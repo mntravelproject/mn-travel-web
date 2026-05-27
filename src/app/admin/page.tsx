@@ -49,8 +49,9 @@ export default function AdminPage() {
   const [trips,       setTrips]      = useState<TravelPackageCard[]>([]);
   const [tripsLoading, setTripsLoading] = useState(false);
   const [refreshKey,  setRefreshKey] = useState(0);
-  const [editId,      setEditId]     = useState<string | null>(null);
-  const [search,      setSearch]     = useState("");
+  const [editId,         setEditId]        = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [search,         setSearch]         = useState("");
 
   useEffect(() => {
     setTripsLoading(true);
@@ -126,7 +127,7 @@ export default function AdminPage() {
                 search={search}
                 setSearch={setSearch}
                 onEdit={openEdit}
-                onDelete={delTrip}
+                onDelete={(id) => setPendingDeleteId(id)}
                 onNew={() => openEdit(null)}
               />
             )}
@@ -149,6 +150,39 @@ export default function AdminPage() {
 
         </div>
       </div>
+
+      {/* ── Delete confirmation modal ── */}
+      {pendingDeleteId && (() => {
+        const tripTitle = trips.find((t) => t.id === pendingDeleteId)?.title ?? "esta viagem";
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setPendingDeleteId(null)} />
+            <div className="relative bg-white rounded-2xl border border-[var(--line)] shadow-xl p-8 w-full max-w-sm">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-5">
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </div>
+              <h2 className="font-display text-[22px] tracking-tight mb-2">Apagar viagem?</h2>
+              <p className="text-[14px] text-[var(--muted)] tracking-tight leading-relaxed mb-7">
+                Tens a certeza que queres apagar <span className="text-[var(--ink)] font-medium">"{tripTitle}"</span>? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setPendingDeleteId(null)}
+                  className="flex-1 rounded-full border border-[var(--line)] py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream)] transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => { delTrip(pendingDeleteId); setPendingDeleteId(null); }}
+                  className="flex-1 rounded-full bg-red-600 text-white py-2.5 text-[14px] tracking-tight hover:bg-red-700 transition"
+                >
+                  Apagar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }

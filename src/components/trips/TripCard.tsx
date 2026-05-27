@@ -26,12 +26,14 @@ export function TripCard({ trip, large = false, className }: TripCardProps) {
           large ? "aspect-[16/10]" : "aspect-[4/5]"
         )}
       >
-        <img
-          src={trip.hero_image_url ?? ""}
-          alt={trip.title}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        {trip.hero_image_url && (
+          <img
+            src={trip.hero_image_url}
+            alt={trip.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
         {/* Top badges */}
