@@ -1,10 +1,22 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { trips } from "@/lib/data";
 import { TripCard } from "@/components/trips/TripCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import type { TravelPackageCard } from "@/types/database";
 
-export function FeaturedTrips() {
+interface Props {
+  trips: TravelPackageCard[];
+}
+
+export function FeaturedTrips({ trips }: Props) {
+  if (trips.length === 0) return null;
+
+  // Layout: [large, normal, normal, normal, large] — matches design
+  const layout = trips.slice(0, 5).map((t, i) => ({
+    trip: t,
+    large: i === 0 || i === 4,
+  }));
+
   return (
     <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-32">
       <div className="grid lg:grid-cols-12 gap-10 items-end mb-16">
@@ -28,13 +40,10 @@ export function FeaturedTrips() {
         </div>
       </div>
 
-      {/* Grid: first card large (col-span-2 out of 3 cols) */}
       <div className="grid lg:grid-cols-3 gap-x-6 gap-y-16">
-        <TripCard trip={trips[0]} large />
-        <TripCard trip={trips[1]} />
-        <TripCard trip={trips[2]} />
-        <TripCard trip={trips[5]} />
-        <TripCard trip={trips[4]} large />
+        {layout.map(({ trip, large }) => (
+          <TripCard key={trip.id} trip={trip} large={large} />
+        ))}
       </div>
     </section>
   );

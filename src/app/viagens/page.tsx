@@ -2,26 +2,37 @@ import { Suspense } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { ViagensContent } from "./ViagensContent";
+import { getAllTrips } from "@/lib/services/trips";
+import { getAllCategories } from "@/lib/services/categories";
 
-export default function ViagensPage() {
+export default async function ViagensPage() {
+  const [trips, categories] = await Promise.all([
+    getAllTrips().catch(() => []),
+    getAllCategories().catch(() => []),
+  ]);
+
   return (
     <>
       <Header />
       <main>
-        <Suspense fallback={<div className="pt-36 max-w-[1320px] mx-auto px-6 lg:px-10 pb-32 animate-pulse">
-          <div className="h-4 w-32 bg-[var(--line)] rounded mb-5" />
-          <div className="h-14 w-96 bg-[var(--line)] rounded mb-10" />
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-16">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i}>
-                <div className="aspect-[4/5] bg-[var(--cream-2)] rounded-2xl mb-4" />
-                <div className="h-5 w-2/3 bg-[var(--cream-2)] rounded mb-2" />
-                <div className="h-4 w-1/3 bg-[var(--cream-2)] rounded" />
-              </div>
-            ))}
+        <Suspense fallback={
+          <div className="pt-[72px]">
+            <div className="pt-16 pb-12 border-b border-[var(--line)] max-w-[1320px] mx-auto px-6 lg:px-10 animate-pulse">
+              <div className="h-4 w-32 bg-[var(--line)] rounded mb-5" />
+              <div className="h-14 w-96 bg-[var(--line)] rounded mb-10" />
+            </div>
+            <div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-16">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[4/5] bg-[var(--cream-2)] rounded-[20px] mb-4" />
+                  <div className="h-5 w-2/3 bg-[var(--cream-2)] rounded mb-2" />
+                  <div className="h-4 w-1/3 bg-[var(--cream-2)] rounded" />
+                </div>
+              ))}
+            </div>
           </div>
-        </div>}>
-          <ViagensContent />
+        }>
+          <ViagensContent trips={trips} categories={categories} />
         </Suspense>
       </main>
       <Footer />

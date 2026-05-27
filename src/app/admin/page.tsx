@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Plane, Plus, Edit3, Trash2, Bell, TrendingUp,
   Search, ArrowLeft, Calendar, Users, Settings, LogOut,
@@ -44,10 +45,18 @@ const BARS   = [60, 78, 52, 91, 68, 100];
 const MONTHS = ["Nov", "Dez", "Jan", "Fev", "Mar", "Abr"];
 
 export default function AdminPage() {
+  const router = useRouter();
   const [view,    setView]    = useState<View>("dashboard");
   const [trips,   setTrips]   = useState<Trip[]>(initialTrips);
   const [editId,  setEditId]  = useState<string | null>(null);
   const [search,  setSearch]  = useState("");
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/admin/login");
+    router.refresh();
+  }
 
   const openEdit = (id: string | null) => { setEditId(id); setView("edit"); };
   const delTrip  = (id: string) => setTrips((p) => p.filter((t) => t.id !== id));
@@ -78,12 +87,12 @@ export default function AdminPage() {
               ))}
             </nav>
             <div className="mt-8 pt-6 border-t border-[var(--line)]">
-              <Link
-                href="/"
+              <button
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition"
               >
                 <LogOut className="w-4 h-4" /> Terminar sessão
-              </Link>
+              </button>
             </div>
           </aside>
 
@@ -350,15 +359,124 @@ function TripsList({
 }
 
 /* ─────────────────────────────────────────────────────── Edit form */
+type ItineraryRow = { day_label: string; title: string; description: string };
+
+function generateSlug(title: string) {
+  return title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
 function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
   const [form, setForm] = useState({
-    title:    trip?.title    ?? "",
-    country:  trip?.country  ?? "",
-    category: trip?.category ?? ("Mediterranean" as Trip["category"]),
-    price:    trip?.price    ?? 0,
-    duration: trip?.duration ?? 7,
-    short:    trip?.short    ?? "",
+    title:             trip?.title    ?? "",
+    country:           trip?.country  ?? "",
+    price_from:        trip?.price    ?? 0,
+    duration_days:     trip?.duration ?? 7,
+    nights:            trip ? Math.max(1, (trip.nights ?? trip.duration - 1)) : 6,
+    short_description: trip?.short    ?? "",
+    long_description:  "",
+    is_published:      false,
+    is_featured:       false,
+    tag:               trip?.tag ?? "",
   });
+
+  const [itinerary, setItinerary] = useState<ItineraryRow[]>(
+    trip?.itinerary?.map((it) => ({
+      day_label:   it.d,
+      title:       it.t,
+      description: it.b,
+    })) ?? [
+      { day_label: "Dia 1", title: "", description: "" },
+      { day_label: "Dia 2", title: "", description: "" },
+    ]
+  );
+
+  const [saving, setSaving] = useState(false);
+  const [saved,  setSaved]  = useState(false);
+  const [error,  setError]  = useState("");
+
+  function updateItinerary(i: number, field: keyof ItineraryRow, value: string) {
+    setItinerary((prev) => prev.map((row, idx) => idx === i ? { ...row, [field]: value } : row));
+  }
+
+  function addItineraryRow() {
+    setItinerary((prev) => [
+      ...prev,
+      { day_label: `Dia ${prev.length + 1}`, title: "", description: "" },
+    ]);
+  }
+
+  function removeItineraryRow(i: number) {
+    setItinerary((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function handleSave() {
+    if (!form.title.trim() || !form.country.trim()) {
+      setError("Título e país são obrigatórios.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSaved(false);
+
+    const supabase = createClient();
+    const slug = generateSlug(form.title);
+
+    const packageData = {
+      slug,
+      title:             form.title.trim(),
+      country:           form.country.trim(),
+      duration_days:     form.duration_days,
+      nights:            form.nights,
+      price_from:        form.price_from,
+      short_description: form.short_description.trim() || null,
+      long_description:  form.long_description.trim() || null,
+      is_published:      form.is_published,
+      is_featured:       form.is_featured,
+      tag:               form.tag || null,
+    };
+
+    try {
+      const { data, error: dbError } = await supabase
+        .from("travel_packages")
+        .insert(packageData)
+        .select("id")
+        .single();
+
+      if (dbError) throw dbError;
+
+      // Save itinerary rows that have a title
+      const validRows = itinerary.filter((it) => it.title.trim());
+      if (validRows.length > 0 && data) {
+        const { error: itError } = await supabase.from("package_itinerary").insert(
+          validRows.map((it, i) => ({
+            package_id:  data.id,
+            day_label:   it.day_label,
+            title:       it.title.trim(),
+            description: it.description.trim(),
+            sort_order:  i,
+          }))
+        );
+        if (itError) throw itError;
+      }
+
+      setSaved(true);
+      setTimeout(() => { setSaved(false); onBack(); }, 1500);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao guardar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const TAGS = ["Bestseller", "Editor's pick", "Novo", "Lua de mel", "Edição limitada"];
 
   return (
     <div className="space-y-8">
@@ -375,11 +493,18 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
           </h1>
         </div>
         <div className="flex items-center gap-3">
-          <button className="inline-flex items-center gap-2 rounded-full border border-[var(--line-2)] hover:border-[var(--ink)] px-5 py-2.5 text-[14px] tracking-tight transition">
-            Pré-visualizar
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition">
-            Guardar alterações
+          {error && (
+            <span className="text-[13px] text-red-600 tracking-tight">{error}</span>
+          )}
+          {saved && (
+            <span className="text-[13px] text-emerald-700 tracking-tight">Guardado ✓</span>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50"
+          >
+            {saving ? "A guardar…" : "Guardar alterações"}
           </button>
         </div>
       </div>
@@ -400,6 +525,11 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
                   placeholder="Ex: Amalfi Coast — Slow Mediterranean Summer"
                   className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
                 />
+                {form.title && (
+                  <p className="mt-1.5 text-[11px] text-[var(--muted)] tracking-tight">
+                    slug: <span className="font-mono">{generateSlug(form.title)}</span>
+                  </p>
+                )}
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
@@ -412,34 +542,34 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Categoria</label>
-                  <select
-                    value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value as Trip["category"] })}
+                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Preço base (€)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.price_from}
+                    onChange={(e) => setForm({ ...form, price_from: +e.target.value })}
                     className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
-                  >
-                    {(["Mediterranean", "Cultural", "Beach", "Adventure", "Wellness"] as const).map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Preço base (€)</label>
+                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Duração (dias)</label>
                   <input
                     type="number"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: +e.target.value })}
+                    min={1}
+                    value={form.duration_days}
+                    onChange={(e) => setForm({ ...form, duration_days: +e.target.value, nights: Math.max(1, +e.target.value - 1) })}
                     className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Duração (dias)</label>
+                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Noites</label>
                   <input
                     type="number"
-                    value={form.duration}
-                    onChange={(e) => setForm({ ...form, duration: +e.target.value })}
+                    min={1}
+                    value={form.nights}
+                    onChange={(e) => setForm({ ...form, nights: +e.target.value })}
                     className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
                   />
                 </div>
@@ -447,10 +577,20 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
               <div>
                 <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Descrição curta</label>
                 <textarea
-                  value={form.short}
-                  onChange={(e) => setForm({ ...form, short: e.target.value })}
+                  value={form.short_description}
+                  onChange={(e) => setForm({ ...form, short_description: e.target.value })}
                   rows={3}
                   placeholder="Uma frase que captura a essência da viagem..."
+                  className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)] resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Descrição longa</label>
+                <textarea
+                  value={form.long_description}
+                  onChange={(e) => setForm({ ...form, long_description: e.target.value })}
+                  rows={5}
+                  placeholder="Descrição completa da viagem..."
                   className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)] resize-none"
                 />
               </div>
@@ -464,7 +604,7 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
               Imagens em formato 4:3 ou 16:9 · 2000px+ recomendado.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {(trip?.gallery.length ? trip.gallery : Array(4).fill(null)).map((img, i) => (
+              {(trip?.gallery?.length ? trip.gallery : Array(4).fill(null)).map((img, i) => (
                 <div
                   key={i}
                   className="aspect-square rounded-xl bg-[var(--cream-2)] border border-[var(--line)] overflow-hidden relative group"
@@ -495,7 +635,10 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
             <div className="flex items-center justify-between mb-1">
               <h3 className="font-display text-[20px] tracking-tight">Itinerário</h3>
-              <button className="inline-flex items-center gap-2 rounded-full border border-[var(--line-2)] hover:border-[var(--ink)] px-3 py-1.5 text-[12px] tracking-tight transition">
+              <button
+                onClick={addItineraryRow}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--line-2)] hover:border-[var(--ink)] px-3 py-1.5 text-[12px] tracking-tight transition"
+              >
                 <Plus className="w-3.5 h-3.5" /> Adicionar dia
               </button>
             </div>
@@ -503,31 +646,42 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
               Etapas do programa visíveis na página de detalhe.
             </p>
             <div className="space-y-3">
-              {(trip?.itinerary ?? [{ d: "Dia 1", t: "", b: "" }, { d: "Dia 2", t: "", b: "" }])
-                .slice(0, 3)
-                .map((it, i) => (
-                  <div key={i} className="p-4 rounded-xl border border-[var(--line)] flex gap-3 items-start">
-                    <div className="w-9 h-9 rounded-full bg-[var(--cream-2)] flex items-center justify-center font-display text-[14px] flex-shrink-0">
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <input
-                        defaultValue={it.t}
-                        placeholder="Título da etapa"
-                        className="w-full bg-transparent text-[14px] font-medium focus:outline-none"
-                      />
-                      <textarea
-                        defaultValue={it.b}
-                        placeholder="Descrição..."
-                        rows={2}
-                        className="w-full bg-transparent text-[13px] text-[var(--muted)] focus:outline-none resize-none"
-                      />
-                    </div>
-                    <button className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--muted)] transition">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </button>
+              {itinerary.map((it, i) => (
+                <div key={i} className="p-4 rounded-xl border border-[var(--line)] flex gap-3 items-start">
+                  <div className="w-9 h-9 rounded-full bg-[var(--cream-2)] flex items-center justify-center font-display text-[14px] flex-shrink-0">
+                    {i + 1}
                   </div>
-                ))}
+                  <div className="flex-1 space-y-2">
+                    <div className="grid sm:grid-cols-[120px_1fr] gap-2">
+                      <input
+                        value={it.day_label}
+                        onChange={(e) => updateItinerary(i, "day_label", e.target.value)}
+                        placeholder="Dia 1–2"
+                        className="bg-[var(--cream-2)] rounded-lg px-3 py-1.5 text-[12px] text-[var(--muted)] focus:outline-none"
+                      />
+                      <input
+                        value={it.title}
+                        onChange={(e) => updateItinerary(i, "title", e.target.value)}
+                        placeholder="Título da etapa"
+                        className="w-full bg-transparent text-[14px] font-medium focus:outline-none border-b border-transparent focus:border-[var(--line-2)]"
+                      />
+                    </div>
+                    <textarea
+                      value={it.description}
+                      onChange={(e) => updateItinerary(i, "description", e.target.value)}
+                      placeholder="Descrição..."
+                      rows={2}
+                      className="w-full bg-transparent text-[13px] text-[var(--muted)] focus:outline-none resize-none"
+                    />
+                  </div>
+                  <button
+                    onClick={() => removeItineraryRow(i)}
+                    className="p-2 rounded-lg hover:bg-red-50 text-[var(--muted)] hover:text-red-500 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -538,18 +692,24 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
             <h3 className="font-display text-[20px] tracking-tight mb-1">Publicação</h3>
             <p className="text-[13px] text-[var(--muted)] mb-6 tracking-tight">Visibilidade da viagem.</p>
             <div className="space-y-3">
-              <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--line)] cursor-pointer">
+              <button
+                onClick={() => setForm((f) => ({ ...f, is_published: !f.is_published }))}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-[var(--line)] cursor-pointer"
+              >
                 <span className="text-[14px]">Publicada</span>
-                <span className="w-10 h-6 rounded-full bg-[var(--ink)] relative flex-shrink-0">
-                  <span className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white" />
+                <span className={`w-10 h-6 rounded-full relative flex-shrink-0 transition-colors ${form.is_published ? "bg-[var(--ink)]" : "bg-[var(--cream-2)]"}`}>
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${form.is_published ? "right-0.5" : "left-0.5 border border-[var(--line-2)]"}`} />
                 </span>
-              </label>
-              <label className="flex items-center justify-between p-3 rounded-xl border border-[var(--line)] cursor-pointer">
+              </button>
+              <button
+                onClick={() => setForm((f) => ({ ...f, is_featured: !f.is_featured }))}
+                className="w-full flex items-center justify-between p-3 rounded-xl border border-[var(--line)] cursor-pointer"
+              >
                 <span className="text-[14px]">Em destaque</span>
-                <span className="w-10 h-6 rounded-full bg-[var(--cream-2)] relative flex-shrink-0">
-                  <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white border border-[var(--line-2)]" />
+                <span className={`w-10 h-6 rounded-full relative flex-shrink-0 transition-colors ${form.is_featured ? "bg-[var(--ink)]" : "bg-[var(--cream-2)]"}`}>
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${form.is_featured ? "right-0.5" : "left-0.5 border border-[var(--line-2)]"}`} />
                 </span>
-              </label>
+              </button>
             </div>
           </div>
 
@@ -557,10 +717,15 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
             <h3 className="font-display text-[20px] tracking-tight mb-1">Tag</h3>
             <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Etiqueta destacada no card.</p>
             <div className="flex flex-wrap gap-2">
-              {["Bestseller", "Editor's pick", "Novo", "Lua de mel", "Edição limitada"].map((tag) => (
+              {TAGS.map((tag) => (
                 <button
                   key={tag}
-                  className="px-3 py-1.5 rounded-full border border-[var(--line-2)] text-[12px] tracking-tight hover:border-[var(--ink)] transition"
+                  onClick={() => setForm((f) => ({ ...f, tag: f.tag === tag ? "" : tag }))}
+                  className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
+                    form.tag === tag
+                      ? "bg-[var(--ink)] text-[var(--cream)] border-[var(--ink)]"
+                      : "border-[var(--line-2)] hover:border-[var(--ink)]"
+                  }`}
                 >
                   {tag}
                 </button>

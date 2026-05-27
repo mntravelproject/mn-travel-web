@@ -4,41 +4,48 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Search, SlidersHorizontal, ArrowLeft, ArrowRight } from "lucide-react";
 import { TripCard } from "@/components/trips/TripCard";
-import { trips } from "@/lib/data";
 import { SectionLabel } from "@/components/ui/SectionLabel";
 import { formatPrice } from "@/lib/utils";
+import type { TravelPackageCard, Category } from "@/types/database";
 
-const CATEGORIES = ["All", "Mediterranean", "Cultural", "Beach", "Adventure"] as const;
-type FilterCat = (typeof CATEGORIES)[number];
+interface Props {
+  trips: TravelPackageCard[];
+  categories: Category[];
+}
 
-export function ViagensContent() {
+export function ViagensContent({ trips, categories }: Props) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
-  const [activeCat, setActiveCat] = useState<FilterCat>("All");
+  const [activeCat, setActiveCat] = useState(searchParams.get("cat") || "all");
   const [price, setPrice] = useState(15000);
   const [sort, setSort] = useState("featured");
+
+  const maxPrice = useMemo(
+    () => Math.max(15000, ...trips.map((t) => t.price_from)),
+    [trips]
+  );
 
   const filtered = useMemo(() => {
     let result = trips.filter(
       (t) =>
-        (activeCat === "All" || (t.category as string) === activeCat) &&
+        (activeCat === "all" || t.category?.slug === activeCat) &&
         (query === "" ||
           t.title.toLowerCase().includes(query.toLowerCase()) ||
           t.country.toLowerCase().includes(query.toLowerCase())) &&
-        t.price <= price
+        t.price_from <= price
     );
-    if (sort === "price-asc") result = [...result].sort((a, b) => a.price - b.price);
-    if (sort === "price-desc") result = [...result].sort((a, b) => b.price - a.price);
-    if (sort === "duration") result = [...result].sort((a, b) => a.duration - b.duration);
+    if (sort === "price-asc") result = [...result].sort((a, b) => a.price_from - b.price_from);
+    if (sort === "price-desc") result = [...result].sort((a, b) => b.price_from - a.price_from);
+    if (sort === "duration") result = [...result].sort((a, b) => a.duration_days - b.duration_days);
     return result;
-  }, [query, activeCat, price, sort]);
+  }, [query, activeCat, price, sort, trips]);
 
   return (
     <div className="pt-[72px]">
       {/* Page header */}
       <section className="border-b border-[var(--line)] bg-[var(--cream)]">
         <div className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-16 pb-12">
-          <SectionLabel>Catálogo · 62 viagens</SectionLabel>
+          <SectionLabel>Catálogo · {trips.length} viagens</SectionLabel>
           <h1 className="mt-5 font-display text-[56px] md:text-[80px] leading-[0.98] tracking-tight text-balance max-w-4xl">
             Cada viagem,<br />uma <span className="italic font-light">narrativa</span>.
           </h1>
@@ -71,20 +78,20 @@ export function ViagensContent() {
           <div>
             <h3 className="text-[13px] font-medium tracking-tight mb-4">Categorias</h3>
             <div className="flex flex-wrap lg:flex-col gap-2 lg:gap-0">
-              {CATEGORIES.map((c) => (
+              {[{ id: "all", name: "Todas" }, ...categories.map((c) => ({ id: c.slug, name: c.name }))].map((c) => (
                 <button
-                  key={c}
-                  onClick={() => setActiveCat(c)}
+                  key={c.id}
+                  onClick={() => setActiveCat(c.id)}
                   className={`lg:py-2.5 px-3 lg:px-3 -mx-3 py-2 rounded-full lg:rounded-md text-[13.5px] tracking-tight text-left transition ${
-                    activeCat === c
+                    activeCat === c.id
                       ? "bg-[var(--ink)] text-[var(--cream)] lg:bg-transparent lg:text-[var(--ink)] lg:font-medium"
                       : "bg-[var(--cream-2)] text-[var(--muted)] lg:bg-transparent lg:hover:text-[var(--ink)]"
                   }`}
                 >
-                  {activeCat === c && (
+                  {activeCat === c.id && (
                     <span className="hidden lg:inline-block w-1 h-1 rounded-full bg-[var(--clay)] mr-2 align-middle" />
                   )}
-                  {c}
+                  {c.name}
                 </button>
               ))}
             </div>
@@ -96,7 +103,7 @@ export function ViagensContent() {
               <input
                 type="range"
                 min="2000"
-                max="15000"
+                max={maxPrice}
                 step="500"
                 value={price}
                 onChange={(e) => setPrice(+e.target.value)}
