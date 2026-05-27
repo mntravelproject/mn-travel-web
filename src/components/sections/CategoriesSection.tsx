@@ -1,19 +1,26 @@
 import Link from "next/link";
-import { Waves, Building2, Mountain, Compass, TreePine, Sparkles } from "lucide-react";
+import { Waves, Building2, Mountain, Compass, TreePine, Sparkles, type LucideIcon } from "lucide-react";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import type { Category } from "@/types/database";
 
-const categoryIcons = [Waves, Building2, Mountain, Compass, TreePine, Sparkles];
+interface Props {
+  categories: Category[];
+}
 
-const categories = [
-  { name: "Mediterrâneo", count: 32 },
-  { name: "Cultural",     count: 28 },
-  { name: "Aventura",     count: 19 },
-  { name: "Praia & ilhas", count: 24 },
-  { name: "Safari",       count: 12 },
-  { name: "Lua de mel",   count: 17 },
-];
+const ICON_BY_SLUG: Record<string, LucideIcon> = {
+  mediterranean: Waves,
+  cultural:      Building2,
+  adventure:     Mountain,
+  beach:         Compass,
+  safari:        TreePine,
+  wellness:      Sparkles,
+};
 
-export function CategoriesSection() {
+const FALLBACK_ICONS: LucideIcon[] = [Waves, Building2, Mountain, Compass, TreePine, Sparkles];
+
+export function CategoriesSection({ categories }: Props) {
+  if (categories.length === 0) return null;
+
   return (
     <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-32">
       <div className="mb-14 max-w-3xl">
@@ -25,11 +32,11 @@ export function CategoriesSection() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {categories.map((c, i) => {
-          const Icon = categoryIcons[i];
+          const Icon = ICON_BY_SLUG[c.slug] ?? FALLBACK_ICONS[i % FALLBACK_ICONS.length];
           return (
             <Link
-              key={c.name}
-              href={`/viagens?q=${encodeURIComponent(c.name)}`}
+              key={c.id}
+              href={`/viagens?cat=${encodeURIComponent(c.slug)}`}
               className="group text-left p-6 rounded-2xl bg-[var(--cream-2)] hover:bg-[var(--ink)] hover:text-[var(--cream)] transition-all duration-500 border border-transparent hover:border-[var(--ink)]"
             >
               <Icon
@@ -40,7 +47,7 @@ export function CategoriesSection() {
                 {c.name}
               </div>
               <div className="mt-2 text-[12px] opacity-60 tracking-tight">
-                {c.count} viagens
+                {c.trip_count} viagens
               </div>
             </Link>
           );

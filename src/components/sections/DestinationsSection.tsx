@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
-import { destinations } from "@/lib/data";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import type { Destination } from "@/types/database";
 
-export function DestinationsSection() {
+interface Props {
+  destinations: Destination[];
+}
+
+export function DestinationsSection({ destinations }: Props) {
+  if (destinations.length === 0) return null;
+
   return (
     <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-32">
       <div className="flex items-end justify-between mb-14">
@@ -26,7 +32,7 @@ export function DestinationsSection() {
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 lg:gap-5">
         {destinations.map((d, i) => (
           <Link
-            key={d.name}
+            key={d.id}
             href={`/viagens?q=${encodeURIComponent(d.name)}`}
             className={`group cursor-pointer ${i === 0 ? "col-span-2 lg:col-span-2 row-span-2" : ""}`}
           >
@@ -36,7 +42,7 @@ export function DestinationsSection() {
               }`}
             >
               <img
-                src={d.img}
+                src={d.image_url}
                 alt={d.name}
                 className="w-full h-full object-cover"
                 loading="lazy"
@@ -44,7 +50,7 @@ export function DestinationsSection() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
               <div className="absolute bottom-4 left-4 right-4 text-white">
                 <div className="font-display text-[24px] leading-tight">{d.name}</div>
-                <div className="text-[12px] text-white/75 tracking-tight">{d.count} viagens</div>
+                <div className="text-[12px] text-white/75 tracking-tight">{d.trip_count} viagens</div>
               </div>
             </div>
           </Link>

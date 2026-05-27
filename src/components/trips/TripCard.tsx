@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { Clock, MapPin, Star, Users, Heart } from "lucide-react";
-import { Trip } from "@/types";
+import type { TravelPackageCard } from "@/types/database";
 import { formatPrice } from "@/lib/utils";
 import { Pill } from "@/components/ui/Pill";
 import { cn } from "@/lib/utils";
 
 interface TripCardProps {
-  trip: Trip;
+  trip: TravelPackageCard;
   large?: boolean;
   className?: string;
 }
@@ -27,7 +27,7 @@ export function TripCard({ trip, large = false, className }: TripCardProps) {
         )}
       >
         <img
-          src={trip.hero}
+          src={trip.hero_image_url ?? ""}
           alt={trip.title}
           className="w-full h-full object-cover"
           loading="lazy"
@@ -36,12 +36,14 @@ export function TripCard({ trip, large = false, className }: TripCardProps) {
 
         {/* Top badges */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-          <Pill className="!bg-white/85 !border-transparent text-[var(--ink)]">
-            {trip.tag}
-          </Pill>
+          {trip.tag && (
+            <Pill className="!bg-white/85 !border-transparent text-[var(--ink)]">
+              {trip.tag}
+            </Pill>
+          )}
           <button
             onClick={(e) => e.preventDefault()}
-            className="w-9 h-9 rounded-full bg-white/85 backdrop-blur flex items-center justify-center hover:bg-white"
+            className="ml-auto w-9 h-9 rounded-full bg-white/85 backdrop-blur flex items-center justify-center hover:bg-white"
           >
             <Heart className="w-4 h-4 text-[var(--ink)]" />
           </button>
@@ -71,14 +73,14 @@ export function TripCard({ trip, large = false, className }: TripCardProps) {
         <div className="mt-3 flex items-center justify-between text-[13px] text-[var(--muted)]">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5" /> {trip.duration} dias
+              <Clock className="w-3.5 h-3.5" /> {trip.duration_days} dias
             </span>
             <span className="hidden sm:flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" /> Privado
             </span>
           </div>
           <div className="text-[var(--ink)] font-medium tracking-tight">
-            desde {formatPrice(trip.price)}
+            desde {formatPrice(trip.price_from)}
           </div>
         </div>
       </div>

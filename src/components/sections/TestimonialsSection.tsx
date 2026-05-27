@@ -1,8 +1,14 @@
 import { Quote } from "lucide-react";
-import { testimonials } from "@/lib/data";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import type { Testimonial } from "@/types/database";
 
-export function TestimonialsSection() {
+interface Props {
+  testimonials: Testimonial[];
+}
+
+export function TestimonialsSection({ testimonials }: Props) {
+  if (testimonials.length === 0) return null;
+
   return (
     <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-32">
       <div className="grid lg:grid-cols-12 gap-16 items-start">
@@ -17,13 +23,15 @@ export function TestimonialsSection() {
 
           <div className="mt-10 flex items-center gap-4">
             <div className="flex -space-x-3">
-              {testimonials.map((t) => (
-                <img
-                  key={t.name}
-                  src={t.avatar}
-                  alt={t.name}
-                  className="w-10 h-10 rounded-full object-cover border-2 border-[var(--cream)]"
-                />
+              {testimonials.slice(0, 4).map((t) => (
+                t.author_avatar && (
+                  <img
+                    key={t.id}
+                    src={t.author_avatar}
+                    alt={t.author_name}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-[var(--cream)]"
+                  />
+                )
               ))}
             </div>
             <div>
@@ -35,7 +43,7 @@ export function TestimonialsSection() {
                 ))}
               </div>
               <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">
-                4.97 · 556 viajantes
+                4.97 · {testimonials.length}+ viajantes
               </div>
             </div>
           </div>
@@ -45,7 +53,7 @@ export function TestimonialsSection() {
         <div className="lg:col-span-8 grid md:grid-cols-2 gap-6">
           {testimonials.slice(0, 2).map((t, i) => (
             <div
-              key={t.name}
+              key={t.id}
               className={`p-8 rounded-2xl bg-[var(--cream-2)] ${i === 1 ? "md:mt-12" : ""}`}
             >
               <Quote className="w-8 h-8 text-[var(--clay)] mb-6" strokeWidth={1.5} />
@@ -53,14 +61,18 @@ export function TestimonialsSection() {
                 &ldquo;{t.quote}&rdquo;
               </p>
               <div className="mt-8 flex items-center gap-3">
-                <img
-                  src={t.avatar}
-                  alt={t.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                {t.author_avatar && (
+                  <img
+                    src={t.author_avatar}
+                    alt={t.author_name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                )}
                 <div>
-                  <div className="text-[14px] font-medium tracking-tight">{t.name}</div>
-                  <div className="text-[12px] text-[var(--muted)] tracking-tight">{t.where}</div>
+                  <div className="text-[14px] font-medium tracking-tight">{t.author_name}</div>
+                  {t.destination && (
+                    <div className="text-[12px] text-[var(--muted)] tracking-tight">{t.destination}</div>
+                  )}
                 </div>
               </div>
             </div>
