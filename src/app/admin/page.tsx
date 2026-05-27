@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Plane, Plus, Edit3, Trash2, Bell, TrendingUp,
   Search, ArrowLeft, Calendar, Users, Settings, LogOut,
-  MoreHorizontal, Upload, Image as ImageIcon, Sparkles,
+  Upload, Image as ImageIcon, Sparkles,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import { trips as initialTrips } from "@/lib/data";
-import type { Trip } from "@/types";
+import type { TravelPackageCard } from "@/types/database";
 import { formatPrice } from "@/lib/utils";
 import { Pill } from "@/components/ui/Pill";
 
@@ -46,10 +45,25 @@ const MONTHS = ["Nov", "Dez", "Jan", "Fev", "Mar", "Abr"];
 
 export default function AdminPage() {
   const router = useRouter();
-  const [view,    setView]    = useState<View>("dashboard");
-  const [trips,   setTrips]   = useState<Trip[]>(initialTrips);
-  const [editId,  setEditId]  = useState<string | null>(null);
-  const [search,  setSearch]  = useState("");
+  const [view,        setView]       = useState<View>("dashboard");
+  const [trips,       setTrips]      = useState<TravelPackageCard[]>([]);
+  const [tripsLoading, setTripsLoading] = useState(false);
+  const [refreshKey,  setRefreshKey] = useState(0);
+  const [editId,      setEditId]     = useState<string | null>(null);
+  const [search,      setSearch]     = useState("");
+
+  useEffect(() => {
+    setTripsLoading(true);
+    const supabase = createClient();
+    supabase
+      .from("travel_packages")
+      .select("*, category:categories(id, name, slug)")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setTrips(data as TravelPackageCard[]);
+        setTripsLoading(false);
+      });
+  }, [refreshKey]);
 
   async function handleLogout() {
     const supabase = createClient();
@@ -59,7 +73,12 @@ export default function AdminPage() {
   }
 
   const openEdit = (id: string | null) => { setEditId(id); setView("edit"); };
-  const delTrip  = (id: string) => setTrips((p) => p.filter((t) => t.id !== id));
+
+  async function delTrip(id: string) {
+    setTrips((p) => p.filter((t) => t.id !== id));
+    const supabase = createClient();
+    await supabase.from("travel_packages").delete().eq("id", id);
+  }
 
   return (
     <>
@@ -115,6 +134,7 @@ export default function AdminPage() {
               <EditForm
                 trip={trips.find((t) => t.id === editId) ?? null}
                 onBack={() => setView("trips")}
+                onSaved={() => { setRefreshKey((k) => k + 1); setView("trips"); }}
               />
             )}
             {!["dashboard", "trips", "edit"].includes(view) && (
@@ -269,7 +289,7 @@ function Dashboard({ onNavigate }: { onNavigate: (v: string) => void }) {
 function TripsList({
   trips, search, setSearch, onEdit, onDelete, onNew,
 }: {
-  trips: Trip[];
+  trips: TravelPackageCard[];
   search: string;
   setSearch: (v: string) => void;
   onEdit: (id: string) => void;
@@ -326,16 +346,22 @@ function TripsList({
               <tr key={t.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/50">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    <img src={t.hero} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                    {t.hero_image_url ? (
+                      <img src={t.hero_image_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-lg bg-[var(--cream-2)] flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-[var(--muted)]" strokeWidth={1.5} />
+                      </div>
+                    )}
                     <div>
                       <div className="font-medium tracking-tight max-w-xs truncate">{t.title}</div>
-                      <div className="text-[12px] text-[var(--muted)] tracking-tight">{t.category}</div>
+                      <div className="text-[12px] text-[var(--muted)] tracking-tight">{t.category?.name ?? "—"}</div>
                     </div>
                   </div>
                 </td>
                 <td className="p-4 text-[var(--ink-soft)] hidden lg:table-cell">{t.country}</td>
-                <td className="p-4 text-[var(--muted)] hidden md:table-cell tracking-tight">{t.duration} dias</td>
-                <td className="p-4 font-medium tracking-tight">{formatPrice(t.price)}</td>
+                <td className="p-4 text-[var(--muted)] hidden md:table-cell tracking-tight">{t.duration_days} dias</td>
+                <td className="p-4 font-medium tracking-tight">{formatPrice(t.price_from)}</td>
                 <td className="p-4 hidden lg:table-cell">
                   <Pill className="!bg-emerald-50 !text-emerald-800 !border-emerald-200">Publicada</Pill>
                 </td>
@@ -372,30 +398,24 @@ function generateSlug(title: string) {
     .replace(/-+/g, "-");
 }
 
-function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
+function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; onBack: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({
     title:             trip?.title    ?? "",
     country:           trip?.country  ?? "",
-    price_from:        trip?.price    ?? 0,
-    duration_days:     trip?.duration ?? 7,
-    nights:            trip ? Math.max(1, (trip.nights ?? trip.duration - 1)) : 6,
-    short_description: trip?.short    ?? "",
+    price_from:        trip?.price_from    ?? 0,
+    duration_days:     trip?.duration_days ?? 7,
+    nights:            trip?.nights        ?? 6,
+    short_description: trip?.short_description ?? "",
     long_description:  "",
     is_published:      false,
     is_featured:       false,
     tag:               trip?.tag ?? "",
   });
 
-  const [itinerary, setItinerary] = useState<ItineraryRow[]>(
-    trip?.itinerary?.map((it) => ({
-      day_label:   it.d,
-      title:       it.t,
-      description: it.b,
-    })) ?? [
-      { day_label: "Dia 1", title: "", description: "" },
-      { day_label: "Dia 2", title: "", description: "" },
-    ]
-  );
+  const [itinerary, setItinerary] = useState<ItineraryRow[]>([
+    { day_label: "Dia 1", title: "", description: "" },
+    { day_label: "Dia 2", title: "", description: "" },
+  ]);
 
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
@@ -468,7 +488,7 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
       }
 
       setSaved(true);
-      setTimeout(() => { setSaved(false); onBack(); }, 1500);
+      setTimeout(() => { setSaved(false); onSaved(); }, 1500);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao guardar.");
     } finally {
@@ -604,7 +624,7 @@ function EditForm({ trip, onBack }: { trip: Trip | null; onBack: () => void }) {
               Imagens em formato 4:3 ou 16:9 · 2000px+ recomendado.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {(trip?.gallery?.length ? trip.gallery : Array(4).fill(null)).map((img, i) => (
+              {(Array(4).fill(null) as null[]).map((img, i) => (
                 <div
                   key={i}
                   className="aspect-square rounded-xl bg-[var(--cream-2)] border border-[var(--line)] overflow-hidden relative group"
