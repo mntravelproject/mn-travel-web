@@ -47,14 +47,12 @@ export default function AdminPage() {
   const router = useRouter();
   const [view,        setView]       = useState<View>("dashboard");
   const [trips,       setTrips]      = useState<TravelPackageCard[]>([]);
-  const [tripsLoading, setTripsLoading] = useState(false);
   const [refreshKey,  setRefreshKey] = useState(0);
   const [editId,         setEditId]        = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [search,         setSearch]         = useState("");
 
   useEffect(() => {
-    setTripsLoading(true);
     const supabase = createClient();
     supabase
       .from("travel_packages")
@@ -62,7 +60,6 @@ export default function AdminPage() {
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setTrips(data as TravelPackageCard[]);
-        setTripsLoading(false);
       });
   }, [refreshKey]);
 
@@ -451,9 +448,10 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     { day_label: "Dia 2", title: "", description: "" },
   ]);
 
-  const [gallery,   setGallery]   = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver,  setDragOver]  = useState(false);
+  const [gallery,      setGallery]      = useState<string[]>([]);
+  const [uploading,    setUploading]    = useState(false);
+  const [dragOver,     setDragOver]     = useState(false);
+  const [uploadError,  setUploadError]  = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
@@ -461,7 +459,12 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
   const [error,  setError]  = useState("");
 
   async function uploadFiles(files: FileList | File[]) {
-    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const arr = Array.from(files).filter((f) => f.type === "image/webp");
+    if (Array.from(files).length > arr.length) {
+      setUploadError("Apenas ficheiros .webp são aceites.");
+      return;
+    }
+    setUploadError("");
     if (!arr.length) return;
     setUploading(true);
     setError("");
@@ -478,7 +481,7 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       }
       setGallery((prev) => [...prev, ...urls]);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Erro ao carregar imagem.");
+      setUploadError(err instanceof Error ? err.message : "Erro ao carregar imagem.");
     } finally {
       setUploading(false);
     }
@@ -695,14 +698,22 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
           {/* Gallery */}
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
             <h3 className="font-display text-[20px] tracking-tight mb-1">Galeria</h3>
-            <p className="text-[13px] text-[var(--muted)] mb-6 tracking-tight">
+            <p className="text-[13px] text-[var(--muted)] tracking-tight">
               A primeira imagem será a principal · 4:3 ou 16:9 · 2000px+ recomendado.
             </p>
+
+            {uploadError && (
+              <div className="mt-3 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-[13px] text-red-700 tracking-tight">
+                {uploadError}
+              </div>
+            )}
+
+            <div className="mt-6" />
 
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept="image/webp"
               multiple
               className="hidden"
               onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }}

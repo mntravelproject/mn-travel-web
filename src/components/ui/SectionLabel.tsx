@@ -4,8 +4,8 @@ interface SectionLabelProps {
 
 export function SectionLabel({ children }: SectionLabelProps) {
   return (
-    <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-[var(--muted)]">
-      <span className="h-px w-8 bg-[var(--line-2)]" />
+    <div className="inline-flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-[var(--muted)]">
+      <span className="h-px w-8 bg-[var(--clay)]/50" />
       {children}
     </div>
   );
