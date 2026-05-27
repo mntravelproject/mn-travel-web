@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -417,9 +417,38 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     { day_label: "Dia 2", title: "", description: "" },
   ]);
 
+  const [gallery,   setGallery]   = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver,  setDragOver]  = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
   const [error,  setError]  = useState("");
+
+  async function uploadFiles(files: FileList | File[]) {
+    const arr = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (!arr.length) return;
+    setUploading(true);
+    setError("");
+    try {
+      const supabase = createClient();
+      const urls: string[] = [];
+      for (const file of arr) {
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const path = `packages/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("package-images").upload(path, file);
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = supabase.storage.from("package-images").getPublicUrl(path);
+        urls.push(publicUrl);
+      }
+      setGallery((prev) => [...prev, ...urls]);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar imagem.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function updateItinerary(i: number, field: keyof ItineraryRow, value: string) {
     setItinerary((prev) => prev.map((row, idx) => idx === i ? { ...row, [field]: value } : row));
@@ -461,6 +490,7 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       is_published:      form.is_published,
       is_featured:       form.is_featured,
       tag:               form.tag || null,
+      hero_image_url:    gallery[0] ?? null,
     };
 
     try {
@@ -471,6 +501,17 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
         .single();
 
       if (dbError) throw dbError;
+
+      // Save gallery images
+      if (gallery.length > 0 && data) {
+        await supabase.from("package_images").insert(
+          gallery.map((url, i) => ({
+            package_id: data.id,
+            image_url:  url,
+            sort_order: i,
+          }))
+        );
+      }
 
       // Save itinerary rows that have a title
       const validRows = itinerary.filter((it) => it.title.trim());
@@ -621,32 +662,57 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
             <h3 className="font-display text-[20px] tracking-tight mb-1">Galeria</h3>
             <p className="text-[13px] text-[var(--muted)] mb-6 tracking-tight">
-              Imagens em formato 4:3 ou 16:9 · 2000px+ recomendado.
+              A primeira imagem será a principal · 4:3 ou 16:9 · 2000px+ recomendado.
             </p>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ""; }}
+            />
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {(Array(4).fill(null) as null[]).map((img, i) => (
-                <div
-                  key={i}
-                  className="aspect-square rounded-xl bg-[var(--cream-2)] border border-[var(--line)] overflow-hidden relative group"
-                >
-                  {img ? (
-                    <>
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                      <button className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                        <Trash2 className="w-3.5 h-3.5 text-[var(--clay-dark)]" />
-                      </button>
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-[var(--muted)]">
-                      <ImageIcon className="w-6 h-6 mb-2" strokeWidth={1.5} />
-                      <span className="text-[11px] tracking-tight">Vazio</span>
+              {gallery.map((url, i) => (
+                <div key={url} className="aspect-square rounded-xl bg-[var(--cream-2)] border border-[var(--line)] overflow-hidden relative group">
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                  {i === 0 && (
+                    <div className="absolute top-2 left-2 bg-[var(--ink)] text-[var(--cream)] text-[10px] px-2 py-0.5 rounded-full tracking-tight">
+                      Principal
                     </div>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setGallery((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 text-[var(--clay-dark)]" />
+                  </button>
                 </div>
               ))}
-              <button className="aspect-square rounded-xl border-2 border-dashed border-[var(--line-2)] flex flex-col items-center justify-center hover:border-[var(--ink)] hover:bg-[var(--cream)] transition">
-                <Upload className="w-6 h-6 mb-2 text-[var(--muted)]" strokeWidth={1.5} />
-                <span className="text-[12px] text-[var(--muted)] tracking-tight">Carregar</span>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files) uploadFiles(e.dataTransfer.files); }}
+                disabled={uploading}
+                className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition disabled:opacity-50 ${
+                  dragOver ? "border-[var(--ink)] bg-[var(--cream-2)]" : "border-[var(--line-2)] hover:border-[var(--ink)] hover:bg-[var(--cream)]"
+                }`}
+              >
+                {uploading ? (
+                  <div className="w-5 h-5 border-2 border-[var(--line-2)] border-t-[var(--ink)] rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 text-[var(--muted)]" strokeWidth={1.5} />
+                    <span className="text-[12px] text-[var(--muted)] tracking-tight">Carregar</span>
+                    <span className="text-[10px] text-[var(--muted)] tracking-tight opacity-60">ou arrastar</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
