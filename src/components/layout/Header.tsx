@@ -26,42 +26,35 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const isHome   = pathname === "/" || (pathname.startsWith("/viagens/") && pathname !== "/viagens");
-  const onLight  = !isHome || scrolled || open;
+  const isHome  = pathname === "/" || (pathname.startsWith("/viagens/") && pathname !== "/viagens");
+  const onLight = !isHome || scrolled || open;
 
   return (
     <header
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-all duration-500",
         onLight
-          ? "bg-[var(--cream)]/85 backdrop-blur-md hairline"
+          ? "bg-[var(--surface-dark)]/90 backdrop-blur-xl border-b border-white/[0.06]"
           : "bg-transparent"
       )}
     >
       <div className="max-w-[1320px] mx-auto px-6 lg:px-10 h-[72px] flex items-center justify-between">
+
         {/* Logo */}
         <Link
           href="/"
-          className={cn(
-            "font-display text-[22px] tracking-tight leading-none transition-colors",
-            onLight ? "text-[var(--ink)]" : "text-white"
-          )}
+          className="font-display text-[22px] tracking-tight leading-none text-white transition-opacity hover:opacity-80"
         >
-          MN<span className="italic font-light"> travel</span>
+          MN<span className="italic font-light text-[var(--clay-soft)]"> travel</span>
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-9">
+        <nav className="hidden lg:flex items-center gap-8">
           {navLinks.map((link, i) => (
             <Link
               key={i}
               href={link.href}
-              className={cn(
-                "link-underline text-[13.5px] tracking-tight transition-colors",
-                onLight
-                  ? "text-[var(--ink-soft)] hover:text-[var(--ink)]"
-                  : "text-white/85 hover:text-white"
-              )}
+              className="link-underline text-[13px] tracking-tight text-white/70 hover:text-white transition-colors"
             >
               {link.label}
             </Link>
@@ -69,23 +62,13 @@ export function Header() {
         </nav>
 
         {/* Right actions */}
-        <div className="flex items-center gap-3">
-          <button
-            className={cn(
-              "hidden sm:inline-flex items-center gap-1.5 text-[13px] tracking-tight",
-              onLight ? "text-[var(--ink-soft)]" : "text-white/85"
-            )}
-          >
+        <div className="flex items-center gap-4">
+          <button className="hidden sm:inline-flex items-center gap-1.5 text-[13px] text-white/60 tracking-tight hover:text-white/90 transition-colors">
             <Globe className="w-4 h-4" /> PT
           </button>
           <Link
             href="/viagens"
-            className={cn(
-              "hidden sm:inline-flex rounded-full px-4 py-2 text-[13px] tracking-tight transition-all",
-              onLight
-                ? "bg-[var(--ink)] text-[var(--cream)] hover:bg-[var(--ink-soft)]"
-                : "bg-white text-[var(--ink)] hover:bg-white/90"
-            )}
+            className="hidden sm:inline-flex rounded-full px-5 py-2 text-[13px] tracking-tight font-medium transition-all bg-[var(--clay)] text-white hover:bg-[var(--clay-dark)]"
           >
             Reservar
           </Link>
@@ -93,10 +76,7 @@ export function Header() {
           {/* Mobile toggle */}
           <button
             onClick={() => setOpen(!open)}
-            className={cn(
-              "lg:hidden p-2 -mr-2",
-              onLight ? "text-[var(--ink)]" : "text-white"
-            )}
+            className="lg:hidden p-2 -mr-2 text-white"
           >
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -105,22 +85,22 @@ export function Header() {
 
       {/* Mobile menu */}
       {open && (
-        <div className="lg:hidden bg-[var(--cream)] border-t border-[var(--line)] anim-in">
-          <div className="px-6 py-6 space-y-4">
+        <div className="lg:hidden bg-[var(--surface-dark)] border-t border-white/[0.07] anim-in">
+          <div className="px-6 py-8 space-y-5">
             {navLinks.map((link, i) => (
               <Link
                 key={i}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="block w-full text-left font-display text-2xl text-[var(--ink)]"
+                className="block w-full text-left font-display text-2xl text-white/90 hover:text-white transition-colors"
               >
                 {link.label}
               </Link>
             ))}
-            <div className="pt-4 border-t border-[var(--line)]">
+            <div className="pt-4 border-t border-white/10">
               <Link
                 href="/viagens"
-                className="block w-full text-center bg-[var(--ink)] text-[var(--cream)] rounded-full px-5 py-3 text-[14px] font-medium tracking-tight"
+                className="block w-full text-center bg-[var(--clay)] text-white rounded-full px-5 py-3 text-[14px] font-medium tracking-tight hover:bg-[var(--clay-dark)] transition-colors"
               >
                 Reservar consulta
               </Link>
