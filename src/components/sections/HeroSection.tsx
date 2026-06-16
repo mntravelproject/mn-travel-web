@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Minus, Plus } from "lucide-react";
+import { Pill } from "@/components/ui/Pill";
 
 const quickSearches = ["Lua de mel", "Maldivas", "Patagónia", "Itália", "Safari"];
 
@@ -23,66 +24,64 @@ export function HeroSection() {
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--surface-dark)]/60 via-black/25 to-[var(--surface-dark)]/75" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/55" />
 
-      <div className="relative h-full max-w-[1320px] mx-auto px-6 lg:px-10 flex flex-col justify-end pb-24 lg:pb-32 text-white anim-in">
+      <div className="relative h-full max-w-[1320px] mx-auto px-6 lg:px-10 flex flex-col justify-end pb-28 lg:pb-36 text-white anim-in">
         <div className="max-w-3xl">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full glass mb-8 text-[12px] tracking-[0.14em] uppercase text-white/80">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--clay-soft)]" />
+          <Pill className="!bg-white/15 !border-white/30 !text-white">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-white" />
             Curadoria de viagens premium · desde 2008
-          </div>
-
-          <h1 className="font-display text-[60px] sm:text-[84px] lg:text-[116px] leading-[0.93] tracking-tight text-balance">
+          </Pill>
+          <h1 className="mt-6 font-display text-[64px] sm:text-[88px] lg:text-[120px] leading-[0.95] tracking-tight text-balance">
             Onde a viagem
             <br />
-            <span className="italic font-light text-[var(--clay-soft)]">se torna</span> arte.
+            <span className="italic font-light">se torna</span> arte.
           </h1>
-          <p className="mt-7 max-w-xl text-[16px] text-white/70 leading-relaxed text-pretty">
+          <p className="mt-7 max-w-xl text-[17px] text-white/85 leading-relaxed text-pretty">
             Desenhamos viagens à medida para quem entende que viajar bem é,
             antes de mais, viajar de outra forma.
           </p>
         </div>
 
-        <div className="mt-12 lg:mt-14">
+        <div className="mt-12 lg:mt-16">
           {/* Search bar */}
-          <div className="glass-dark rounded-[20px] p-2 max-w-3xl border border-white/10">
-            <div className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr_0.8fr_auto] gap-px items-stretch bg-white/[0.06] rounded-[14px] overflow-hidden">
+          <div className="bg-[var(--cream)] rounded-[28px] p-2 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.5)] max-w-3xl">
+            <div className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr_0.8fr_auto] gap-1 items-stretch">
               {/* Destination */}
-              <div className="px-5 py-4 hover:bg-white/[0.06] cursor-pointer transition-colors bg-transparent">
-                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--clay-soft)]/80 mb-1.5">Destino</div>
+              <div className="px-5 py-3 rounded-[22px] hover:bg-[var(--cream-2)] cursor-pointer transition">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Destino</div>
                 <input
                   value={destination}
                   onChange={(e) => setDestination(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   placeholder="Para onde sonha ir?"
-                  className="w-full bg-transparent text-[14px] text-white placeholder:text-white/40 focus:outline-none"
+                  className="w-full mt-1 bg-transparent text-[14px] text-[var(--ink)] placeholder:text-[var(--muted-2)] focus:outline-none"
                 />
               </div>
               {/* When */}
-              <div className="px-5 py-4 hover:bg-white/[0.06] cursor-pointer transition-colors border-l border-white/[0.08]">
-                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--clay-soft)]/80 mb-1.5">Quando</div>
+              <div className="px-5 py-3 rounded-[22px] hover:bg-[var(--cream-2)] cursor-pointer transition border-l border-[var(--line)]">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Quando</div>
                 <input
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   placeholder="Datas flexíveis"
-                  className="w-full bg-transparent text-[14px] text-white placeholder:text-white/40 focus:outline-none"
+                  className="w-full mt-1 bg-transparent text-[14px] text-[var(--ink)] placeholder:text-[var(--muted-2)] focus:outline-none"
                 />
               </div>
               {/* Travelers */}
-              <div className="px-5 py-4 hover:bg-white/[0.06] cursor-pointer transition-colors border-l border-white/[0.08]">
-                <div className="text-[10px] uppercase tracking-[0.22em] text-[var(--clay-soft)]/80 mb-1.5">Viajantes</div>
-                <div className="flex items-center gap-2.5 text-[14px] text-white">
+              <div className="px-5 py-3 rounded-[22px] hover:bg-[var(--cream-2)] cursor-pointer transition border-l border-[var(--line)]">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-[var(--muted)]">Viajantes</div>
+                <div className="flex items-center mt-1 gap-2 text-[14px] text-[var(--ink)]">
                   <button
                     onClick={() => setPax(Math.max(1, pax - 1))}
-                    className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+                    className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
                   {pax} adultos
                   <button
                     onClick={() => setPax(pax + 1)}
-                    className="w-5 h-5 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+                    className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -91,7 +90,7 @@ export function HeroSection() {
               {/* Search button */}
               <button
                 onClick={handleSearch}
-                className="rounded-[12px] bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-6 m-1.5 flex items-center justify-center gap-2 text-[14px] font-medium tracking-tight transition-colors"
+                className="rounded-[22px] bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 m-1 flex items-center justify-center gap-2 text-[14px] font-medium tracking-tight transition"
               >
                 <Search className="w-4 h-4" /> Procurar
               </button>
@@ -99,13 +98,12 @@ export function HeroSection() {
           </div>
 
           {/* Quick searches */}
-          <div className="mt-5 flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] text-white/40 tracking-tight mr-1">Popular:</span>
+          <div className="mt-5 flex items-center gap-5 flex-wrap text-[12px] text-white/70 tracking-tight">
             {quickSearches.map((t) => (
               <button
                 key={t}
                 onClick={() => router.push(`/viagens?q=${encodeURIComponent(t)}`)}
-                className="px-3.5 py-1.5 rounded-full glass text-[12px] text-white/70 hover:text-white hover:bg-white/15 transition-all tracking-tight"
+                className="link-underline"
               >
                 {t}
               </button>

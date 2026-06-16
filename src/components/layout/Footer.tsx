@@ -19,23 +19,17 @@ const columns = [
 
 export function Footer() {
   return (
-    <footer className="bg-[var(--surface-dark)] text-[var(--cream)] pt-24 pb-10">
-      {/* Top teal line */}
+    <footer className="bg-[var(--ink)] text-[var(--cream)] pt-24 pb-10 mt-32">
       <div className="max-w-[1320px] mx-auto px-6 lg:px-10">
-        <div className="h-px bg-gradient-to-r from-[var(--clay)]/60 via-[var(--clay)]/20 to-transparent mb-20" />
-
         {/* Top grid */}
-        <div className="grid lg:grid-cols-12 gap-12 pb-20 border-b border-white/[0.06]">
+        <div className="grid lg:grid-cols-12 gap-12 pb-20 border-b border-white/10">
           {/* CTA column */}
           <div className="lg:col-span-5">
-            <div className="font-display text-[26px] tracking-tight mb-2 text-white">
-              MN<span className="italic font-light text-[var(--clay-soft)]"> travel</span>
-            </div>
-            <h2 className="mt-6 font-display text-[42px] md:text-[52px] leading-[1.04] tracking-tight text-balance text-white">
+            <h2 className="font-display text-[44px] md:text-[56px] leading-[1.02] tracking-tight text-balance">
               Pronto para a próxima{" "}
-              <span className="italic font-light text-[var(--clay-soft)]">história</span>?
+              <span className="italic font-light">história</span>?
             </h2>
-            <p className="mt-6 text-white/45 max-w-md text-[15px] leading-relaxed">
+            <p className="mt-6 text-white/60 max-w-md text-[15px] leading-relaxed">
               Falamos consigo sobre o que procura. Depois desenhamos a viagem de
               raiz — porque nenhuma viagem premium se desenha por catálogo.
             </p>
@@ -46,7 +40,7 @@ export function Footer() {
               <Button
                 variant="ghost"
                 size="lg"
-                className="text-white/70 hover:text-white hover:bg-white/[0.08]"
+                className="text-white hover:bg-white/10"
               >
                 Falar com curador
               </Button>
@@ -57,15 +51,15 @@ export function Footer() {
           <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-10 text-[13.5px]">
             {columns.map((col) => (
               <div key={col.title}>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-[var(--clay-soft)]/50 mb-6">
+                <div className="text-[11px] uppercase tracking-[0.22em] text-white/45 mb-5">
                   {col.title}
                 </div>
-                <ul className="space-y-3.5">
+                <ul className="space-y-3">
                   {col.links.map((item) => (
                     <li key={item}>
                       <a
                         href="#"
-                        className="text-white/55 hover:text-white transition-colors link-underline"
+                        className="text-white/80 hover:text-white transition link-underline"
                       >
                         {item}
                       </a>
@@ -79,26 +73,26 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5 text-white/40">
+          <div className="flex items-center gap-5 text-white/50">
             {["IG", "FB", "TW"].map((s) => (
               <a
                 key={s}
                 href="#"
-                className="text-[11px] font-semibold tracking-widest hover:text-white/80 transition-colors cursor-pointer"
+                className="text-[11px] font-semibold tracking-widest hover:text-white transition cursor-pointer"
               >
                 {s}
               </a>
             ))}
           </div>
-          <div className="flex items-center gap-5 text-[12px] text-white/30 tracking-tight">
+          <div className="flex items-center gap-5 text-[12px] text-white/40 tracking-tight">
             <span>© 2026 MN Travel · RNAVT 9999 · Lisboa, Portugal</span>
-            <Link href="/admin" className="hover:text-white/60 transition-colors">Admin</Link>
+            <Link href="/admin" className="hover:text-white/70 transition">Admin</Link>
           </div>
         </div>
 
         {/* Watermark */}
         <div className="mt-12 -mb-10 overflow-hidden">
-          <div className="font-display italic text-[18vw] leading-none text-white/[0.025] tracking-tighter select-none whitespace-nowrap">
+          <div className="font-display italic text-[18vw] leading-none text-white/[0.04] tracking-tighter select-none whitespace-nowrap">
             mn travel
           </div>
         </div>
