@@ -96,7 +96,8 @@ export async function getTripBySlug(slug: string): Promise<TravelPackageWithRela
   trip.images = (trip.images ?? []).sort((a, b) => a.sort_order - b.sort_order);
   trip.itinerary = (trip.itinerary ?? []).sort((a, b) => a.sort_order - b.sort_order);
 
-  return trip;
+  // Ensure plain JSON before crossing the Server→Client boundary on Vercel
+  return JSON.parse(JSON.stringify(trip)) as TravelPackageWithRelations;
 }
 
 export async function getTripSlugs(): Promise<string[]> {
