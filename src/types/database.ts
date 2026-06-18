@@ -287,10 +287,10 @@ export interface Database {
         ];
       };
       trip_groups: {
-        Row: { id: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes: string | null; created_at: string; updated_at: string };
-        Insert: { id?: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes?: string | null };
-        Update: { title?: string; destination?: string; start_date?: string; end_date?: string; price_per_person?: number; notes?: string | null; updated_at?: string };
-        Relationships: [];
+        Row: { id: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes: string | null; package_id: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes?: string | null; package_id?: string | null };
+        Update: { title?: string; destination?: string; start_date?: string; end_date?: string; price_per_person?: number; notes?: string | null; package_id?: string | null; updated_at?: string };
+        Relationships: [{ foreignKeyName: "trip_groups_package_id_fkey"; columns: ["package_id"]; isOneToOne: false; referencedRelation: "travel_packages"; referencedColumns: ["id"] }];
       };
       trip_passengers: {
         Row: { id: string; trip_id: string; full_name: string; id_card_number: string | null; id_card_expiry: string | null; nif: string | null; date_of_birth: string | null; nationality: string | null; phone: string | null; email: string | null; notes: string | null; sort_order: number; created_at: string; updated_at: string };

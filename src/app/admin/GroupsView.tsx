@@ -14,6 +14,7 @@ type TripGroup = {
   id: string; title: string; destination: string;
   start_date: string; end_date: string;
   price_per_person: number; notes: string | null;
+  package_id: string | null;
   created_at: string; updated_at: string;
 };
 type Passenger = {
@@ -91,16 +92,44 @@ function Modal({ open, onClose, title, children, wide }: {
 }
 
 // ─── Trip form ────────────────────────────────────────────────────────────────
-const EMPTY_TRIP = { title: "", destination: "", start_date: "", end_date: "", price_per_person: "", notes: "" };
+const EMPTY_TRIP = { title: "", destination: "", start_date: "", end_date: "", price_per_person: "", notes: "", package_id: "" };
+
+type PackageOption = { id: string; title: string; country: string; departure_date: string | null; return_date: string | null; price_from: number };
 
 function TripForm({ initial, onSave, onCancel }: {
   initial?: typeof EMPTY_TRIP;
   onSave: (d: typeof EMPTY_TRIP) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [form, setForm] = useState(initial ?? EMPTY_TRIP);
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
+  const [form,     setForm]     = useState(initial ?? EMPTY_TRIP);
+  const [packages, setPackages] = useState<PackageOption[]>([]);
+  const [saving,   setSaving]   = useState(false);
+  const [err,      setErr]      = useState("");
+
+  useEffect(() => {
+    createClient()
+      .from("travel_packages")
+      .select("id, title, country, departure_date, return_date, price_from")
+      .eq("is_published", true)
+      .order("departure_date", { ascending: true })
+      .then(({ data }) => { if (data) setPackages(data as PackageOption[]); });
+  }, []);
+
+  function selectPackage(id: string) {
+    if (!id) { setForm((f) => ({ ...f, package_id: "" })); return; }
+    const pkg = packages.find((p) => p.id === id);
+    if (!pkg) return;
+    setForm((f) => ({
+      ...f,
+      package_id:       id,
+      title:            pkg.title,
+      destination:      pkg.country,
+      start_date:       pkg.departure_date ?? f.start_date,
+      end_date:         pkg.return_date    ?? f.end_date,
+      price_per_person: String(pkg.price_from),
+    }));
+  }
+
   const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((p) => ({ ...p, [k]: e.target.value }));
 
@@ -115,8 +144,26 @@ function TripForm({ initial, onSave, onCancel }: {
 
   return (
     <form onSubmit={submit} className="px-7 py-6 space-y-4">
+      {/* Package picker */}
       <div>
-        <label className={lCls}>Nome da viagem *</label>
+        <label className={lCls}>Viagem do catálogo</label>
+        <select value={form.package_id} onChange={(e) => selectPackage(e.target.value)} className={iCls}>
+          <option value="">— Seleccionar viagem existente —</option>
+          {packages.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.title}{p.departure_date ? ` · ${new Date(p.departure_date + "T00:00:00").toLocaleDateString("pt-PT")}` : ""}
+            </option>
+          ))}
+        </select>
+        {form.package_id && (
+          <p className="text-[11px] text-[var(--muted)] mt-1.5">Campos preenchidos automaticamente — podes editar abaixo.</p>
+        )}
+      </div>
+
+      <div className="border-t border-[var(--line)]" />
+
+      <div>
+        <label className={lCls}>Nome do grupo *</label>
         <input value={form.title} onChange={f("title")} placeholder="ex: Marrocos 2026" className={iCls} />
       </div>
       <div>
@@ -409,6 +456,7 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
       title: data.title, destination: data.destination,
       start_date: data.start_date, end_date: data.end_date,
       price_per_person: parseFloat(data.price_per_person), notes: data.notes || null,
+      package_id: data.package_id || null,
     }).select("*").single();
     if (error) throw new Error(error.message);
     setTrips((prev) => [created as TripGroup, ...prev]);
@@ -423,6 +471,7 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
       title: data.title, destination: data.destination,
       start_date: data.start_date, end_date: data.end_date,
       price_per_person: parseFloat(data.price_per_person), notes: data.notes || null,
+      package_id: data.package_id || null,
     };
     const { error } = await supabase.from("trip_groups").update(updates).eq("id", editTrip.id);
     if (error) throw new Error(error.message);
@@ -539,6 +588,7 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
               title: editTrip.title, destination: editTrip.destination,
               start_date: editTrip.start_date, end_date: editTrip.end_date,
               price_per_person: String(editTrip.price_per_person), notes: editTrip.notes ?? "",
+              package_id: editTrip.package_id ?? "",
             }}
             onSave={updateTrip} onCancel={() => setEditTrip(null)}
           />
