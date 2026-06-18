@@ -613,16 +613,16 @@ function BookingsView() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden">
+      <div className="bg-white rounded-2xl border border-[var(--line)]">
         <table className="w-full text-[14px]">
           <thead>
             <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40">
-              <th className="text-left font-medium p-4">Cliente</th>
+              <th className="text-left font-medium p-4 rounded-tl-2xl">Cliente</th>
               <th className="text-left font-medium p-4 hidden md:table-cell">Contacto</th>
               <th className="text-left font-medium p-4 hidden lg:table-cell">Viagem</th>
               <th className="text-left font-medium p-4 hidden xl:table-cell">Pax</th>
               <th className="text-left font-medium p-4 hidden sm:table-cell">Data</th>
-              <th className="text-left font-medium p-4">Estado</th>
+              <th className="text-left font-medium p-4 rounded-tr-2xl">Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -646,7 +646,7 @@ function BookingsView() {
                   <td className="p-4">
                     <div className="font-medium tracking-tight">{b.name}</div>
                     {b.message && (
-                      <div className="text-[12px] text-[var(--muted)] mt-0.5 max-w-[200px] truncate">{b.message}</div>
+                      <div className="text-[12px] text-[var(--muted)] mt-1 leading-relaxed">{b.message}</div>
                     )}
                   </td>
                   {/* Contacto */}
