@@ -95,7 +95,7 @@ export default function AdminPage() {
     const original = trips.find((t) => t.id === id);
     if (!original) return;
     const supabase = createClient();
-    const uniqueSlug = `${generateSlug(original.title)}-${Date.now()}`;
+    const uniqueSlug = `viagem-${Date.now()}`;
 
     const { data, error } = await supabase
       .from("travel_packages")
