@@ -390,6 +390,114 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
   );
 }
 
+/* ─────────────────────────────────────────────────────── Table helpers */
+const PER_PAGE = 10;
+
+type SortState = { key: string; dir: "asc" | "desc" };
+
+function getVal(obj: Record<string, unknown>, key: string): unknown {
+  return key.split(".").reduce((o, k) => (o as Record<string, unknown>)?.[k], obj as unknown);
+}
+
+function applySortFilter<T extends Record<string, unknown>>(
+  items: T[],
+  sort: SortState | null,
+): T[] {
+  if (!sort) return items;
+  return [...items].sort((a, b) => {
+    const av = getVal(a, sort.key) ?? "";
+    const bv = getVal(b, sort.key) ?? "";
+    let cmp = 0;
+    if (typeof av === "boolean" && typeof bv === "boolean") {
+      cmp = Number(av) - Number(bv);
+    } else if (typeof av === "number" && typeof bv === "number") {
+      cmp = av - bv;
+    } else {
+      cmp = String(av).localeCompare(String(bv), "pt");
+    }
+    return sort.dir === "asc" ? cmp : -cmp;
+  });
+}
+
+function Th({
+  label, field, sort, onSort, className = "",
+}: {
+  label: string; field: string; sort: SortState | null;
+  onSort: (k: string) => void; className?: string;
+}) {
+  const active = sort?.key === field;
+  return (
+    <th
+      onClick={() => onSort(field)}
+      className={`text-left font-medium p-4 cursor-pointer select-none group hover:text-[var(--ink)] ${className}`}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <span className={`text-[10px] transition-opacity ${active ? "opacity-100" : "opacity-0 group-hover:opacity-40"}`}>
+          {active && sort?.dir === "desc" ? "↓" : "↑"}
+        </span>
+      </span>
+    </th>
+  );
+}
+
+function Pagination({
+  page, total, count, onPage,
+}: {
+  page: number; total: number; count: number; onPage: (p: number) => void;
+}) {
+  if (total <= 1) return null;
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--line)] bg-[var(--cream)]/40 text-[12px] text-[var(--muted)]">
+      <span>{count} resultado{count !== 1 ? "s" : ""} · Página {page} de {total}</span>
+      <div className="flex items-center gap-1">
+        <button
+          disabled={page === 1}
+          onClick={() => onPage(1)}
+          className="px-2 py-1 rounded-lg hover:bg-[var(--line)] disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >«</button>
+        <button
+          disabled={page === 1}
+          onClick={() => onPage(page - 1)}
+          className="px-3 py-1 rounded-lg hover:bg-[var(--line)] disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >Anterior</button>
+        {Array.from({ length: total }, (_, i) => i + 1)
+          .filter((p) => p === 1 || p === total || Math.abs(p - page) <= 1)
+          .reduce<(number | "…")[]>((acc, p, i, arr) => {
+            if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+            acc.push(p);
+            return acc;
+          }, [])
+          .map((p, i) =>
+            p === "…" ? (
+              <span key={`e${i}`} className="px-2">…</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onPage(p as number)}
+                className={`w-8 h-8 rounded-lg text-[12px] transition ${
+                  page === p
+                    ? "bg-[var(--ink)] text-[var(--cream)]"
+                    : "hover:bg-[var(--line)]"
+                }`}
+              >{p}</button>
+            )
+          )}
+        <button
+          disabled={page === total}
+          onClick={() => onPage(page + 1)}
+          className="px-3 py-1 rounded-lg hover:bg-[var(--line)] disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >Próxima</button>
+        <button
+          disabled={page === total}
+          onClick={() => onPage(total)}
+          className="px-2 py-1 rounded-lg hover:bg-[var(--line)] disabled:opacity-30 disabled:cursor-not-allowed transition"
+        >»</button>
+      </div>
+    </div>
+  );
+}
+
 /* ─────────────────────────────────────────────────────── Trips list */
 function TripsList({
   trips, search, setSearch, onEdit, onDelete, onDuplicate, onNew,
@@ -402,12 +510,28 @@ function TripsList({
   onDuplicate: (id: string) => void;
   onNew: () => void;
 }) {
+  const [sort, setSort] = useState<SortState | null>({ key: "title", dir: "asc" });
+  const [page, setPage] = useState(1);
+
   const filtered = trips.filter(
     (t) =>
       !search ||
       t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.country.toLowerCase().includes(search.toLowerCase())
   );
+
+  const sorted = applySortFilter(filtered as unknown as Record<string, unknown>[], sort) as unknown as typeof filtered;
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const paged = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  function onSort(key: string) {
+    setSort((s) => s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+    setPage(1);
+  }
+
+  useEffect(() => { setPage(1); }, [search]);
+
+  const thBase = "text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40";
 
   return (
     <div className="space-y-8">
@@ -438,18 +562,21 @@ function TripsList({
       <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden">
         <table className="w-full text-[14px]">
           <thead>
-            <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40">
-              <th className="text-left font-medium p-4">Viagem</th>
-              <th className="text-left font-medium p-4 hidden lg:table-cell">País</th>
-              <th className="text-left font-medium p-4 hidden md:table-cell">Duração</th>
-              <th className="text-left font-medium p-4 hidden xl:table-cell">Datas</th>
-              <th className="text-left font-medium p-4">Preço</th>
-              <th className="text-left font-medium p-4 hidden lg:table-cell">Estado</th>
-              <th className="text-right font-medium p-4 w-12">·</th>
+            <tr className={thBase}>
+              <Th label="Viagem"   field="title"          sort={sort} onSort={onSort} className="rounded-tl-2xl" />
+              <Th label="País"     field="country"        sort={sort} onSort={onSort} className="hidden lg:table-cell" />
+              <Th label="Duração"  field="duration_days"  sort={sort} onSort={onSort} className="hidden md:table-cell" />
+              <Th label="Partida"  field="departure_date" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
+              <Th label="Preço"    field="price_from"     sort={sort} onSort={onSort} />
+              <Th label="Estado"   field="is_published"   sort={sort} onSort={onSort} className="hidden lg:table-cell" />
+              <th className="text-right font-medium p-4 w-12 rounded-tr-2xl">·</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((t) => (
+            {paged.length === 0 && (
+              <tr><td colSpan={7} className="p-12 text-center text-[var(--muted)] text-[13px]">Nenhuma viagem encontrada.</td></tr>
+            )}
+            {paged.map((t) => (
               <tr key={t.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/50">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
@@ -472,13 +599,9 @@ function TripsList({
                   {t.departure_date ? (
                     <div className="text-[13px] tracking-tight">
                       <span className="text-[var(--ink)]">{formatTripDate(t.departure_date)}</span>
-                      {t.return_date && (
-                        <span className="text-[var(--muted)]"> → {formatTripDate(t.return_date)}</span>
-                      )}
+                      {t.return_date && <span className="text-[var(--muted)]"> → {formatTripDate(t.return_date)}</span>}
                     </div>
-                  ) : (
-                    <span className="text-[var(--muted)] text-[13px]">—</span>
-                  )}
+                  ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
                 </td>
                 <td className="p-4 font-medium tracking-tight">{formatPrice(t.price_from)}</td>
                 <td className="p-4 hidden lg:table-cell">
@@ -490,21 +613,16 @@ function TripsList({
                 </td>
                 <td className="p-4 text-right">
                   <div className="inline-flex items-center gap-1">
-                    <button onClick={() => onEdit(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar">
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => onDuplicate(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Duplicar">
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <button onClick={() => onDelete(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition" title="Apagar">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <button onClick={() => onEdit(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                    <button onClick={() => onDuplicate(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Duplicar"><Copy className="w-4 h-4" /></button>
+                    <button onClick={() => onDelete(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition" title="Apagar"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
       </div>
     </div>
   );
@@ -537,6 +655,8 @@ function BookingsView() {
   const [search,    setSearch]    = useState("");
   const [loading,   setLoading]   = useState(true);
   const [openMenu,  setOpenMenu]  = useState<string | null>(null);
+  const [sort,      setSort]      = useState<SortState | null>({ key: "created_at", dir: "desc" });
+  const [page,      setPage]      = useState(1);
 
   useEffect(() => {
     if (!openMenu) return;
@@ -556,11 +676,21 @@ function BookingsView() {
       });
   }, []);
 
+  useEffect(() => { setPage(1); }, [search, sort]);
+
   const filtered = bookings.filter((b) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return b.name.toLowerCase().includes(q) || (b.package?.title ?? "").toLowerCase().includes(q);
   });
+
+  const sorted  = applySortFilter(filtered as unknown as Record<string, unknown>[], sort) as unknown as typeof filtered;
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const paged   = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  function onSort(key: string) {
+    setSort((s) => s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  }
 
   async function updateStatus(id: string, status: BookingStatus) {
     setOpenMenu(null);
@@ -571,13 +701,9 @@ function BookingsView() {
   function exportCSV() {
     const BOM = "﻿";
     const headers = ["Nome", "Email", "Telefone", "Viagem", "Pax", "Estado", "Mensagem", "Data"];
-    const rows = filtered.map((b) => [
-      b.name,
-      b.email,
-      b.phone ?? "",
-      b.package?.title ?? "",
-      String(b.pax_count),
-      BOOKING_STATUS[b.status]?.label ?? b.status,
+    const rows = sorted.map((b) => [
+      b.name, b.email, b.phone ?? "", b.package?.title ?? "",
+      String(b.pax_count), BOOKING_STATUS[b.status]?.label ?? b.status,
       (b.message ?? "").replace(/,/g, ";").replace(/\n/g, " "),
       new Date(b.created_at).toLocaleString("pt-PT"),
     ]);
@@ -585,11 +711,11 @@ function BookingsView() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href     = url;
-    a.download = `reservas-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = `reservas-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
   }
+
+  const thBase = "text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40";
 
   function fmtDate(iso: string) {
     return new Date(iso).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
@@ -597,7 +723,6 @@ function BookingsView() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="font-display text-[36px] tracking-tight">Reservas</h1>
@@ -606,102 +731,60 @@ function BookingsView() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2">
             <Search className="w-4 h-4 text-[var(--muted)]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Procurar por nome ou viagem..."
-              className="bg-transparent text-[13px] focus:outline-none w-52"
-            />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Procurar por nome ou viagem..." className="bg-transparent text-[13px] focus:outline-none w-52" />
           </div>
-          <button
-            onClick={exportCSV}
-            className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition"
-          >
+          <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">
             <Download className="w-4 h-4" /> Exportar Excel
           </button>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-white rounded-2xl border border-[var(--line)]">
         <table className="w-full text-[14px]">
           <thead>
-            <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40">
-              <th className="text-left font-medium p-4 rounded-tl-2xl">Cliente</th>
-              <th className="text-left font-medium p-4 hidden md:table-cell">Contacto</th>
-              <th className="text-left font-medium p-4 hidden lg:table-cell">Viagem</th>
-              <th className="text-left font-medium p-4 hidden xl:table-cell">Pax</th>
-              <th className="text-left font-medium p-4 hidden sm:table-cell">Data</th>
-              <th className="text-left font-medium p-4 rounded-tr-2xl">Estado</th>
+            <tr className={thBase}>
+              <Th label="Cliente"  field="name"         sort={sort} onSort={onSort} className="rounded-tl-2xl" />
+              <Th label="Contacto" field="email"        sort={sort} onSort={onSort} className="hidden md:table-cell" />
+              <Th label="Viagem"   field="package.title" sort={sort} onSort={onSort} className="hidden lg:table-cell" />
+              <Th label="Pax"      field="pax_count"    sort={sort} onSort={onSort} className="hidden xl:table-cell" />
+              <Th label="Data"     field="created_at"   sort={sort} onSort={onSort} className="hidden sm:table-cell" />
+              <Th label="Estado"   field="status"       sort={sort} onSort={onSort} className="rounded-tr-2xl" />
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td>
-              </tr>
+            {loading && <tr><td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td></tr>}
+            {!loading && paged.length === 0 && (
+              <tr><td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">
+                {search ? "Nenhum resultado para a pesquisa." : "Ainda não há pedidos de reserva."}
+              </td></tr>
             )}
-            {!loading && filtered.length === 0 && (
-              <tr>
-                <td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">
-                  {search ? "Nenhum resultado para a pesquisa." : "Ainda não há pedidos de reserva."}
-                </td>
-              </tr>
-            )}
-            {filtered.map((b) => {
+            {paged.map((b) => {
               const st = BOOKING_STATUS[b.status];
               return (
                 <tr key={b.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
-                  {/* Nome */}
                   <td className="p-4">
                     <div className="font-medium tracking-tight">{b.name}</div>
-                    {b.message && (
-                      <div className="text-[12px] text-[var(--muted)] mt-1 leading-relaxed">{b.message}</div>
-                    )}
+                    {b.message && <div className="text-[12px] text-[var(--muted)] mt-1 leading-relaxed">{b.message}</div>}
                   </td>
-                  {/* Contacto */}
                   <td className="p-4 hidden md:table-cell">
                     <div className="flex flex-col gap-1">
-                      <a href={`mailto:${b.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
-                        <Mail className="w-3.5 h-3.5" /> {b.email}
-                      </a>
-                      {b.phone && (
-                        <a href={`tel:${b.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition">
-                          <Phone className="w-3.5 h-3.5" /> {b.phone}
-                        </a>
-                      )}
+                      <a href={`mailto:${b.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition"><Mail className="w-3.5 h-3.5" /> {b.email}</a>
+                      {b.phone && <a href={`tel:${b.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition"><Phone className="w-3.5 h-3.5" /> {b.phone}</a>}
                     </div>
                   </td>
-                  {/* Viagem */}
-                  <td className="p-4 hidden lg:table-cell">
-                    <span className="text-[13px] text-[var(--ink-soft)]">{b.package?.title ?? "—"}</span>
-                  </td>
-                  {/* Pax */}
-                  <td className="p-4 hidden xl:table-cell text-[var(--muted)] text-[13px]">
-                    {b.pax_count} pax
-                  </td>
-                  {/* Data */}
-                  <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">
-                    {fmtDate(b.created_at)}
-                  </td>
-                  {/* Estado */}
+                  <td className="p-4 hidden lg:table-cell"><span className="text-[13px] text-[var(--ink-soft)]">{b.package?.title ?? "—"}</span></td>
+                  <td className="p-4 hidden xl:table-cell text-[var(--muted)] text-[13px]">{b.pax_count} pax</td>
+                  <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(b.created_at)}</td>
                   <td className="p-4">
                     <div className="relative inline-block">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === b.id ? null : b.id); }}
-                        className="flex items-center gap-1"
-                      >
+                      <button onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === b.id ? null : b.id); }} className="flex items-center gap-1">
                         <Pill className={st?.cls}>{st?.label ?? b.status}</Pill>
                         <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
                       </button>
                       {openMenu === b.id && (
                         <div className="absolute left-0 top-8 z-20 bg-white border border-[var(--line)] rounded-xl shadow-lg py-1 min-w-[148px]">
                           {(Object.entries(BOOKING_STATUS) as [BookingStatus, { label: string; cls: string }][]).map(([val, cfg]) => (
-                            <button
-                              key={val}
-                              onClick={() => updateStatus(b.id, val)}
-                              className="w-full text-left px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] flex items-center gap-2"
-                            >
+                            <button key={val} onClick={() => updateStatus(b.id, val)} className="w-full text-left px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] flex items-center gap-2">
                               <Pill className={`${cfg.cls} !text-[11px]`}>{cfg.label}</Pill>
                             </button>
                           ))}
@@ -714,14 +797,7 @@ function BookingsView() {
             })}
           </tbody>
         </table>
-        {/* Totals footer */}
-        {!loading && filtered.length > 0 && (
-          <div className="px-4 py-3 border-t border-[var(--line)] bg-[var(--cream)]/40 text-[12px] text-[var(--muted)] tracking-tight flex gap-6">
-            <span>{filtered.length} pedido{filtered.length !== 1 ? "s" : ""}</span>
-            <span>{filtered.filter(b => b.status === "pending").length} novos</span>
-            <span>{filtered.filter(b => b.status === "confirmed").length} confirmados</span>
-          </div>
-        )}
+        <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
       </div>
     </div>
   );
@@ -748,17 +824,11 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
 };
 
 function QuotesView() {
-  const [quotes,   setQuotes]   = useState<ContactRequest[]>([]);
-  const [search,   setSearch]   = useState("");
-  const [loading,  setLoading]  = useState(true);
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!openMenu) return;
-    const handler = () => setOpenMenu(null);
-    document.addEventListener("click", handler);
-    return () => document.removeEventListener("click", handler);
-  }, [openMenu]);
+  const [quotes,  setQuotes]  = useState<ContactRequest[]>([]);
+  const [search,  setSearch]  = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sort,    setSort]    = useState<SortState | null>({ key: "created_at", dir: "desc" });
+  const [page,    setPage]    = useState(1);
 
   useEffect(() => {
     createClient()
@@ -772,14 +842,23 @@ function QuotesView() {
       });
   }, []);
 
+  useEffect(() => { setPage(1); }, [search, sort]);
+
   const filtered = quotes.filter((q) => {
     if (!search) return true;
     const s = search.toLowerCase();
     return q.name.toLowerCase().includes(s) || (q.subject ?? "").toLowerCase().includes(s) || q.email.toLowerCase().includes(s);
   });
 
+  const sorted = applySortFilter(filtered as unknown as Record<string, unknown>[], sort) as unknown as typeof filtered;
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const paged = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  function onSort(key: string) {
+    setSort((s) => s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  }
+
   async function markResponded(id: string) {
-    setOpenMenu(null);
     const next = quotes.find((q) => q.id === id)?.status === "respondido" ? "novo" : "respondido";
     setQuotes((prev) => prev.map((q) => q.id === id ? { ...q, status: next } : q));
     await createClient().from("contact_requests").update({ status: next }).eq("id", id);
@@ -788,7 +867,7 @@ function QuotesView() {
   function exportCSV() {
     const BOM = "﻿";
     const headers = ["Nome", "Email", "Telefone", "Assunto", "Mensagem", "Estado", "Data"];
-    const rows = filtered.map((q) => [
+    const rows = sorted.map((q) => [
       q.name, q.email, q.phone ?? "", q.subject ?? "", q.message.replace(/,/g, ";").replace(/\n/g, " "),
       q.status, new Date(q.created_at).toLocaleString("pt-PT"),
     ]);
@@ -799,6 +878,8 @@ function QuotesView() {
     a.href = url; a.download = `orcamentos-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click(); URL.revokeObjectURL(url);
   }
+
+  const thBase = "text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40";
 
   function fmtDate(iso: string) {
     return new Date(iso).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
@@ -814,16 +895,9 @@ function QuotesView() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2">
             <Search className="w-4 h-4 text-[var(--muted)]" />
-            <input
-              value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Procurar por nome ou assunto…"
-              className="bg-transparent text-[13px] focus:outline-none w-52"
-            />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Procurar por nome ou assunto…" className="bg-transparent text-[13px] focus:outline-none w-52" />
           </div>
-          <button
-            onClick={exportCSV}
-            className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition"
-          >
+          <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">
             <Download className="w-4 h-4" /> Exportar Excel
           </button>
         </div>
@@ -832,60 +906,40 @@ function QuotesView() {
       <div className="bg-white rounded-2xl border border-[var(--line)]">
         <table className="w-full text-[14px]">
           <thead>
-            <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40">
-              <th className="text-left font-medium p-4 rounded-tl-2xl">Cliente</th>
-              <th className="text-left font-medium p-4 hidden md:table-cell">Contacto</th>
-              <th className="text-left font-medium p-4 hidden lg:table-cell">Assunto</th>
-              <th className="text-left font-medium p-4 hidden sm:table-cell">Data</th>
-              <th className="text-left font-medium p-4 rounded-tr-2xl">Estado</th>
+            <tr className={thBase}>
+              <Th label="Cliente" field="name"       sort={sort} onSort={onSort} className="rounded-tl-2xl" />
+              <Th label="Contacto" field="email"     sort={sort} onSort={onSort} className="hidden md:table-cell" />
+              <Th label="Assunto"  field="subject"   sort={sort} onSort={onSort} className="hidden lg:table-cell" />
+              <Th label="Data"     field="created_at" sort={sort} onSort={onSort} className="hidden sm:table-cell" />
+              <Th label="Estado"   field="status"    sort={sort} onSort={onSort} className="rounded-tr-2xl" />
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr><td colSpan={5} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td></tr>
-            )}
-            {!loading && filtered.length === 0 && (
+            {loading && <tr><td colSpan={5} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td></tr>}
+            {!loading && paged.length === 0 && (
               <tr><td colSpan={5} className="p-12 text-center text-[var(--muted)] text-[13px]">
                 {search ? "Nenhum resultado." : "Ainda não há pedidos de orçamento."}
               </td></tr>
             )}
-            {filtered.map((q) => {
+            {paged.map((q) => {
               const responded = q.status === "respondido";
               return (
                 <tr key={q.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
-                  {/* Cliente */}
                   <td className="p-4">
                     <div className={`font-medium tracking-tight ${responded ? "text-[var(--muted)]" : ""}`}>{q.name}</div>
-                    {q.message && (
-                      <div className="text-[12px] text-[var(--muted)] mt-1 leading-relaxed">{q.message}</div>
-                    )}
+                    {q.message && <div className="text-[12px] text-[var(--muted)] mt-1 leading-relaxed">{q.message}</div>}
                   </td>
-                  {/* Contacto */}
                   <td className="p-4 hidden md:table-cell">
                     <div className="flex flex-col gap-1">
-                      <a href={`mailto:${q.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
-                        <Mail className="w-3.5 h-3.5" /> {q.email}
-                      </a>
-                      {q.phone && (
-                        <a href={`tel:${q.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition">
-                          <Phone className="w-3.5 h-3.5" /> {q.phone}
-                        </a>
-                      )}
+                      <a href={`mailto:${q.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition"><Mail className="w-3.5 h-3.5" /> {q.email}</a>
+                      {q.phone && <a href={`tel:${q.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition"><Phone className="w-3.5 h-3.5" /> {q.phone}</a>}
                     </div>
                   </td>
-                  {/* Assunto */}
-                  <td className="p-4 hidden lg:table-cell">
-                    <span className="text-[13px] text-[var(--ink-soft)]">{q.subject ?? "—"}</span>
-                  </td>
-                  {/* Data */}
-                  <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">
-                    {fmtDate(q.created_at)}
-                  </td>
-                  {/* Estado */}
+                  <td className="p-4 hidden lg:table-cell"><span className="text-[13px] text-[var(--ink-soft)]">{q.subject ?? "—"}</span></td>
+                  <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(q.created_at)}</td>
                   <td className="p-4">
                     <button
-                      onClick={(e) => { e.stopPropagation(); markResponded(q.id); }}
-                      title={responded ? "Marcar como novo" : "Marcar como respondido"}
+                      onClick={() => markResponded(q.id)}
                       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] tracking-tight transition ${
                         responded
                           ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
@@ -901,13 +955,7 @@ function QuotesView() {
             })}
           </tbody>
         </table>
-        {!loading && filtered.length > 0 && (
-          <div className="px-4 py-3 border-t border-[var(--line)] bg-[var(--cream)]/40 text-[12px] text-[var(--muted)] tracking-tight flex gap-6">
-            <span>{filtered.length} pedido{filtered.length !== 1 ? "s" : ""}</span>
-            <span>{filtered.filter(q => q.status === "novo").length} por responder</span>
-            <span>{filtered.filter(q => q.status === "respondido").length} respondidos</span>
-          </div>
-        )}
+        <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
       </div>
     </div>
   );
