@@ -95,29 +95,63 @@ export default function AdminPage() {
     const original = trips.find((t) => t.id === id);
     if (!original) return;
     const supabase = createClient();
-    const newTitle = original.title;
     const uniqueSlug = `${generateSlug(original.title)}-${Date.now()}`;
+
     const { data, error } = await supabase
       .from("travel_packages")
       .insert({
         slug:              uniqueSlug,
-        title:             newTitle,
+        title:             original.title,
         country:           original.country,
         duration_days:     original.duration_days,
         nights:            original.nights,
         price_from:        original.price_from,
         short_description: original.short_description,
+        long_description:  original.long_description,
         hero_image_url:    original.hero_image_url,
         tag:               original.tag,
+        category_id:       original.category_id,
         departure_date:    original.departure_date,
         return_date:       original.return_date,
+        available_seats:   original.available_seats,
+        trip_status:       original.trip_status,
+        pdf_url:           original.pdf_url,
         is_published:      false,
         is_featured:       false,
       })
       .select("*, category:categories(id, name, slug)")
       .single();
+
     if (error) { console.error("Erro ao duplicar viagem:", error.message); return; }
-    if (data) setTrips((p) => [data as TravelPackageCard, ...p]);
+    if (!data) return;
+
+    // Copy gallery images
+    const { data: images } = await supabase
+      .from("package_images")
+      .select("image_url, alt_text, sort_order")
+      .eq("package_id", id)
+      .order("sort_order");
+
+    if (images && images.length > 0) {
+      await supabase.from("package_images").insert(
+        images.map((img) => ({ ...img, package_id: data.id }))
+      );
+    }
+
+    // Copy itinerary
+    const { data: itinerary } = await supabase
+      .from("package_itinerary")
+      .select("day_label, title, description, sort_order")
+      .eq("package_id", id)
+      .order("sort_order");
+
+    if (itinerary && itinerary.length > 0) {
+      await supabase.from("package_itinerary").insert(
+        itinerary.map((row) => ({ ...row, package_id: data.id }))
+      );
+    }
+
+    setTrips((p) => [data as TravelPackageCard, ...p]);
   }
 
   return (
