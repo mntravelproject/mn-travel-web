@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import type { Testimonial } from "@/types/database";
 
 export async function getFeaturedTestimonials(limit = 4): Promise<Testimonial[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("testimonials")
     .select("*")
@@ -15,7 +15,7 @@ export async function getFeaturedTestimonials(limit = 4): Promise<Testimonial[]>
 }
 
 export async function getTestimonialsByPackage(packageId: string): Promise<Testimonial[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("testimonials")
     .select("*")

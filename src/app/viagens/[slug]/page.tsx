@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { getTripBySlug, getTripSlugs } from "@/lib/services/trips";
 import { TripDetailClient } from "./TripDetailClient";
 
+export const revalidate = 3600; // ISR: revalidate cached pages every hour
+export const dynamicParams = true; // SSR fallback for slugs not pre-generated
+
 interface Props {
   params: Promise<{ slug: string }>;
 }

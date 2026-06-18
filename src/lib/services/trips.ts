@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import type { TravelPackageCard, TravelPackageWithRelations } from "@/types/database";
 
 const PACKAGE_CARD_SELECT = `
@@ -16,7 +16,7 @@ const PACKAGE_FULL_SELECT = `
 ` as const;
 
 export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("travel_packages")
     .select(PACKAGE_CARD_SELECT)
@@ -35,7 +35,7 @@ export async function getAllTrips(filters?: {
   search?: string;
   sortBy?: "featured" | "price-asc" | "price-desc" | "duration";
 }): Promise<TravelPackageCard[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   let query = supabase
     .from("travel_packages")
     .select(PACKAGE_CARD_SELECT)
@@ -70,7 +70,6 @@ export async function getAllTrips(filters?: {
 
   let result = (data ?? []) as TravelPackageCard[];
 
-  // Filter by category slug after join (Supabase doesn't support filtering on joined columns directly)
   if (filters?.categorySlug && filters.categorySlug !== "all") {
     result = result.filter((t) => t.category?.slug === filters.categorySlug);
   }
@@ -79,7 +78,7 @@ export async function getAllTrips(filters?: {
 }
 
 export async function getTripBySlug(slug: string): Promise<TravelPackageWithRelations | null> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("travel_packages")
     .select(PACKAGE_FULL_SELECT)
@@ -96,12 +95,11 @@ export async function getTripBySlug(slug: string): Promise<TravelPackageWithRela
   trip.images = (trip.images ?? []).sort((a, b) => a.sort_order - b.sort_order);
   trip.itinerary = (trip.itinerary ?? []).sort((a, b) => a.sort_order - b.sort_order);
 
-  // Ensure plain JSON before crossing the Server→Client boundary on Vercel
   return JSON.parse(JSON.stringify(trip)) as TravelPackageWithRelations;
 }
 
 export async function getTripSlugs(): Promise<string[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("travel_packages")
     .select("slug")

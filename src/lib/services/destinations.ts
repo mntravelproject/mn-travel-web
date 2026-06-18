@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import type { Destination } from "@/types/database";
 
 export async function getFeaturedDestinations(limit = 6): Promise<Destination[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("destinations")
     .select("*")
@@ -15,7 +15,7 @@ export async function getFeaturedDestinations(limit = 6): Promise<Destination[]>
 }
 
 export async function getAllDestinations(): Promise<Destination[]> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("destinations")
     .select("*")
@@ -26,7 +26,7 @@ export async function getAllDestinations(): Promise<Destination[]> {
 }
 
 export async function getDestinationBySlug(slug: string): Promise<Destination | null> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("destinations")
     .select("*")
