@@ -445,7 +445,11 @@ function TripsList({
                 </td>
                 <td className="p-4 font-medium tracking-tight">{formatPrice(t.price_from)}</td>
                 <td className="p-4 hidden lg:table-cell">
-                  <Pill className="!bg-emerald-50 !text-emerald-800 !border-emerald-200">Publicada</Pill>
+                  {t.is_published ? (
+                    <Pill className="!bg-emerald-50 !text-emerald-800 !border-emerald-200">Publicada</Pill>
+                  ) : (
+                    <Pill className="!bg-[var(--cream-2)] !text-[var(--muted)] !border-[var(--line)]">Rascunho</Pill>
+                  )}
                 </td>
                 <td className="p-4 text-right">
                   <div className="inline-flex items-center gap-1">
