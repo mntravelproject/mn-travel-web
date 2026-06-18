@@ -217,7 +217,8 @@ export default function AdminPage() {
             {view === "bookings" && <BookingsView />}
             {view === "quotes"   && <QuotesView />}
             {view === "clients"  && <ClientsView />}
-            {!["dashboard", "trips", "edit", "bookings", "quotes", "clients"].includes(view) && (
+            {view === "users"    && <UsersView />}
+            {!["dashboard", "trips", "edit", "bookings", "quotes", "clients", "users"].includes(view) && (
               <div className="bg-white rounded-2xl border border-[var(--line)] p-16 text-center">
                 <div className="font-display text-[28px]">{view}</div>
                 <p className="mt-2 text-[var(--muted)] text-[14px]">
@@ -1217,6 +1218,243 @@ function ClientsView() {
                 <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">Cancelar</button>
                 <button type="submit" disabled={saving} className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
                   {saving ? "A guardar…" : editClient ? "Guardar" : "Criar cliente"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── Users view */
+type AdminUser = {
+  id: string;
+  email: string;
+  role: "admin" | "staff";
+  created_at: string;
+  last_sign_in: string | null;
+  confirmed: boolean;
+};
+
+const ROLE_LABELS: Record<string, { label: string; cls: string }> = {
+  admin: { label: "Administrador", cls: "bg-[var(--ink)] text-[var(--cream)]" },
+  staff: { label: "Funcionário",   cls: "bg-[var(--cream-2)] text-[var(--ink-soft)] border border-[var(--line)]" },
+};
+
+function UsersView() {
+  const [users,       setUsers]       = useState<AdminUser[]>([]);
+  const [loading,     setLoading]     = useState(true);
+  const [sort,        setSort]        = useState<SortState | null>({ key: "email", dir: "asc" });
+  const [page,        setPage]        = useState(1);
+  const [showForm,    setShowForm]    = useState(false);
+  const [form,        setForm]        = useState({ email: "", password: "", role: "staff" });
+  const [saving,      setSaving]      = useState(false);
+  const [formError,   setFormError]   = useState("");
+  const [openRoleMenu, setOpenRoleMenu] = useState<string | null>(null);
+  const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
+
+  useEffect(() => { loadUsers(); }, []);
+  useEffect(() => { setPage(1); }, [sort]);
+
+  useEffect(() => {
+    if (!openRoleMenu) return;
+    const handler = () => setOpenRoleMenu(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [openRoleMenu]);
+
+  function loadUsers() {
+    setLoading(true);
+    fetch("/api/admin/users")
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setUsers(data as AdminUser[]); })
+      .finally(() => setLoading(false));
+  }
+
+  async function createUser(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.email || !form.password) { setFormError("Email e password são obrigatórios."); return; }
+    setSaving(true); setFormError("");
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const data = await res.json();
+    if (!res.ok) { setFormError(data.error ?? "Erro ao criar utilizador."); setSaving(false); return; }
+    setUsers((prev) => [data as AdminUser, ...prev]);
+    setSaving(false); setShowForm(false);
+    setForm({ email: "", password: "", role: "staff" });
+  }
+
+  async function changeRole(id: string, role: string) {
+    setOpenRoleMenu(null); setRoleUpdating(id);
+    await fetch(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    setUsers((prev) => prev.map((u) => u.id === id ? { ...u, role: role as "admin" | "staff" } : u));
+    setRoleUpdating(null);
+  }
+
+  async function deleteUser(id: string, email: string) {
+    if (!confirm(`Apagar o utilizador ${email}?`)) return;
+    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error ?? "Erro ao apagar utilizador."); return; }
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+  }
+
+  function fmtDate(iso: string | null) {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString("pt-PT");
+  }
+
+  const sorted     = applySortFilter(users as unknown as Record<string, unknown>[], sort) as unknown as typeof users;
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const paged      = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  function onSort(key: string) {
+    setSort((s) => s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  }
+
+  const thBase = "text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40";
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="font-display text-[36px] tracking-tight">Equipa</h1>
+          <p className="text-[14px] text-[var(--muted)] mt-1">{users.length} utilizador{users.length !== 1 ? "es" : ""} registado{users.length !== 1 ? "s" : ""}.</p>
+        </div>
+        <button onClick={() => { setForm({ email: "", password: "", role: "staff" }); setFormError(""); setShowForm(true); }}
+          className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition">
+          <UserPlus className="w-4 h-4" /> Novo utilizador
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-[var(--line)] overflow-visible">
+        <table className="w-full text-[14px]">
+          <thead>
+            <tr className={thBase}>
+              <Th label="Email"        field="email"        sort={sort} onSort={onSort} className="rounded-tl-2xl" />
+              <Th label="Permissão"    field="role"         sort={sort} onSort={onSort} />
+              <Th label="Confirmado"   field="confirmed"    sort={sort} onSort={onSort} className="hidden md:table-cell" />
+              <Th label="Último login" field="last_sign_in" sort={sort} onSort={onSort} className="hidden lg:table-cell" />
+              <Th label="Criado em"    field="created_at"   sort={sort} onSort={onSort} className="hidden sm:table-cell" />
+              <th className="text-right font-medium p-4 rounded-tr-2xl w-20">·</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && <tr><td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td></tr>}
+            {!loading && paged.length === 0 && (
+              <tr><td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">Nenhum utilizador encontrado.</td></tr>
+            )}
+            {paged.map((u) => {
+              const rl = ROLE_LABELS[u.role] ?? ROLE_LABELS.staff;
+              return (
+                <tr key={u.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-[var(--cream-2)] border border-[var(--line)] flex items-center justify-center shrink-0">
+                        <UserCircle className="w-5 h-5 text-[var(--muted)]" strokeWidth={1.5} />
+                      </div>
+                      <span className="font-medium tracking-tight text-[13px]">{u.email}</span>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="relative inline-block">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setOpenRoleMenu(openRoleMenu === u.id ? null : u.id); }}
+                        disabled={roleUpdating === u.id}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium tracking-wide uppercase cursor-pointer transition ${rl.cls} disabled:opacity-50`}
+                      >
+                        {roleUpdating === u.id ? "…" : rl.label} <ChevronDown className="w-3 h-3" />
+                      </button>
+                      {openRoleMenu === u.id && (
+                        <div className="absolute left-0 top-full mt-1.5 z-50 w-44 bg-white border border-[var(--line)] rounded-xl shadow-lg overflow-hidden">
+                          {Object.entries(ROLE_LABELS).map(([key, { label, cls }]) => (
+                            <button key={key} onClick={() => changeRole(u.id, key)}
+                              className={`w-full text-left px-4 py-2.5 text-[12px] tracking-wide uppercase font-medium hover:bg-[var(--cream)]/60 transition flex items-center gap-2 ${u.role === key ? "opacity-50 cursor-default" : ""}`}>
+                              <span className={`inline-block w-2 h-2 rounded-full ${cls.includes("var(--ink)]") ? "bg-[var(--ink)]" : "bg-[var(--muted)]"}`} />
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-4 hidden md:table-cell">
+                    <span className={`inline-flex items-center gap-1.5 text-[12px] ${u.confirmed ? "text-emerald-600" : "text-amber-600"}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${u.confirmed ? "bg-emerald-500" : "bg-amber-400"}`} />
+                      {u.confirmed ? "Confirmado" : "Pendente"}
+                    </span>
+                  </td>
+                  <td className="p-4 hidden lg:table-cell text-[var(--muted)] text-[13px]">{fmtDate(u.last_sign_in)}</td>
+                  <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(u.created_at)}</td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => deleteUser(u.id, u.email)}
+                      className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition" title="Apagar">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
+      </div>
+
+      {/* Slide-in create form */}
+      {showForm && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[var(--cream)] shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-7 pt-7 pb-4 border-b border-[var(--line)]">
+              <h2 className="font-display text-[24px] tracking-tight">Novo utilizador</h2>
+              <button onClick={() => setShowForm(false)} className="p-2 rounded-full hover:bg-[var(--cream-2)] transition text-[var(--muted)]">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={createUser} className="flex-1 overflow-y-auto px-7 py-6 space-y-5">
+              <div>
+                <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Email *</label>
+                <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="utilizador@mntravel.pt"
+                  className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition" />
+              </div>
+              <div>
+                <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Password *</label>
+                <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Mínimo 8 caracteres"
+                  className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition" />
+              </div>
+              <div>
+                <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Permissão *</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(ROLE_LABELS).map(([key, { label }]) => (
+                    <button key={key} type="button"
+                      onClick={() => setForm((f) => ({ ...f, role: key }))}
+                      className={`py-3 rounded-xl border text-[13px] tracking-tight transition ${form.role === key ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]" : "border-[var(--line)] hover:border-[var(--ink-soft)]"}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[12px] text-[var(--muted)]">
+                  {form.role === "admin" ? "Acesso completo a todas as funcionalidades." : "Acesso de leitura e edição, sem gestão de utilizadores."}
+                </p>
+              </div>
+              {formError && <p className="text-[13px] text-red-600">{formError}</p>}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">Cancelar</button>
+                <button type="submit" disabled={saving} className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
+                  {saving ? "A criar…" : "Criar utilizador"}
                 </button>
               </div>
             </form>

@@ -286,6 +286,23 @@ export interface Database {
           }
         ];
       };
+      user_profiles: {
+        Row: {
+          id: string;
+          role: string;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          role?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          role?: string;
+        };
+        Relationships: [];
+      };
       clients: {
         Row: {
           id: string;
