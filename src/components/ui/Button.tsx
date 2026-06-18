@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { ButtonHTMLAttributes, forwardRef } from "react";
+import { motion, useReducedMotion } from "motion/react";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "clay" | "ghost" | "outline";
@@ -10,8 +11,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", children, ...props }, ref) => {
+    const reduced = useReducedMotion();
     const base =
-      "inline-flex items-center justify-center gap-2 font-medium tracking-tight transition-all duration-300 focus-ring rounded-full cursor-pointer";
+      "inline-flex items-center justify-center gap-2 font-medium tracking-tight transition-colors duration-200 focus-ring rounded-full cursor-pointer";
 
     const variants = {
       primary:   "bg-[var(--ink)] text-[var(--cream)] hover:bg-[var(--ink-soft)]",
@@ -28,13 +30,16 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     return (
-      <button
+      <motion.button
         ref={ref}
         className={cn(base, variants[variant], sizes[size], className)}
-        {...props}
+        whileHover={{ scale: reduced ? 1 : 1.03 }}
+        whileTap={{ scale: reduced ? 1 : 0.97 }}
+        transition={{ type: "spring", stiffness: 400, damping: 22 }}
+        {...(props as React.ComponentProps<typeof motion.button>)}
       >
         {children}
-      </button>
+      </motion.button>
     );
   }
 );

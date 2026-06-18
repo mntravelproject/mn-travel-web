@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { TripCard } from "@/components/trips/TripCard";
 import { SectionLabel } from "@/components/ui/SectionLabel";
+import { SlideUp, StaggerContainer, StaggerItem } from "@/components/animations";
 import type { TravelPackageCard } from "@/types/database";
 
 interface Props {
@@ -18,7 +19,8 @@ export function FeaturedTrips({ trips }: Props) {
 
   return (
     <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-32">
-      <div className="grid lg:grid-cols-12 gap-10 items-end mb-16">
+      {/* Header */}
+      <SlideUp className="grid lg:grid-cols-12 gap-10 items-end mb-16">
         <div className="lg:col-span-7">
           <SectionLabel>Em destaque · primavera 2026</SectionLabel>
           <h2 className="mt-5 font-display text-[44px] md:text-[64px] leading-[1.02] tracking-tight text-balance">
@@ -37,14 +39,16 @@ export function FeaturedTrips({ trips }: Props) {
             Ver todas as viagens <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-      </div>
+      </SlideUp>
 
-      {/* Grid */}
-      <div className="grid lg:grid-cols-3 gap-x-6 gap-y-16">
+      {/* Cards grid — stagger */}
+      <StaggerContainer className="grid lg:grid-cols-3 gap-x-6 gap-y-16" staggerDelay={0.1}>
         {layout.map(({ trip, large }) => (
-          <TripCard key={trip.id} trip={trip} large={large} />
+          <StaggerItem key={trip.id}>
+            <TripCard trip={trip} large={large} />
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerContainer>
     </section>
   );
 }

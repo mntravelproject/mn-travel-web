@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Minus, Plus } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { Pill } from "@/components/ui/Pill";
 
 const quickSearches = ["Lua de mel", "Maldivas", "Patagónia", "Itália", "Safari"];
@@ -12,39 +13,92 @@ export function HeroSection() {
   const [destination, setDestination] = useState("");
   const [date, setDate] = useState("");
   const [pax, setPax] = useState(2);
+  const reduced = useReducedMotion();
 
   const handleSearch = () => {
     router.push(`/viagens${destination ? `?q=${encodeURIComponent(destination)}` : ""}`);
   };
 
+  const ease = [0.16, 1, 0.3, 1] as const;
+
   return (
     <section className="relative h-[100vh] min-h-[720px] overflow-hidden grain">
-      <img
+      {/* Background image with subtle zoom-in */}
+      <motion.img
         src="https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=2400&q=90"
         alt=""
         className="absolute inset-0 w-full h-full object-cover"
+        initial={{ scale: reduced ? 1 : 1.06 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: reduced ? 0.01 : 1.8, ease: "easeOut" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-black/55" />
 
-      <div className="relative h-full max-w-[1320px] mx-auto px-6 lg:px-10 flex flex-col justify-end pb-28 lg:pb-36 text-white anim-in">
+      <div className="relative h-full max-w-[1320px] mx-auto px-6 lg:px-10 flex flex-col justify-end pb-28 lg:pb-36 text-white">
         <div className="max-w-3xl">
-          <Pill className="!bg-white/15 !border-white/30 !text-white">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-white" />
-            Curadoria de viagens premium · desde 2008
-          </Pill>
-          <h1 className="mt-6 font-display text-[64px] sm:text-[88px] lg:text-[120px] leading-[0.95] tracking-tight text-balance">
-            Onde a viagem
-            <br />
-            <span className="italic font-light">se torna</span> arte.
-          </h1>
-          <p className="mt-7 max-w-xl text-[17px] text-white/85 leading-relaxed text-pretty">
+          {/* Pill */}
+          <motion.div
+            initial={{ opacity: 0, y: reduced ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduced ? 0.01 : 0.6, ease }}
+          >
+            <Pill className="!bg-white/15 !border-white/30 !text-white">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-white" />
+              Curadoria de viagens premium · desde 2008
+            </Pill>
+          </motion.div>
+
+          {/* Title — stagger lines */}
+          <motion.h1
+            className="mt-6 font-display text-[64px] sm:text-[88px] lg:text-[120px] leading-[0.95] tracking-tight text-balance"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: {
+                transition: { staggerChildren: reduced ? 0 : 0.1, delayChildren: 0.15 },
+              },
+            }}
+          >
+            {["Onde a viagem", "se torna arte."].map((line, i) => (
+              <motion.span
+                key={i}
+                className="block"
+                variants={{
+                  hidden: { opacity: 0, y: reduced ? 0 : 32 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.75, ease } },
+                }}
+              >
+                {i === 1 ? (
+                  <>
+                    <span className="italic font-light">se torna</span> arte.
+                  </>
+                ) : (
+                  line
+                )}
+              </motion.span>
+            ))}
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            className="mt-7 max-w-xl text-[17px] text-white/85 leading-relaxed text-pretty"
+            initial={{ opacity: 0, y: reduced ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: reduced ? 0.01 : 0.65, delay: reduced ? 0 : 0.45, ease }}
+          >
             Desenhamos viagens à medida para quem entende que viajar bem é,
             antes de mais, viajar de outra forma.
-          </p>
+          </motion.p>
         </div>
 
-        <div className="mt-12 lg:mt-16">
-          {/* Search bar */}
+        {/* Search bar — slides up */}
+        <motion.div
+          className="mt-12 lg:mt-16"
+          initial={{ opacity: 0, y: reduced ? 0 : 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reduced ? 0.01 : 0.7, delay: reduced ? 0 : 0.55, ease }}
+        >
           <div className="bg-[var(--cream)] rounded-[28px] p-2 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.5)] max-w-3xl">
             <div className="grid grid-cols-1 sm:grid-cols-[1.3fr_1fr_0.8fr_auto] gap-1 items-stretch">
               {/* Destination */}
@@ -88,28 +142,45 @@ export function HeroSection() {
                 </div>
               </div>
               {/* Search button */}
-              <button
+              <motion.button
+                whileHover={{ scale: reduced ? 1 : 1.03 }}
+                whileTap={{ scale: reduced ? 1 : 0.97 }}
+                transition={{ type: "spring", stiffness: 400, damping: 22 }}
                 onClick={handleSearch}
-                className="rounded-[22px] bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 m-1 flex items-center justify-center gap-2 text-[14px] font-medium tracking-tight transition"
+                className="rounded-[22px] bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 m-1 flex items-center justify-center gap-2 text-[14px] font-medium tracking-tight transition-colors"
               >
                 <Search className="w-4 h-4" /> Procurar
-              </button>
+              </motion.button>
             </div>
           </div>
 
-          {/* Quick searches */}
-          <div className="mt-5 flex items-center gap-5 flex-wrap text-[12px] text-white/70 tracking-tight">
+          {/* Quick searches — stagger */}
+          <motion.div
+            className="mt-5 flex items-center gap-5 flex-wrap text-[12px] text-white/70 tracking-tight"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: {},
+              visible: {
+                transition: { staggerChildren: reduced ? 0 : 0.06, delayChildren: reduced ? 0 : 0.7 },
+              },
+            }}
+          >
             {quickSearches.map((t) => (
-              <button
+              <motion.button
                 key={t}
+                variants={{
+                  hidden: { opacity: 0, y: reduced ? 0 : 8 },
+                  visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
+                }}
                 onClick={() => router.push(`/viagens?q=${encodeURIComponent(t)}`)}
-                className="link-underline"
+                className="link-underline hover:text-white transition-colors"
               >
                 {t}
-              </button>
+              </motion.button>
             ))}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );

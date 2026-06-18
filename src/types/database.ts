@@ -96,6 +96,11 @@ export interface Database {
           review_count: number;
           hero_image_url: string | null;
           tag: string | null;
+          departure_date: string | null;
+          return_date: string | null;
+          available_seats: number | null;
+          trip_status: string | null;
+          pdf_url: string | null;
           is_featured: boolean;
           is_published: boolean;
           created_at: string;
@@ -117,6 +122,11 @@ export interface Database {
           review_count?: number;
           hero_image_url?: string | null;
           tag?: string | null;
+          departure_date?: string | null;
+          return_date?: string | null;
+          available_seats?: number | null;
+          trip_status?: string | null;
+          pdf_url?: string | null;
           is_featured?: boolean;
           is_published?: boolean;
           created_at?: string;
@@ -138,6 +148,11 @@ export interface Database {
           review_count?: number;
           hero_image_url?: string | null;
           tag?: string | null;
+          departure_date?: string | null;
+          return_date?: string | null;
+          available_seats?: number | null;
+          trip_status?: string | null;
+          pdf_url?: string | null;
           is_featured?: boolean;
           is_published?: boolean;
           updated_at?: string;

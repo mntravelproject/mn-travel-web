@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { Fraunces } from "next/font/google";
+import { PageTransition } from "@/components/animations/PageTransition";
 import "./globals.css";
 
 const geist = Geist({
@@ -29,7 +30,7 @@ export default function RootLayout({
   return (
     <html lang="pt" className={`${geist.variable} ${fraunces.variable}`}>
       <body className="min-h-screen bg-[var(--cream)] text-[var(--ink)]" suppressHydrationWarning>
-        {children}
+        <PageTransition>{children}</PageTransition>
       </body>
     </html>
   );

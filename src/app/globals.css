@@ -118,6 +118,15 @@ body {
   box-shadow: 0 28px 56px -14px rgba(0,0,0,0.14);
 }
 
+/* ── Reduced motion — remove all transitions/animations at CSS level ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* ── Glass ── */
 .glass {
   background: rgba(255,255,255,0.12);

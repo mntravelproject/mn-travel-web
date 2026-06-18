@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
 import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { SlideUp, StaggerContainer, StaggerItem } from "@/components/animations";
 
 const columns = [
   {
@@ -24,7 +25,7 @@ export function Footer() {
         {/* Top grid */}
         <div className="grid lg:grid-cols-12 gap-12 pb-20 border-b border-white/10">
           {/* CTA column */}
-          <div className="lg:col-span-5">
+          <SlideUp delay={0.05} className="lg:col-span-5">
             <h2 className="font-display text-[44px] md:text-[56px] leading-[1.02] tracking-tight text-balance">
               Pronto para a próxima{" "}
               <span className="italic font-light">história</span>?
@@ -45,40 +46,46 @@ export function Footer() {
                 Falar com curador
               </Button>
             </div>
-          </div>
+          </SlideUp>
 
           {/* Link columns */}
-          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-10 text-[13.5px]">
+          <StaggerContainer
+            className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-10 text-[13.5px]"
+            staggerDelay={0.08}
+            initialDelay={0.1}
+          >
             {columns.map((col) => (
-              <div key={col.title}>
-                <div className="text-[11px] uppercase tracking-[0.22em] text-white/45 mb-5">
-                  {col.title}
+              <StaggerItem key={col.title}>
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.22em] text-white/45 mb-5">
+                    {col.title}
+                  </div>
+                  <ul className="space-y-3">
+                    {col.links.map((item) => (
+                      <li key={item}>
+                        <a
+                          href="#"
+                          className="text-white/80 hover:text-white transition-colors link-underline"
+                        >
+                          {item}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="space-y-3">
-                  {col.links.map((item) => (
-                    <li key={item}>
-                      <a
-                        href="#"
-                        className="text-white/80 hover:text-white transition link-underline"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <SlideUp delay={0.15} className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-5 text-white/50">
             {["IG", "FB", "TW"].map((s) => (
               <a
                 key={s}
                 href="#"
-                className="text-[11px] font-semibold tracking-widest hover:text-white transition cursor-pointer"
+                className="text-[11px] font-semibold tracking-widest hover:text-white transition-colors cursor-pointer"
               >
                 {s}
               </a>
@@ -86,9 +93,9 @@ export function Footer() {
           </div>
           <div className="flex items-center gap-5 text-[12px] text-white/40 tracking-tight">
             <span>© 2026 MN Travel · RNAVT 9999 · Lisboa, Portugal</span>
-            <Link href="/admin" className="hover:text-white/70 transition">Admin</Link>
+            <Link href="/admin" className="hover:text-white/70 transition-colors">Admin</Link>
           </div>
-        </div>
+        </SlideUp>
 
         {/* Watermark */}
         <div className="mt-12 -mb-10 overflow-hidden">

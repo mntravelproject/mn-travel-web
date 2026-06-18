@@ -6,11 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Plane, Plus, Edit3, Trash2, Bell, TrendingUp,
   Search, ArrowLeft, Calendar, Users, Settings, LogOut,
-  Upload, Image as ImageIcon, Sparkles,
+  Upload, Image as ImageIcon, Sparkles, Copy, FileText,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import type { TravelPackageCard } from "@/types/database";
-import { formatPrice } from "@/lib/utils";
+import type { TravelPackageCard, Category } from "@/types/database";
+import { formatPrice, formatTripDate } from "@/lib/utils";
 import { Pill } from "@/components/ui/Pill";
 
 type View = "dashboard" | "trips" | "edit" | "media" | "bookings" | "users" | "settings";
@@ -18,7 +18,6 @@ type View = "dashboard" | "trips" | "edit" | "media" | "bookings" | "users" | "s
 const NAV = [
   { id: "dashboard", label: "Dashboard",     icon: LayoutDashboard },
   { id: "trips",     label: "Viagens",        icon: Plane },
-  { id: "edit",      label: "Nova viagem",    icon: Plus },
   { id: "media",     label: "Media library",  icon: ImageIcon },
   { id: "bookings",  label: "Reservas",       icon: Calendar },
   { id: "users",     label: "Equipa",         icon: Users },
@@ -51,6 +50,20 @@ export default function AdminPage() {
   const [editId,         setEditId]        = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [search,         setSearch]         = useState("");
+  const [userName,       setUserName]       = useState("");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      const name =
+        user.user_metadata?.full_name ??
+        user.user_metadata?.name ??
+        user.email?.split("@")[0] ??
+        "Admin";
+      setUserName(name);
+    });
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -76,6 +89,35 @@ export default function AdminPage() {
     setTrips((p) => p.filter((t) => t.id !== id));
     const supabase = createClient();
     await supabase.from("travel_packages").delete().eq("id", id);
+  }
+
+  async function dupTrip(id: string) {
+    const original = trips.find((t) => t.id === id);
+    if (!original) return;
+    const supabase = createClient();
+    const newTitle = original.title;
+    const uniqueSlug = `${generateSlug(original.title)}-${Date.now()}`;
+    const { data, error } = await supabase
+      .from("travel_packages")
+      .insert({
+        slug:              uniqueSlug,
+        title:             newTitle,
+        country:           original.country,
+        duration_days:     original.duration_days,
+        nights:            original.nights,
+        price_from:        original.price_from,
+        short_description: original.short_description,
+        hero_image_url:    original.hero_image_url,
+        tag:               original.tag,
+        departure_date:    original.departure_date,
+        return_date:       original.return_date,
+        is_published:      false,
+        is_featured:       false,
+      })
+      .select("*, category:categories(id, name, slug)")
+      .single();
+    if (error) { console.error("Erro ao duplicar viagem:", error.message); return; }
+    if (data) setTrips((p) => [data as TravelPackageCard, ...p]);
   }
 
   return (
@@ -116,7 +158,7 @@ export default function AdminPage() {
           {/* ── Main ── */}
           <main>
             {view === "dashboard" && (
-              <Dashboard onNavigate={(v) => setView(v as View)} />
+              <Dashboard onNavigate={(v) => setView(v as View)} userName={userName} />
             )}
             {view === "trips" && (
               <TripsList
@@ -125,6 +167,7 @@ export default function AdminPage() {
                 setSearch={setSearch}
                 onEdit={openEdit}
                 onDelete={(id) => setPendingDeleteId(id)}
+                onDuplicate={dupTrip}
                 onNew={() => openEdit(null)}
               />
             )}
@@ -185,24 +228,18 @@ export default function AdminPage() {
 }
 
 /* ─────────────────────────────────────────────────────── Dashboard */
-function Dashboard({ onNavigate }: { onNavigate: (v: string) => void }) {
+function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; userName: string }) {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-[36px] tracking-tight">Olá, Madalena.</h1>
+          <h1 className="font-display text-[36px] tracking-tight">Olá, {userName || "…"}.</h1>
           <p className="text-[14px] text-[var(--muted)] mt-1">Eis o resumo do que se passa hoje.</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="w-10 h-10 rounded-full border border-[var(--line)] flex items-center justify-center relative hover:border-[var(--ink)] transition">
             <Bell className="w-4 h-4" />
             <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--clay)]" />
-          </button>
-          <button
-            onClick={() => onNavigate("edit")}
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition"
-          >
-            <Plus className="w-4 h-4" /> Nova viagem
           </button>
         </div>
       </div>
@@ -318,13 +355,14 @@ function Dashboard({ onNavigate }: { onNavigate: (v: string) => void }) {
 
 /* ─────────────────────────────────────────────────────── Trips list */
 function TripsList({
-  trips, search, setSearch, onEdit, onDelete, onNew,
+  trips, search, setSearch, onEdit, onDelete, onDuplicate, onNew,
 }: {
   trips: TravelPackageCard[];
   search: string;
   setSearch: (v: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => void;
   onNew: () => void;
 }) {
   const filtered = trips.filter(
@@ -367,6 +405,7 @@ function TripsList({
               <th className="text-left font-medium p-4">Viagem</th>
               <th className="text-left font-medium p-4 hidden lg:table-cell">País</th>
               <th className="text-left font-medium p-4 hidden md:table-cell">Duração</th>
+              <th className="text-left font-medium p-4 hidden xl:table-cell">Datas</th>
               <th className="text-left font-medium p-4">Preço</th>
               <th className="text-left font-medium p-4 hidden lg:table-cell">Estado</th>
               <th className="text-right font-medium p-4 w-12">·</th>
@@ -392,16 +431,31 @@ function TripsList({
                 </td>
                 <td className="p-4 text-[var(--ink-soft)] hidden lg:table-cell">{t.country}</td>
                 <td className="p-4 text-[var(--muted)] hidden md:table-cell tracking-tight">{t.duration_days} dias</td>
+                <td className="p-4 hidden xl:table-cell">
+                  {t.departure_date ? (
+                    <div className="text-[13px] tracking-tight">
+                      <span className="text-[var(--ink)]">{formatTripDate(t.departure_date)}</span>
+                      {t.return_date && (
+                        <span className="text-[var(--muted)]"> → {formatTripDate(t.return_date)}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[var(--muted)] text-[13px]">—</span>
+                  )}
+                </td>
                 <td className="p-4 font-medium tracking-tight">{formatPrice(t.price_from)}</td>
                 <td className="p-4 hidden lg:table-cell">
                   <Pill className="!bg-emerald-50 !text-emerald-800 !border-emerald-200">Publicada</Pill>
                 </td>
                 <td className="p-4 text-right">
                   <div className="inline-flex items-center gap-1">
-                    <button onClick={() => onEdit(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition">
+                    <button onClick={() => onEdit(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar">
                       <Edit3 className="w-4 h-4" />
                     </button>
-                    <button onClick={() => onDelete(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition">
+                    <button onClick={() => onDuplicate(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Duplicar">
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => onDelete(t.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition" title="Apagar">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -431,17 +485,32 @@ function generateSlug(title: string) {
 
 function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; onBack: () => void; onSaved: () => void }) {
   const [form, setForm] = useState({
-    title:             trip?.title    ?? "",
-    country:           trip?.country  ?? "",
-    price_from:        trip?.price_from    ?? 0,
-    duration_days:     trip?.duration_days ?? 7,
-    nights:            trip?.nights        ?? 6,
+    title:             trip?.title             ?? "",
+    country:           trip?.country           ?? "",
+    price_from:        trip?.price_from        ?? 0,
+    duration_days:     trip?.duration_days     ?? 7,
+    nights:            trip?.nights            ?? 6,
+    departure_date:    trip?.departure_date    ?? "",
+    return_date:       trip?.return_date       ?? "",
+    available_seats:   trip?.available_seats != null ? String(trip.available_seats) : "",
+    trip_status:       trip?.trip_status       ?? "disponivel",
+    category_id:       (trip?.category_id      ?? null) as string | null,
     short_description: trip?.short_description ?? "",
-    long_description:  "",
-    is_published:      false,
-    is_featured:       false,
-    tag:               trip?.tag ?? "",
+    long_description:  trip?.long_description  ?? "",
+    is_published:      trip?.is_published      ?? false,
+    is_featured:       trip?.is_featured       ?? false,
+    tag:               trip?.tag               ?? "",
   });
+
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    createClient()
+      .from("categories")
+      .select("*")
+      .order("name")
+      .then(({ data }) => { if (data) setCategories(data as Category[]); });
+  }, []);
 
   const [itinerary, setItinerary] = useState<ItineraryRow[]>([
     { day_label: "Dia 1", title: "", description: "" },
@@ -449,10 +518,33 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
   ]);
 
   const [gallery,      setGallery]      = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!trip?.id) return;
+    const supabase = createClient();
+    supabase
+      .from("package_images")
+      .select("image_url")
+      .eq("package_id", trip.id)
+      .order("sort_order")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setGallery(data.map((r) => r.image_url));
+        } else if (trip.hero_image_url) {
+          setGallery([trip.hero_image_url]);
+        }
+      });
+  }, [trip?.id]);
   const [uploading,    setUploading]    = useState(false);
   const [dragOver,     setDragOver]     = useState(false);
   const [uploadError,  setUploadError]  = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [pdfUrl,       setPdfUrl]       = useState(trip?.pdf_url ?? "");
+  const [pdfName,      setPdfName]      = useState(() => trip?.pdf_url ? decodeURIComponent(trip.pdf_url.split("/").pop() ?? "documento.pdf") : "");
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfError,     setPdfError]     = useState("");
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const [saving, setSaving] = useState(false);
   const [saved,  setSaved]  = useState(false);
@@ -487,6 +579,25 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     }
   }
 
+  async function uploadPdf(file: File) {
+    if (file.type !== "application/pdf") { setPdfError("Apenas ficheiros PDF são aceites."); return; }
+    setPdfError("");
+    setPdfUploading(true);
+    try {
+      const supabase = createClient();
+      const path = `pdfs/${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`;
+      const { error: upErr } = await supabase.storage.from("package-images").upload(path, file, { contentType: "application/pdf" });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("package-images").getPublicUrl(path);
+      setPdfUrl(publicUrl);
+      setPdfName(file.name);
+    } catch (err: unknown) {
+      setPdfError(err instanceof Error ? err.message : "Erro ao carregar PDF.");
+    } finally {
+      setPdfUploading(false);
+    }
+  }
+
   function updateItinerary(i: number, field: keyof ItineraryRow, value: string) {
     setItinerary((prev) => prev.map((row, idx) => idx === i ? { ...row, [field]: value } : row));
   }
@@ -513,17 +624,21 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     setSaved(false);
 
     const supabase = createClient();
-    const slug = generateSlug(form.title);
 
-    const packageData = {
-      slug,
+    const fields = {
       title:             form.title.trim(),
       country:           form.country.trim(),
       duration_days:     form.duration_days,
       nights:            form.nights,
       price_from:        form.price_from,
       short_description: form.short_description.trim() || null,
-      long_description:  form.long_description.trim() || null,
+      long_description:  form.long_description.trim()  || null,
+      departure_date:    form.departure_date || null,
+      return_date:       form.return_date    || null,
+      available_seats:   form.available_seats !== "" ? Number(form.available_seats) : null,
+      trip_status:       form.trip_status || null,
+      category_id:       form.category_id || null,
+      pdf_url:           pdfUrl || null,
       is_published:      form.is_published,
       is_featured:       form.is_featured,
       tag:               form.tag || null,
@@ -531,38 +646,54 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     };
 
     try {
-      const { data, error: dbError } = await supabase
-        .from("travel_packages")
-        .insert(packageData)
-        .select("id")
-        .single();
+      let packageId: string;
 
-      if (dbError) throw dbError;
+      if (trip?.id) {
+        // ── Update existing trip ──────────────────────────────
+        const { error: dbError } = await supabase
+          .from("travel_packages")
+          .update(fields)
+          .eq("id", trip.id);
+        if (dbError) throw dbError;
+        packageId = trip.id;
 
-      // Save gallery images
-      if (gallery.length > 0 && data) {
-        await supabase.from("package_images").insert(
-          gallery.map((url, i) => ({
-            package_id: data.id,
-            image_url:  url,
-            sort_order: i,
-          }))
-        );
-      }
+        // Sync images: replace all
+        await supabase.from("package_images").delete().eq("package_id", packageId);
+        if (gallery.length > 0) {
+          await supabase.from("package_images").insert(
+            gallery.map((url, i) => ({ package_id: packageId, image_url: url, sort_order: i }))
+          );
+        }
+      } else {
+        // ── Insert new trip ───────────────────────────────────
+        const { data, error: dbError } = await supabase
+          .from("travel_packages")
+          .insert({ slug: generateSlug(form.title), ...fields })
+          .select("id")
+          .single();
+        if (dbError) throw dbError;
+        packageId = data.id;
 
-      // Save itinerary rows that have a title
-      const validRows = itinerary.filter((it) => it.title.trim());
-      if (validRows.length > 0 && data) {
-        const { error: itError } = await supabase.from("package_itinerary").insert(
-          validRows.map((it, i) => ({
-            package_id:  data.id,
-            day_label:   it.day_label,
-            title:       it.title.trim(),
-            description: it.description.trim(),
-            sort_order:  i,
-          }))
-        );
-        if (itError) throw itError;
+        if (gallery.length > 0) {
+          await supabase.from("package_images").insert(
+            gallery.map((url, i) => ({ package_id: packageId, image_url: url, sort_order: i }))
+          );
+        }
+
+        // Save itinerary (only on create)
+        const validRows = itinerary.filter((it) => it.title.trim());
+        if (validRows.length > 0) {
+          const { error: itError } = await supabase.from("package_itinerary").insert(
+            validRows.map((it, i) => ({
+              package_id:  packageId,
+              day_label:   it.day_label,
+              title:       it.title.trim(),
+              description: it.description.trim(),
+              sort_order:  i,
+            }))
+          );
+          if (itError) throw itError;
+        }
       }
 
       setSaved(true);
@@ -672,6 +803,27 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
                   />
                 </div>
               </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data de partida</label>
+                  <input
+                    type="date"
+                    value={form.departure_date}
+                    onChange={(e) => setForm({ ...form, departure_date: e.target.value })}
+                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data de regresso</label>
+                  <input
+                    type="date"
+                    value={form.return_date}
+                    min={form.departure_date || undefined}
+                    onChange={(e) => setForm({ ...form, return_date: e.target.value })}
+                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                  />
+                </div>
+              </div>
               <div>
                 <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Descrição curta</label>
                 <textarea
@@ -762,6 +914,66 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             </div>
           </div>
 
+          {/* PDF */}
+          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
+            <h3 className="font-display text-[20px] tracking-tight mb-1">Ficha da viagem (PDF)</h3>
+            <p className="text-[13px] text-[var(--muted)] mb-5 tracking-tight">
+              Documento descarregável visível na página da viagem.
+            </p>
+            {pdfError && (
+              <div className="mb-4 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-[13px] text-red-700 tracking-tight">
+                {pdfError}
+              </div>
+            )}
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={(e) => { if (e.target.files?.[0]) uploadPdf(e.target.files[0]); e.target.value = ""; }}
+            />
+            {pdfUrl ? (
+              <div className="flex items-center gap-3 p-4 rounded-xl border border-[var(--line)] bg-[var(--cream-2)]">
+                <FileText className="w-8 h-8 text-[var(--clay)] flex-shrink-0" strokeWidth={1.5} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium tracking-tight truncate">{pdfName || "documento.pdf"}</div>
+                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[var(--muted)] hover:text-[var(--ink)] transition">
+                    Abrir PDF →
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => pdfInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-lg border border-[var(--line-2)] text-[12px] hover:border-[var(--ink)] transition tracking-tight"
+                  >
+                    Substituir
+                  </button>
+                  <button
+                    onClick={() => { setPdfUrl(""); setPdfName(""); }}
+                    className="p-2 rounded-lg hover:bg-red-50 text-[var(--muted)] hover:text-red-500 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => pdfInputRef.current?.click()}
+                disabled={pdfUploading}
+                className="w-full rounded-xl border-2 border-dashed border-[var(--line-2)] hover:border-[var(--ink)] py-8 flex flex-col items-center gap-2 transition disabled:opacity-50"
+              >
+                {pdfUploading ? (
+                  <div className="w-5 h-5 border-2 border-[var(--line-2)] border-t-[var(--ink)] rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <FileText className="w-7 h-7 text-[var(--muted)]" strokeWidth={1.5} />
+                    <span className="text-[13px] text-[var(--muted)] tracking-tight">Carregar PDF</span>
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+
           {/* Itinerary */}
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
             <div className="flex items-center justify-between mb-1">
@@ -820,6 +1032,29 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
         {/* Right: publication + tag + AI */}
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
+            <h3 className="font-display text-[20px] tracking-tight mb-1">Categoria</h3>
+            <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Tipo de viagem.</p>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setForm((f) => ({ ...f, category_id: f.category_id === cat.id ? null : cat.id }))}
+                  className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
+                    form.category_id === cat.id
+                      ? "bg-[var(--ink)] text-[var(--cream)] border-[var(--ink)]"
+                      : "border-[var(--line-2)] hover:border-[var(--ink)]"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+              {categories.length === 0 && (
+                <p className="text-[12px] text-[var(--muted)] tracking-tight">A carregar categorias…</p>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
             <h3 className="font-display text-[20px] tracking-tight mb-1">Publicação</h3>
             <p className="text-[13px] text-[var(--muted)] mb-6 tracking-tight">Visibilidade da viagem.</p>
             <div className="space-y-3">
@@ -841,6 +1076,40 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
                   <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${form.is_featured ? "right-0.5" : "left-0.5 border border-[var(--line-2)]"}`} />
                 </span>
               </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
+            <h3 className="font-display text-[20px] tracking-tight mb-1">Disponibilidade</h3>
+            <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Estado e lugares disponíveis.</p>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {([
+                { v: "disponivel",      l: "Disponível",      cls: "border-emerald-300 text-emerald-800 bg-emerald-50" },
+                { v: "ultimos_lugares", l: "Últimos lugares", cls: "border-amber-300 text-amber-800 bg-amber-50" },
+                { v: "esgotado",        l: "Esgotado",        cls: "border-red-300 text-red-700 bg-red-50" },
+                { v: "em_breve",        l: "Em breve",        cls: "border-[var(--line-2)] text-[var(--ink)]" },
+              ] as const).map(({ v, l, cls }) => (
+                <button
+                  key={v}
+                  onClick={() => setForm((f) => ({ ...f, trip_status: v }))}
+                  className={`px-3 py-2 rounded-xl border text-[12px] tracking-tight transition text-center ${
+                    form.trip_status === v ? cls + " font-medium" : "border-[var(--line-2)] text-[var(--muted)] hover:border-[var(--ink)]"
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Lugares disponíveis</label>
+              <input
+                type="number"
+                min={0}
+                value={form.available_seats}
+                onChange={(e) => setForm((f) => ({ ...f, available_seats: e.target.value }))}
+                placeholder="Sem limite"
+                className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+              />
             </div>
           </div>
 

@@ -2,23 +2,35 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Pill } from "@/components/ui/Pill";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { formatPrice } from "@/lib/utils";
+import { SlideUp, SlideIn, StaggerContainer, StaggerItem, FadeIn, ScaleIn } from "@/components/animations";
+import { formatPrice, formatTripDate } from "@/lib/utils";
 import type { TravelPackageWithRelations } from "@/types/database";
 
 interface Props {
   trip: TravelPackageWithRelations;
 }
 
+const ease = [0.16, 1, 0.3, 1] as const;
+
+const STATUS: Record<string, { label: string; cls: string }> = {
+  disponivel:      { label: "Disponível",      cls: "!bg-emerald-50 !text-emerald-800 !border-emerald-200" },
+  ultimos_lugares: { label: "Últimos lugares", cls: "!bg-amber-50 !text-amber-800 !border-amber-200" },
+  esgotado:        { label: "Esgotado",        cls: "!bg-red-50 !text-red-600 !border-red-200" },
+  em_breve:        { label: "Em breve",        cls: "!bg-[var(--cream-2)] !text-[var(--ink-soft)]" },
+};
+
 export function TripDetailClient({ trip }: Props) {
   const [activeImg, setActiveImg] = useState(0);
   const [tab, setTab] = useState<"itinerary" | "includes" | "dates">("itinerary");
   const [pax, setPax] = useState(2);
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const reduced = useReducedMotion();
 
   const gallery = trip.images ?? [];
   const itinerary = trip.itinerary ?? [];
@@ -29,23 +41,31 @@ export function TripDetailClient({ trip }: Props) {
       <main>
         <div className="pt-[72px]">
           {/* Back */}
-          <div className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-8">
+          <FadeIn delay={0.1} className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-8">
             <Link
               href="/viagens"
               className="inline-flex items-center gap-2 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Todas as viagens
             </Link>
-          </div>
+          </FadeIn>
 
           {/* Title */}
           <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-8 pb-12">
             <div className="grid lg:grid-cols-12 gap-8 items-end">
-              <div className="lg:col-span-8">
-                <div className="flex items-center gap-3 mb-5">
+              <SlideUp className="lg:col-span-8" duration={0.65}>
+                <div className="flex items-center gap-3 mb-5 flex-wrap">
                   {trip.tag && (
                     <Pill className="!bg-[var(--clay-soft)] !border-transparent !text-[var(--clay-dark)]">
                       {trip.tag}
+                    </Pill>
+                  )}
+                  {trip.trip_status && STATUS[trip.trip_status] && (
+                    <Pill className={STATUS[trip.trip_status].cls}>
+                      {STATUS[trip.trip_status].label}
+                      {trip.available_seats != null && trip.trip_status !== "esgotado" && (
+                        <span className="ml-1 opacity-70">· {trip.available_seats} lugares</span>
+                      )}
                     </Pill>
                   )}
                   <span className="text-[13px] text-[var(--muted)] flex items-center gap-1.5">
@@ -55,8 +75,8 @@ export function TripDetailClient({ trip }: Props) {
                 <h1 className="font-display text-[44px] md:text-[64px] leading-[1.02] tracking-tight text-balance">
                   {trip.title}
                 </h1>
-              </div>
-              <div className="lg:col-span-4 flex flex-wrap gap-6 text-[13px]">
+              </SlideUp>
+              <SlideIn direction="right" className="lg:col-span-4 flex flex-wrap gap-6 text-[13px]" delay={0.1}>
                 <div>
                   <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--muted)]">Duração</div>
                   <div className="mt-1 text-[var(--ink)] tracking-tight">{trip.duration_days} dias · {trip.nights} noites</div>
@@ -72,40 +92,47 @@ export function TripDetailClient({ trip }: Props) {
                   <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--muted)]">Tipologia</div>
                   <div className="mt-1 text-[var(--ink)] tracking-tight">Privada · personalizável</div>
                 </div>
-              </div>
+              </SlideIn>
             </div>
           </section>
 
           {/* Gallery */}
           {gallery.length > 0 && (
-            <section className="max-w-[1320px] mx-auto px-6 lg:px-10">
+            <ScaleIn from={0.97} delay={0.05} className="max-w-[1320px] mx-auto px-6 lg:px-10">
               <div className="grid grid-cols-4 gap-3 h-[460px] lg:h-[560px]">
-                <div className="col-span-4 lg:col-span-2 row-span-2 rounded-3xl overflow-hidden img-zoom">
-                  <img
+                <div className="col-span-4 lg:col-span-2 row-span-2 rounded-3xl overflow-hidden">
+                  <motion.img
+                    key={activeImg}
                     src={gallery[activeImg]?.image_url ?? trip.hero_image_url ?? ""}
                     alt={trip.title}
                     className="w-full h-full object-cover"
+                    initial={{ opacity: 0, scale: reduced ? 1 : 1.03 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.45, ease }}
                   />
                 </div>
                 {gallery.map((img, i) => (
-                  <button
+                  <motion.button
                     key={img.id}
                     onClick={() => setActiveImg(i)}
-                    className={`relative rounded-2xl overflow-hidden img-zoom hidden lg:block ${
+                    whileHover={{ scale: reduced ? 1 : 1.02 }}
+                    whileTap={{ scale: reduced ? 1 : 0.98 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    className={`relative rounded-2xl overflow-hidden hidden lg:block ${
                       activeImg === i ? "ring-2 ring-offset-2 ring-[var(--ink)]" : ""
                     }`}
                   >
                     <img src={img.image_url} alt={img.alt_text ?? ""} className="w-full h-full object-cover" />
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-            </section>
+            </ScaleIn>
           )}
 
           {/* Content */}
           <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-16 grid lg:grid-cols-12 gap-12">
             {/* Left */}
-            <div className="lg:col-span-7 xl:col-span-8">
+            <SlideUp delay={0.05} className="lg:col-span-7 xl:col-span-8">
               <div className="pb-12 border-b border-[var(--line)]">
                 <SectionLabel>A viagem</SectionLabel>
                 <p className="mt-6 font-display text-[28px] md:text-[34px] leading-[1.25] tracking-tight text-balance">
@@ -117,19 +144,21 @@ export function TripDetailClient({ trip }: Props) {
                   </p>
                 )}
 
-                <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StaggerContainer className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4" staggerDelay={0.07} initialDelay={0.1}>
                   {[
                     { l: "Privacidade", v: "100%" },
                     { l: "Guias locais", v: trip.duration_days > 7 ? "5" : "3" },
                     { l: "Refeições incl.", v: "12" },
                     { l: "Transfers", v: "Privados" },
                   ].map((x) => (
-                    <div key={x.l} className="p-5 rounded-2xl bg-[var(--cream-2)]">
-                      <div className="font-display text-[28px] leading-none">{x.v}</div>
-                      <div className="mt-2 text-[12px] uppercase tracking-[0.15em] text-[var(--muted)]">{x.l}</div>
-                    </div>
+                    <StaggerItem key={x.l}>
+                      <div className="p-5 rounded-2xl bg-[var(--cream-2)]">
+                        <div className="font-display text-[28px] leading-none">{x.v}</div>
+                        <div className="mt-2 text-[12px] uppercase tracking-[0.15em] text-[var(--muted)]">{x.l}</div>
+                      </div>
+                    </StaggerItem>
                   ))}
-                </div>
+                </StaggerContainer>
               </div>
 
               <div className="pt-10">
@@ -158,16 +187,22 @@ export function TripDetailClient({ trip }: Props) {
                 {tab === "itinerary" && (
                   <div className="relative">
                     <div className="absolute left-[19px] top-2 bottom-2 w-px bg-[var(--line-2)]" />
-                    {itinerary.length > 0 ? itinerary.map((it, i) => (
-                      <div key={it.id} className="relative pl-12 pb-10 last:pb-0">
-                        <div className="absolute left-0 top-1 w-10 h-10 rounded-full bg-[var(--cream)] border border-[var(--line-2)] flex items-center justify-center font-display text-[14px]">
-                          {i + 1}
-                        </div>
-                        <div className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">{it.day_label}</div>
-                        <h4 className="mt-1.5 font-display text-[22px] leading-tight tracking-tight">{it.title}</h4>
-                        <p className="mt-2 text-[14.5px] text-[var(--muted)] leading-relaxed max-w-2xl">{it.description}</p>
-                      </div>
-                    )) : (
+                    {itinerary.length > 0 ? (
+                      <StaggerContainer staggerDelay={0.06}>
+                        {itinerary.map((it, i) => (
+                          <StaggerItem key={it.id}>
+                            <div className="relative pl-12 pb-10 last:pb-0">
+                              <div className="absolute left-0 top-1 w-10 h-10 rounded-full bg-[var(--cream)] border border-[var(--line-2)] flex items-center justify-center font-display text-[14px]">
+                                {i + 1}
+                              </div>
+                              <div className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">{it.day_label}</div>
+                              <h4 className="mt-1.5 font-display text-[22px] leading-tight tracking-tight">{it.title}</h4>
+                              <p className="mt-2 text-[14.5px] text-[var(--muted)] leading-relaxed max-w-2xl">{it.description}</p>
+                            </div>
+                          </StaggerItem>
+                        ))}
+                      </StaggerContainer>
+                    ) : (
                       <p className="text-[var(--muted)] text-[14px]">Itinerário detalhado disponível na proposta.</p>
                     )}
                   </div>
@@ -175,7 +210,7 @@ export function TripDetailClient({ trip }: Props) {
 
                 {/* Includes tab */}
                 {tab === "includes" && (
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <StaggerContainer className="grid sm:grid-cols-2 gap-4" staggerDelay={0.05}>
                     {[
                       "Voos internacionais em classe executiva",
                       "Alojamento em hotéis 5★ ou boutique",
@@ -186,46 +221,54 @@ export function TripDetailClient({ trip }: Props) {
                       "Seguro de viagem premium",
                       "Concierge 24/7 durante toda a viagem",
                     ].map((x) => (
-                      <div key={x} className="flex items-start gap-3 p-5 rounded-2xl bg-[var(--cream-2)]">
-                        <div className="w-5 h-5 rounded-full bg-[var(--ink)] text-[var(--cream)] flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <Check className="w-3 h-3" />
+                      <StaggerItem key={x}>
+                        <div className="flex items-start gap-3 p-5 rounded-2xl bg-[var(--cream-2)]">
+                          <div className="w-5 h-5 rounded-full bg-[var(--ink)] text-[var(--cream)] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <Check className="w-3 h-3" />
+                          </div>
+                          <span className="text-[14.5px] text-[var(--ink-soft)]">{x}</span>
                         </div>
-                        <span className="text-[14.5px] text-[var(--ink-soft)]">{x}</span>
-                      </div>
+                      </StaggerItem>
                     ))}
-                  </div>
+                  </StaggerContainer>
                 )}
 
                 {/* Dates tab */}
                 {tab === "dates" && (
-                  <div className="space-y-3">
-                    {[
-                      { d: "12 Mai — 19 Mai 2026", s: "3 lugares" },
-                      { d: "04 Jun — 11 Jun 2026", s: "Disponível" },
-                      { d: "16 Set — 23 Set 2026", s: "Disponível" },
-                      { d: "08 Out — 15 Out 2026", s: "2 lugares" },
-                    ].map((d) => (
-                      <div
-                        key={d.d}
-                        className="flex items-center justify-between p-6 rounded-2xl border border-[var(--line)] hover:border-[var(--ink)] transition cursor-pointer"
-                      >
-                        <div>
-                          <div className="font-display text-[20px] tracking-tight">{d.d}</div>
-                          <div className="text-[12px] text-[var(--muted)] mt-1 tracking-tight">{d.s}</div>
+                  trip.departure_date ? (
+                    <StaggerContainer className="space-y-3" staggerDelay={0.07}>
+                      <StaggerItem>
+                        <div className="flex items-center justify-between p-6 rounded-2xl border border-[var(--line)] hover:border-[var(--ink)] transition-colors">
+                          <div>
+                            <div className="font-display text-[20px] tracking-tight">
+                              {formatTripDate(trip.departure_date)}
+                              {trip.return_date && ` — ${formatTripDate(trip.return_date)}`}
+                            </div>
+                            <div className="text-[12px] text-[var(--muted)] mt-1 tracking-tight">
+                              {trip.trip_status && STATUS[trip.trip_status]
+                                ? STATUS[trip.trip_status].label
+                                : "Disponível"}
+                              {trip.available_seats != null && ` · ${trip.available_seats} lugares`}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-[20px] font-medium tracking-tight">{formatPrice(trip.price_from)}</div>
+                            <div className="text-[12px] text-[var(--muted)] tracking-tight">por pessoa</div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-[20px] font-medium tracking-tight">{formatPrice(trip.price_from)}</div>
-                          <div className="text-[12px] text-[var(--muted)] tracking-tight">por pessoa</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      </StaggerItem>
+                    </StaggerContainer>
+                  ) : (
+                    <p className="text-[var(--muted)] text-[14px] tracking-tight">
+                      Datas disponíveis a pedido. Contacte o seu curador.
+                    </p>
+                  )
                 )}
               </div>
-            </div>
+            </SlideUp>
 
             {/* Sidebar */}
-            <aside className="lg:col-span-5 xl:col-span-4">
+            <SlideIn direction="right" delay={0.1} className="lg:col-span-5 xl:col-span-4">
               <div className="lg:sticky lg:top-[88px] rounded-[28px] bg-[var(--cream-2)] p-7 border border-[var(--line)]">
                 <div className="flex items-end justify-between pb-6 border-b border-[var(--line-2)]">
                   <div>
@@ -247,19 +290,25 @@ export function TripDetailClient({ trip }: Props) {
                     <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                       <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
                       <div className="flex items-center justify-between mt-1 text-[13px]">
-                        <button
+                        <motion.button
+                          whileHover={{ scale: reduced ? 1 : 1.15 }}
+                          whileTap={{ scale: reduced ? 1 : 0.85 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
                           onClick={() => setPax(Math.max(1, pax - 1))}
                           className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
                         >
                           <Minus className="w-3 h-3" />
-                        </button>
+                        </motion.button>
                         {pax} adultos
-                        <button
+                        <motion.button
+                          whileHover={{ scale: reduced ? 1 : 1.15 }}
+                          whileTap={{ scale: reduced ? 1 : 0.85 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
                           onClick={() => setPax(pax + 1)}
                           className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
                         >
                           <Plus className="w-3 h-3" />
-                        </button>
+                        </motion.button>
                       </div>
                     </label>
                   </div>
@@ -268,20 +317,20 @@ export function TripDetailClient({ trip }: Props) {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="Nome completo"
-                    className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)]"
+                    className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
                   />
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       placeholder="Email"
-                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)]"
+                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
                     />
                     <input
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       placeholder="Telefone"
-                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)]"
+                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
                     />
                   </div>
                   <textarea
@@ -289,13 +338,28 @@ export function TripDetailClient({ trip }: Props) {
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                     rows={3}
                     placeholder="Conte-nos como sonha esta viagem (opcional)"
-                    className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] resize-none"
+                    className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] resize-none transition-colors"
                   />
 
-                  <button className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 py-4 text-[15px] font-medium tracking-tight transition mt-2">
+                  <motion.button
+                    whileHover={{ scale: reduced ? 1 : 1.02 }}
+                    whileTap={{ scale: reduced ? 1 : 0.97 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 py-4 text-[15px] font-medium tracking-tight transition-colors mt-2"
+                  >
                     Pedir proposta personalizada <ArrowRight className="w-4 h-4" />
-                  </button>
-                  <button className="w-full text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition">
+                  </motion.button>
+                  {trip.pdf_url && (
+                    <a
+                      href={trip.pdf_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-[var(--line-2)] hover:border-[var(--ink)] px-7 py-3.5 text-[14px] tracking-tight transition-colors"
+                    >
+                      <FileText className="w-4 h-4" /> Descarregar ficha da viagem
+                    </a>
+                  )}
+                  <button className="w-full text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
                     Falar com curador agora →
                   </button>
                 </div>
@@ -306,15 +370,23 @@ export function TripDetailClient({ trip }: Props) {
                   programa final.
                 </div>
               </div>
-            </aside>
+            </SlideIn>
           </section>
 
           {/* Quote section */}
           <section className="mt-32 relative h-[80vh] min-h-[600px] overflow-hidden">
-            <img src={trip.hero_image_url ?? ""} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <motion.img
+              src={trip.hero_image_url ?? ""}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+              initial={{ scale: reduced ? 1 : 1.05 }}
+              whileInView={{ scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: reduced ? 0.01 : 1.2, ease: "easeOut" }}
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-black/30" />
             <div className="relative h-full max-w-[1320px] mx-auto px-6 lg:px-10 flex flex-col justify-center text-white">
-              <div className="max-w-2xl">
+              <SlideUp delay={0.1} className="max-w-2xl">
                 <SectionLabel>
                   <span className="text-white/60">Inspiração</span>
                 </SectionLabel>
@@ -325,7 +397,7 @@ export function TripDetailClient({ trip }: Props) {
                 <div className="mt-8 text-[13px] tracking-[0.2em] uppercase text-white/60">
                   — Anthony Bourdain
                 </div>
-              </div>
+              </SlideUp>
             </div>
           </section>
         </div>
