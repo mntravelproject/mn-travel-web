@@ -7,20 +7,21 @@ import {
   LayoutDashboard, Plane, Plus, Edit3, Trash2, Bell, TrendingUp,
   Search, ArrowLeft, Calendar, Users, Settings, LogOut,
   Upload, Image as ImageIcon, Sparkles, Copy, FileText, Download, Phone, Mail, ChevronDown,
-  MessageSquare, CheckCircle,
+  MessageSquare, CheckCircle, UserCircle, UserPlus, Globe,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import type { TravelPackageCard, Category } from "@/types/database";
 import { formatPrice, formatTripDate } from "@/lib/utils";
 import { Pill } from "@/components/ui/Pill";
 
-type View = "dashboard" | "trips" | "edit" | "bookings" | "quotes" | "users" | "settings";
+type View = "dashboard" | "trips" | "edit" | "bookings" | "quotes" | "clients" | "users" | "settings";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard",     icon: LayoutDashboard },
   { id: "trips",     label: "Viagens",        icon: Plane },
   { id: "bookings",  label: "Reservas",       icon: Calendar },
   { id: "quotes",    label: "Orçamentos",     icon: MessageSquare },
+  { id: "clients",   label: "Clientes",       icon: Users },
   { id: "users",     label: "Equipa",         icon: Users },
   { id: "settings",  label: "Definições",     icon: Settings },
 ];
@@ -215,7 +216,8 @@ export default function AdminPage() {
             )}
             {view === "bookings" && <BookingsView />}
             {view === "quotes"   && <QuotesView />}
-            {!["dashboard", "trips", "edit", "bookings", "quotes"].includes(view) && (
+            {view === "clients"  && <ClientsView />}
+            {!["dashboard", "trips", "edit", "bookings", "quotes", "clients"].includes(view) && (
               <div className="bg-white rounded-2xl border border-[var(--line)] p-16 text-center">
                 <div className="font-display text-[28px]">{view}</div>
                 <p className="mt-2 text-[var(--muted)] text-[14px]">
@@ -957,6 +959,270 @@ function QuotesView() {
         </table>
         <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
       </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── Clients view */
+type Client = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  country: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function ClientsView() {
+  const [clients,    setClients]    = useState<Client[]>([]);
+  const [search,     setSearch]     = useState("");
+  const [loading,    setLoading]    = useState(true);
+  const [sort,       setSort]       = useState<SortState | null>({ key: "name", dir: "asc" });
+  const [page,       setPage]       = useState(1);
+  const [showForm,   setShowForm]   = useState(false);
+  const [editClient, setEditClient] = useState<Client | null>(null);
+  const [form,       setForm]       = useState({ name: "", email: "", phone: "", country: "", notes: "" });
+  const [saving,     setSaving]     = useState(false);
+  const [formError,  setFormError]  = useState("");
+
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  useEffect(() => { setPage(1); }, [search, sort]);
+
+  function loadClients() {
+    setLoading(true);
+    createClient()
+      .from("clients")
+      .select("*")
+      .order("name", { ascending: true })
+      .then(({ data }) => {
+        if (data) setClients(data as Client[]);
+        setLoading(false);
+      });
+  }
+
+  function openNew() {
+    setEditClient(null);
+    setForm({ name: "", email: "", phone: "", country: "", notes: "" });
+    setFormError("");
+    setShowForm(true);
+  }
+
+  function openEdit(c: Client) {
+    setEditClient(c);
+    setForm({ name: c.name, email: c.email, phone: c.phone ?? "", country: c.country ?? "", notes: c.notes ?? "" });
+    setFormError("");
+    setShowForm(true);
+  }
+
+  async function saveClient(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name || !form.email) { setFormError("Nome e email são obrigatórios."); return; }
+    setSaving(true);
+    setFormError("");
+    const supabase = createClient();
+    if (editClient) {
+      const { error } = await supabase.from("clients").update({
+        name: form.name, email: form.email,
+        phone: form.phone || null, country: form.country || null, notes: form.notes || null,
+      }).eq("id", editClient.id);
+      if (error) { setFormError(error.message); setSaving(false); return; }
+      setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null } : c));
+    } else {
+      const { data, error } = await supabase.from("clients").insert({
+        name: form.name, email: form.email,
+        phone: form.phone || null, country: form.country || null, notes: form.notes || null,
+      }).select("*").single();
+      if (error) { setFormError(error.message); setSaving(false); return; }
+      if (data) setClients((prev) => [data as Client, ...prev]);
+    }
+    setSaving(false);
+    setShowForm(false);
+  }
+
+  async function deleteClient(id: string) {
+    if (!confirm("Apagar este cliente?")) return;
+    await createClient().from("clients").delete().eq("id", id);
+    setClients((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  function exportCSV() {
+    const BOM = "﻿";
+    const headers = ["Nome", "Email", "Telefone", "País", "Notas", "Data"];
+    const rows = sorted.map((c) => [
+      c.name, c.email, c.phone ?? "", c.country ?? "", (c.notes ?? "").replace(/,/g, ";").replace(/\n/g, " "),
+      new Date(c.created_at).toLocaleString("pt-PT"),
+    ]);
+    const csv = BOM + [headers, ...rows].map((r) => r.map((v) => `"${v}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = `clientes-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  const filtered = clients.filter((c) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.country ?? "").toLowerCase().includes(q);
+  });
+
+  const sorted     = applySortFilter(filtered as unknown as Record<string, unknown>[], sort) as unknown as typeof filtered;
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const paged      = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  function onSort(key: string) {
+    setSort((s) => s?.key === key ? { key, dir: s.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" });
+  }
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleDateString("pt-PT");
+  }
+
+  const thBase = "text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40";
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="font-display text-[36px] tracking-tight">Clientes</h1>
+          <p className="text-[14px] text-[var(--muted)] mt-1">{clients.length} cliente{clients.length !== 1 ? "s" : ""} registado{clients.length !== 1 ? "s" : ""}.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2">
+            <Search className="w-4 h-4 text-[var(--muted)]" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Procurar por nome, email ou país…" className="bg-transparent text-[13px] focus:outline-none w-56" />
+          </div>
+          <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">
+            <Download className="w-4 h-4" /> Exportar
+          </button>
+          <button onClick={openNew} className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition">
+            <UserPlus className="w-4 h-4" /> Novo cliente
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden">
+        <table className="w-full text-[14px]">
+          <thead>
+            <tr className={thBase}>
+              <Th label="Nome"     field="name"       sort={sort} onSort={onSort} className="rounded-tl-2xl" />
+              <Th label="Email"    field="email"      sort={sort} onSort={onSort} className="hidden md:table-cell" />
+              <Th label="Telefone" field="phone"      sort={sort} onSort={onSort} className="hidden lg:table-cell" />
+              <Th label="País"     field="country"    sort={sort} onSort={onSort} className="hidden xl:table-cell" />
+              <Th label="Desde"    field="created_at" sort={sort} onSort={onSort} className="hidden sm:table-cell" />
+              <th className="text-right font-medium p-4 rounded-tr-2xl w-20">·</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && <tr><td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td></tr>}
+            {!loading && paged.length === 0 && (
+              <tr><td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">
+                {search ? "Nenhum cliente encontrado." : "Ainda não há clientes registados."}
+              </td></tr>
+            )}
+            {paged.map((c) => (
+              <tr key={c.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
+                <td className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[var(--cream-2)] border border-[var(--line)] flex items-center justify-center shrink-0">
+                      <UserCircle className="w-5 h-5 text-[var(--muted)]" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <div className="font-medium tracking-tight">{c.name}</div>
+                      {c.notes && <div className="text-[12px] text-[var(--muted)] mt-0.5 max-w-[220px] truncate">{c.notes}</div>}
+                    </div>
+                  </div>
+                </td>
+                <td className="p-4 hidden md:table-cell">
+                  <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
+                    <Mail className="w-3.5 h-3.5" /> {c.email}
+                  </a>
+                </td>
+                <td className="p-4 hidden lg:table-cell">
+                  {c.phone ? (
+                    <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition">
+                      <Phone className="w-3.5 h-3.5" /> {c.phone}
+                    </a>
+                  ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
+                </td>
+                <td className="p-4 hidden xl:table-cell">
+                  {c.country ? (
+                    <span className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)]">
+                      <Globe className="w-3.5 h-3.5 text-[var(--muted)]" /> {c.country}
+                    </span>
+                  ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
+                </td>
+                <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(c.created_at)}</td>
+                <td className="p-4 text-right">
+                  <div className="inline-flex items-center gap-1">
+                    <button onClick={() => openEdit(c)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                    <button onClick={() => deleteClient(c.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition" title="Apagar"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
+      </div>
+
+      {/* Slide-in form panel */}
+      {showForm && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[var(--cream)] shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-7 pt-7 pb-4 border-b border-[var(--line)]">
+              <h2 className="font-display text-[24px] tracking-tight">{editClient ? "Editar cliente" : "Novo cliente"}</h2>
+              <button onClick={() => setShowForm(false)} className="p-2 rounded-full hover:bg-[var(--cream-2)] transition text-[var(--muted)]">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={saveClient} className="flex-1 overflow-y-auto px-7 py-6 space-y-4">
+              {[
+                { label: "Nome completo *", key: "name",    type: "text",  placeholder: "Nome do cliente" },
+                { label: "Email *",         key: "email",   type: "email", placeholder: "email@exemplo.pt" },
+                { label: "Telefone",        key: "phone",   type: "tel",   placeholder: "+351 9xx xxx xxx" },
+                { label: "País",            key: "country", type: "text",  placeholder: "Portugal" },
+              ].map(({ label, key, type, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">{label}</label>
+                  <input
+                    type={type}
+                    value={form[key as keyof typeof form]}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
+                  />
+                </div>
+              ))}
+              <div>
+                <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Notas</label>
+                <textarea
+                  rows={4}
+                  value={form.notes}
+                  onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+                  placeholder="Observações sobre o cliente…"
+                  className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition resize-none"
+                />
+              </div>
+              {formError && <p className="text-[13px] text-red-600">{formError}</p>}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">Cancelar</button>
+                <button type="submit" disabled={saving} className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
+                  {saving ? "A guardar…" : editClient ? "Guardar" : "Criar cliente"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>
+      )}
     </div>
   );
 }
