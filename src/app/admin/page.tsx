@@ -13,12 +13,11 @@ import type { TravelPackageCard, Category } from "@/types/database";
 import { formatPrice, formatTripDate } from "@/lib/utils";
 import { Pill } from "@/components/ui/Pill";
 
-type View = "dashboard" | "trips" | "edit" | "media" | "bookings" | "users" | "settings";
+type View = "dashboard" | "trips" | "edit" | "bookings" | "users" | "settings";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard",     icon: LayoutDashboard },
   { id: "trips",     label: "Viagens",        icon: Plane },
-  { id: "media",     label: "Media library",  icon: ImageIcon },
   { id: "bookings",  label: "Reservas",       icon: Calendar },
   { id: "users",     label: "Equipa",         icon: Users },
   { id: "settings",  label: "Definições",     icon: Settings },
