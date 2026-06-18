@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { Globe, Menu, X } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
+import { BookingModal } from "@/components/BookingModal";
 
 const navLinks = [
   { href: "/",        label: "Início" },
@@ -17,8 +18,9 @@ const navLinks = [
 
 export function Header() {
   const pathname  = usePathname();
-  const [scrolled, setScrolled] = useState(false);
-  const [open,     setOpen]     = useState(false);
+  const [scrolled,     setScrolled]     = useState(false);
+  const [open,         setOpen]         = useState(false);
+  const [bookingOpen,  setBookingOpen]  = useState(false);
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -93,8 +95,8 @@ export function Header() {
               transition={{ type: "spring", stiffness: 400, damping: 22 }}
               className="hidden sm:block"
             >
-              <Link
-                href="/viagens"
+              <button
+                onClick={() => setBookingOpen(true)}
                 className={cn(
                   "inline-flex rounded-full px-4 py-2 text-[13px] tracking-tight transition-all",
                   onLight
@@ -103,7 +105,7 @@ export function Header() {
                 )}
               >
                 Reservar
-              </Link>
+              </button>
             </motion.div>
 
             {/* Mobile toggle */}
@@ -203,18 +205,18 @@ export function Header() {
                 transition={{ delay: 0.4, duration: 0.4, ease: "easeOut" }}
                 className="mt-auto"
               >
-                <Link
-                  href="/viagens"
+                <button
+                  onClick={() => { setOpen(false); setBookingOpen(true); }}
                   className="block w-full text-center bg-[var(--clay)] text-white rounded-full py-3.5 text-[14px] font-medium tracking-tight"
-                  onClick={() => setOpen(false)}
                 >
                   Reservar consulta
-                </Link>
+                </button>
               </motion.div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} />
     </>
   );
 }
