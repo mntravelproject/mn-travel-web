@@ -1,4 +1,4 @@
-export const revalidate = 300; // ISR: refresh homepage data every 5 minutes
+export const dynamic = "force-dynamic";
 
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
