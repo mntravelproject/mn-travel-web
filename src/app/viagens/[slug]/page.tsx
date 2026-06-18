@@ -1,18 +1,12 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getTripBySlug, getTripSlugs } from "@/lib/services/trips";
+import { getTripBySlug } from "@/lib/services/trips";
 import { TripDetailClient } from "./TripDetailClient";
-
-export const revalidate = 3600; // ISR: revalidate cached pages every hour
-export const dynamicParams = true; // SSR fallback for slugs not pre-generated
 
 interface Props {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  const slugs = await getTripSlugs().catch(() => []);
-  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
