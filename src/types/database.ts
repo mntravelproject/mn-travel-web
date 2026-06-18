@@ -286,6 +286,24 @@ export interface Database {
           }
         ];
       };
+      trip_groups: {
+        Row: { id: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes?: string | null };
+        Update: { title?: string; destination?: string; start_date?: string; end_date?: string; price_per_person?: number; notes?: string | null; updated_at?: string };
+        Relationships: [];
+      };
+      trip_passengers: {
+        Row: { id: string; trip_id: string; full_name: string; id_card_number: string | null; id_card_expiry: string | null; nif: string | null; date_of_birth: string | null; nationality: string | null; phone: string | null; email: string | null; notes: string | null; sort_order: number; created_at: string; updated_at: string };
+        Insert: { id?: string; trip_id: string; full_name: string; id_card_number?: string | null; id_card_expiry?: string | null; nif?: string | null; date_of_birth?: string | null; nationality?: string | null; phone?: string | null; email?: string | null; notes?: string | null; sort_order?: number };
+        Update: { full_name?: string; id_card_number?: string | null; id_card_expiry?: string | null; nif?: string | null; date_of_birth?: string | null; nationality?: string | null; phone?: string | null; email?: string | null; notes?: string | null; sort_order?: number; updated_at?: string };
+        Relationships: [{ foreignKeyName: "trip_passengers_trip_id_fkey"; columns: ["trip_id"]; isOneToOne: false; referencedRelation: "trip_groups"; referencedColumns: ["id"] }];
+      };
+      trip_payments: {
+        Row: { id: string; passenger_id: string; amount: number; payment_date: string; method: string; notes: string | null; created_at: string };
+        Insert: { id?: string; passenger_id: string; amount: number; payment_date: string; method: string; notes?: string | null };
+        Update: { amount?: number; payment_date?: string; method?: string; notes?: string | null };
+        Relationships: [{ foreignKeyName: "trip_payments_passenger_id_fkey"; columns: ["passenger_id"]; isOneToOne: false; referencedRelation: "trip_passengers"; referencedColumns: ["id"] }];
+      };
       user_profiles: {
         Row: {
           id: string;
