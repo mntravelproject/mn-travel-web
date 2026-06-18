@@ -13,14 +13,28 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     await requireAuth();
     const { id } = await params;
-    const { role } = await req.json() as { role: string };
+    const body = await req.json() as { role?: string; email?: string; password?: string };
 
     const admin = createAdminClient();
-    const { error } = await admin
-      .from("user_profiles")
-      .upsert({ id, role }, { onConflict: "id" });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    // Update role in user_profiles
+    if (body.role !== undefined) {
+      const { error } = await admin
+        .from("user_profiles")
+        .upsert({ id, role: body.role }, { onConflict: "id" });
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
+    // Update email and/or password in Supabase Auth
+    if (body.email !== undefined || body.password !== undefined) {
+      const updates: { email?: string; password?: string } = {};
+      if (body.email)    updates.email    = body.email;
+      if (body.password) updates.password = body.password;
+
+      const { error } = await admin.auth.admin.updateUserById(id, updates);
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
