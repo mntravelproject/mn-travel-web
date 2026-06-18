@@ -1370,20 +1370,6 @@ function UsersView() {
 
   const thBase = "text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40";
 
-  const SidePanel = ({ children, title }: { children: React.ReactNode; title: string }) => (
-    <>
-      <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setPanel(null)} />
-      <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[var(--cream)] shadow-2xl flex flex-col">
-        <div className="flex items-center justify-between px-7 pt-7 pb-4 border-b border-[var(--line)]">
-          <h2 className="font-display text-[24px] tracking-tight">{title}</h2>
-          <button onClick={() => setPanel(null)} className="p-2 rounded-full hover:bg-[var(--cream-2)] transition text-[var(--muted)]">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </>
-  );
 
   const inputCls = "w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition";
   const labelCls = "block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5";
@@ -1482,112 +1468,125 @@ function UsersView() {
 
       {/* Panel — Novo utilizador */}
       {panel === "new" && (
-        <SidePanel title="Novo utilizador">
-          <form onSubmit={createUser} className="flex-1 overflow-y-auto px-7 py-6 space-y-5">
-            <div>
-              <label className={labelCls}>Email *</label>
-              <input type="email" value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="utilizador@mntravel.pt" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Password *</label>
-              <input type="password" value={newForm.password} onChange={(e) => setNewForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder="Mínimo 8 caracteres" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Permissão *</label>
-              <div className="grid grid-cols-2 gap-3">
-                {Object.entries(ROLE_LABELS).map(([key, { label }]) => (
-                  <button key={key} type="button" onClick={() => setNewForm((f) => ({ ...f, role: key }))}
-                    className={`py-3 rounded-xl border text-[13px] tracking-tight transition ${newForm.role === key ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]" : "border-[var(--line)] hover:border-[var(--ink-soft)]"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-[12px] text-[var(--muted)]">
-                {newForm.role === "admin" ? "Acesso completo a todas as funcionalidades." : "Acesso de leitura e edição, sem gestão de utilizadores."}
-              </p>
-            </div>
-            {newError && <p className="text-[13px] text-red-600">{newError}</p>}
-            <div className="flex gap-3 pt-2">
-              <button type="button" onClick={() => setPanel(null)} className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">Cancelar</button>
-              <button type="submit" disabled={newSaving} className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
-                {newSaving ? "A criar…" : "Criar utilizador"}
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setPanel(null)} />
+          <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[var(--cream)] shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-7 pt-7 pb-4 border-b border-[var(--line)]">
+              <h2 className="font-display text-[24px] tracking-tight">Novo utilizador</h2>
+              <button onClick={() => setPanel(null)} className="p-2 rounded-full hover:bg-[var(--cream-2)] transition text-[var(--muted)]">
+                <ArrowLeft className="w-5 h-5" />
               </button>
             </div>
-          </form>
-        </SidePanel>
-      )}
-
-      {/* Panel — Editar utilizador */}
-      {panel === "edit" && editTarget && (
-        <SidePanel title="Editar utilizador">
-          <div className="flex-1 overflow-y-auto px-7 py-6 space-y-7">
-            {/* Edit form */}
-            <form onSubmit={saveEdit} className="space-y-5">
+            <form onSubmit={createUser} className="flex-1 overflow-y-auto px-7 py-6 space-y-5">
               <div>
-                <label className={labelCls}>Email</label>
-                <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Email *</label>
+                <input type="email" value={newForm.email} onChange={(e) => setNewForm((f) => ({ ...f, email: e.target.value }))}
+                  placeholder="utilizador@mntravel.pt" className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Nova password</label>
-                <input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)}
-                  placeholder="Deixar vazio para não alterar" className={inputCls} />
+                <label className={labelCls}>Password *</label>
+                <input type="password" value={newForm.password} onChange={(e) => setNewForm((f) => ({ ...f, password: e.target.value }))}
+                  placeholder="Mínimo 8 caracteres" className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Permissão</label>
+                <label className={labelCls}>Permissão *</label>
                 <div className="grid grid-cols-2 gap-3">
                   {Object.entries(ROLE_LABELS).map(([key, { label }]) => (
-                    <button key={key} type="button" onClick={() => setEditRole(key)}
-                      className={`py-3 rounded-xl border text-[13px] tracking-tight transition ${editRole === key ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]" : "border-[var(--line)] hover:border-[var(--ink-soft)]"}`}>
+                    <button key={key} type="button" onClick={() => setNewForm((f) => ({ ...f, role: key }))}
+                      className={`py-3 rounded-xl border text-[13px] tracking-tight transition ${newForm.role === key ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]" : "border-[var(--line)] hover:border-[var(--ink-soft)]"}`}>
                       {label}
                     </button>
                   ))}
                 </div>
+                <p className="mt-2 text-[12px] text-[var(--muted)]">
+                  {newForm.role === "admin" ? "Acesso completo a todas as funcionalidades." : "Acesso de leitura e edição, sem gestão de utilizadores."}
+                </p>
               </div>
-              {editError && <p className="text-[13px] text-red-600">{editError}</p>}
-              <div className="flex gap-3">
+              {newError && <p className="text-[13px] text-red-600">{newError}</p>}
+              <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setPanel(null)} className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">Cancelar</button>
-                <button type="submit" disabled={editSaving} className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
-                  {editSaving ? "A guardar…" : "Guardar"}
+                <button type="submit" disabled={newSaving} className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
+                  {newSaving ? "A criar…" : "Criar utilizador"}
                 </button>
               </div>
             </form>
+          </div>
+        </>
+      )}
 
-            {/* Divider */}
-            <div className="border-t border-[var(--line)]" />
-
-            {/* Reset password */}
-            <div className="space-y-3">
-              <p className="text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)]">Reset de password</p>
-              <p className="text-[13px] text-[var(--ink-soft)] leading-relaxed">
-                Envia um email de recuperação de password para <strong>{editTarget.email}</strong>.
-              </p>
-              {resetDone ? (
-                <div className="flex items-center gap-2 text-emerald-600 text-[13px]">
-                  <CheckCircle className="w-4 h-4" /> Email de recuperação enviado.
-                </div>
-              ) : (
-                <button onClick={sendReset} disabled={resetSaving}
-                  className="rounded-full border border-[var(--line)] px-5 py-2.5 text-[13px] tracking-tight hover:bg-[var(--cream-2)] transition disabled:opacity-50 inline-flex items-center gap-2">
-                  {resetSaving ? "A enviar…" : "Enviar email de reset"}
-                </button>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="border-t border-[var(--line)]" />
-
-            {/* Danger zone */}
-            <div className="space-y-3">
-              <p className="text-[10.5px] uppercase tracking-[0.16em] text-red-500">Zona de perigo</p>
-              <button onClick={() => deleteUser(editTarget.id, editTarget.email)}
-                className="rounded-full border border-red-200 text-red-600 px-5 py-2.5 text-[13px] tracking-tight hover:bg-red-50 transition inline-flex items-center gap-2">
-                <Trash2 className="w-4 h-4" /> Apagar utilizador
+      {/* Panel — Editar utilizador */}
+      {panel === "edit" && editTarget && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={() => setPanel(null)} />
+          <div className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[var(--cream)] shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between px-7 pt-7 pb-4 border-b border-[var(--line)]">
+              <h2 className="font-display text-[24px] tracking-tight">Editar utilizador</h2>
+              <button onClick={() => setPanel(null)} className="p-2 rounded-full hover:bg-[var(--cream-2)] transition text-[var(--muted)]">
+                <ArrowLeft className="w-5 h-5" />
               </button>
             </div>
+            <div className="flex-1 overflow-y-auto px-7 py-6 space-y-7">
+              <form onSubmit={saveEdit} className="space-y-5">
+                <div>
+                  <label className={labelCls}>Email</label>
+                  <input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Nova password</label>
+                  <input type="password" value={editPassword} onChange={(e) => setEditPassword(e.target.value)}
+                    placeholder="Deixar vazio para não alterar" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Permissão</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(ROLE_LABELS).map(([key, { label }]) => (
+                      <button key={key} type="button" onClick={() => setEditRole(key)}
+                        className={`py-3 rounded-xl border text-[13px] tracking-tight transition ${editRole === key ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]" : "border-[var(--line)] hover:border-[var(--ink-soft)]"}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {editError && <p className="text-[13px] text-red-600">{editError}</p>}
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setPanel(null)} className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">Cancelar</button>
+                  <button type="submit" disabled={editSaving} className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
+                    {editSaving ? "A guardar…" : "Guardar"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="border-t border-[var(--line)]" />
+
+              <div className="space-y-3">
+                <p className="text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)]">Reset de password</p>
+                <p className="text-[13px] text-[var(--ink-soft)] leading-relaxed">
+                  Envia um email de recuperação para <strong>{editTarget.email}</strong>.
+                </p>
+                {resetDone ? (
+                  <div className="flex items-center gap-2 text-emerald-600 text-[13px]">
+                    <CheckCircle className="w-4 h-4" /> Email de recuperação enviado.
+                  </div>
+                ) : (
+                  <button onClick={sendReset} disabled={resetSaving}
+                    className="rounded-full border border-[var(--line)] px-5 py-2.5 text-[13px] tracking-tight hover:bg-[var(--cream-2)] transition disabled:opacity-50 inline-flex items-center gap-2">
+                    {resetSaving ? "A enviar…" : "Enviar email de reset"}
+                  </button>
+                )}
+              </div>
+
+              <div className="border-t border-[var(--line)]" />
+
+              <div className="space-y-3">
+                <p className="text-[10.5px] uppercase tracking-[0.16em] text-red-500">Zona de perigo</p>
+                <button onClick={() => deleteUser(editTarget.id, editTarget.email)}
+                  className="rounded-full border border-red-200 text-red-600 px-5 py-2.5 text-[13px] tracking-tight hover:bg-red-50 transition inline-flex items-center gap-2">
+                  <Trash2 className="w-4 h-4" /> Apagar utilizador
+                </button>
+              </div>
+            </div>
           </div>
-        </SidePanel>
+        </>
       )}
     </div>
   );
