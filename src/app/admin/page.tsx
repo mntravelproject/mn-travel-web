@@ -536,6 +536,13 @@ function BookingsView() {
   const [openMenu,  setOpenMenu]  = useState<string | null>(null);
 
   useEffect(() => {
+    if (!openMenu) return;
+    const handler = () => setOpenMenu(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [openMenu]);
+
+  useEffect(() => {
     createClient()
       .from("booking_requests")
       .select("id, name, email, phone, message, pax_count, status, created_at, package:travel_packages(title)")
@@ -678,7 +685,7 @@ function BookingsView() {
                   <td className="p-4">
                     <div className="relative inline-block">
                       <button
-                        onClick={() => setOpenMenu(openMenu === b.id ? null : b.id)}
+                        onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === b.id ? null : b.id); }}
                         className="flex items-center gap-1"
                       >
                         <Pill className={st?.cls}>{st?.label ?? b.status}</Pill>
