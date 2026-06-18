@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard, Plane, Plus, Edit3, Trash2, Bell, TrendingUp,
   Search, ArrowLeft, Calendar, Users, Settings, LogOut,
-  Upload, Image as ImageIcon, Sparkles, Copy, FileText,
+  Upload, Image as ImageIcon, Sparkles, Copy, FileText, Download, Phone, Mail, ChevronDown,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import type { TravelPackageCard, Category } from "@/types/database";
@@ -211,11 +211,12 @@ export default function AdminPage() {
                 onSaved={() => { setRefreshKey((k) => k + 1); setView("trips"); }}
               />
             )}
-            {!["dashboard", "trips", "edit"].includes(view) && (
+            {view === "bookings" && <BookingsView />}
+            {!["dashboard", "trips", "edit", "bookings"].includes(view) && (
               <div className="bg-white rounded-2xl border border-[var(--line)] p-16 text-center">
                 <div className="font-display text-[28px]">{view}</div>
                 <p className="mt-2 text-[var(--muted)] text-[14px]">
-                  Esta secção é uma vista do design system.
+                  Esta secção ainda não está disponível.
                 </p>
               </div>
             )}
@@ -501,6 +502,216 @@ function TripsList({
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── Bookings view */
+type BookingStatus = "pending" | "contacted" | "confirmed" | "cancelled";
+
+type BookingRequest = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  message: string | null;
+  pax_count: number;
+  status: BookingStatus;
+  created_at: string;
+  package: { title: string } | null;
+};
+
+const BOOKING_STATUS: Record<BookingStatus, { label: string; cls: string }> = {
+  pending:   { label: "Novo",        cls: "!bg-blue-50 !text-blue-700 !border-blue-200" },
+  contacted: { label: "Contactado",  cls: "!bg-amber-50 !text-amber-700 !border-amber-200" },
+  confirmed: { label: "Confirmado",  cls: "!bg-emerald-50 !text-emerald-800 !border-emerald-200" },
+  cancelled: { label: "Cancelado",   cls: "!bg-red-50 !text-red-600 !border-red-200" },
+};
+
+function BookingsView() {
+  const [bookings,  setBookings]  = useState<BookingRequest[]>([]);
+  const [search,    setSearch]    = useState("");
+  const [loading,   setLoading]   = useState(true);
+  const [openMenu,  setOpenMenu]  = useState<string | null>(null);
+
+  useEffect(() => {
+    createClient()
+      .from("booking_requests")
+      .select("id, name, email, phone, message, pax_count, status, created_at, package:travel_packages(title)")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setBookings(data as unknown as BookingRequest[]);
+        setLoading(false);
+      });
+  }, []);
+
+  const filtered = bookings.filter((b) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return b.name.toLowerCase().includes(q) || (b.package?.title ?? "").toLowerCase().includes(q);
+  });
+
+  async function updateStatus(id: string, status: BookingStatus) {
+    setOpenMenu(null);
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+    await createClient().from("booking_requests").update({ status }).eq("id", id);
+  }
+
+  function exportCSV() {
+    const BOM = "﻿";
+    const headers = ["Nome", "Email", "Telefone", "Viagem", "Pax", "Estado", "Mensagem", "Data"];
+    const rows = filtered.map((b) => [
+      b.name,
+      b.email,
+      b.phone ?? "",
+      b.package?.title ?? "",
+      String(b.pax_count),
+      BOOKING_STATUS[b.status]?.label ?? b.status,
+      (b.message ?? "").replace(/,/g, ";").replace(/\n/g, " "),
+      new Date(b.created_at).toLocaleString("pt-PT"),
+    ]);
+    const csv = BOM + [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `reservas-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="font-display text-[36px] tracking-tight">Reservas</h1>
+          <p className="text-[14px] text-[var(--muted)] mt-1">Pedidos de reserva recebidos.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2">
+            <Search className="w-4 h-4 text-[var(--muted)]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Procurar por nome ou viagem..."
+              className="bg-transparent text-[13px] focus:outline-none w-52"
+            />
+          </div>
+          <button
+            onClick={exportCSV}
+            className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition"
+          >
+            <Download className="w-4 h-4" /> Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden">
+        <table className="w-full text-[14px]">
+          <thead>
+            <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40">
+              <th className="text-left font-medium p-4">Cliente</th>
+              <th className="text-left font-medium p-4 hidden md:table-cell">Contacto</th>
+              <th className="text-left font-medium p-4 hidden lg:table-cell">Viagem</th>
+              <th className="text-left font-medium p-4 hidden xl:table-cell">Pax</th>
+              <th className="text-left font-medium p-4 hidden sm:table-cell">Data</th>
+              <th className="text-left font-medium p-4">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr>
+                <td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td>
+              </tr>
+            )}
+            {!loading && filtered.length === 0 && (
+              <tr>
+                <td colSpan={6} className="p-12 text-center text-[var(--muted)] text-[13px]">
+                  {search ? "Nenhum resultado para a pesquisa." : "Ainda não há pedidos de reserva."}
+                </td>
+              </tr>
+            )}
+            {filtered.map((b) => {
+              const st = BOOKING_STATUS[b.status];
+              return (
+                <tr key={b.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
+                  {/* Nome */}
+                  <td className="p-4">
+                    <div className="font-medium tracking-tight">{b.name}</div>
+                    {b.message && (
+                      <div className="text-[12px] text-[var(--muted)] mt-0.5 max-w-[200px] truncate">{b.message}</div>
+                    )}
+                  </td>
+                  {/* Contacto */}
+                  <td className="p-4 hidden md:table-cell">
+                    <div className="flex flex-col gap-1">
+                      <a href={`mailto:${b.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
+                        <Mail className="w-3.5 h-3.5" /> {b.email}
+                      </a>
+                      {b.phone && (
+                        <a href={`tel:${b.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition">
+                          <Phone className="w-3.5 h-3.5" /> {b.phone}
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                  {/* Viagem */}
+                  <td className="p-4 hidden lg:table-cell">
+                    <span className="text-[13px] text-[var(--ink-soft)]">{b.package?.title ?? "—"}</span>
+                  </td>
+                  {/* Pax */}
+                  <td className="p-4 hidden xl:table-cell text-[var(--muted)] text-[13px]">
+                    {b.pax_count} pax
+                  </td>
+                  {/* Data */}
+                  <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">
+                    {fmtDate(b.created_at)}
+                  </td>
+                  {/* Estado */}
+                  <td className="p-4">
+                    <div className="relative inline-block">
+                      <button
+                        onClick={() => setOpenMenu(openMenu === b.id ? null : b.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <Pill className={st?.cls}>{st?.label ?? b.status}</Pill>
+                        <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
+                      </button>
+                      {openMenu === b.id && (
+                        <div className="absolute left-0 top-8 z-20 bg-white border border-[var(--line)] rounded-xl shadow-lg py-1 min-w-[148px]">
+                          {(Object.entries(BOOKING_STATUS) as [BookingStatus, { label: string; cls: string }][]).map(([val, cfg]) => (
+                            <button
+                              key={val}
+                              onClick={() => updateStatus(b.id, val)}
+                              className="w-full text-left px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] flex items-center gap-2"
+                            >
+                              <Pill className={`${cfg.cls} !text-[11px]`}>{cfg.label}</Pill>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {/* Totals footer */}
+        {!loading && filtered.length > 0 && (
+          <div className="px-4 py-3 border-t border-[var(--line)] bg-[var(--cream)]/40 text-[12px] text-[var(--muted)] tracking-tight flex gap-6">
+            <span>{filtered.length} pedido{filtered.length !== 1 ? "s" : ""}</span>
+            <span>{filtered.filter(b => b.status === "pending").length} novos</span>
+            <span>{filtered.filter(b => b.status === "confirmed").length} confirmados</span>
+          </div>
+        )}
       </div>
     </div>
   );
