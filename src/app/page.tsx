@@ -1,3 +1,5 @@
+export const revalidate = 300; // ISR: refresh homepage data every 5 minutes
+
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
