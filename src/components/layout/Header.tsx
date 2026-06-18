@@ -9,11 +9,12 @@ import { cn } from "@/lib/utils";
 import { BookingModal } from "@/components/BookingModal";
 
 const navLinks = [
-  { href: "/",        label: "Início" },
-  { href: "/viagens", label: "Viagens" },
-  { href: "/viagens", label: "Destinos" },
-  { href: "/viagens", label: "Editorial" },
-  { href: "/sobre",   label: "Sobre" },
+  { href: "/",          label: "Início" },
+  { href: "/viagens",   label: "Viagens" },
+  { href: "/viagens",   label: "Destinos" },
+  { href: "/viagens",   label: "Editorial" },
+  { href: "/sobre",     label: "Sobre" },
+  { href: "/contacto",  label: "Contacto" },
 ];
 
 export function Header() {

@@ -7,18 +7,20 @@ import {
   LayoutDashboard, Plane, Plus, Edit3, Trash2, Bell, TrendingUp,
   Search, ArrowLeft, Calendar, Users, Settings, LogOut,
   Upload, Image as ImageIcon, Sparkles, Copy, FileText, Download, Phone, Mail, ChevronDown,
+  MessageSquare, CheckCircle,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import type { TravelPackageCard, Category } from "@/types/database";
 import { formatPrice, formatTripDate } from "@/lib/utils";
 import { Pill } from "@/components/ui/Pill";
 
-type View = "dashboard" | "trips" | "edit" | "bookings" | "users" | "settings";
+type View = "dashboard" | "trips" | "edit" | "bookings" | "quotes" | "users" | "settings";
 
 const NAV = [
   { id: "dashboard", label: "Dashboard",     icon: LayoutDashboard },
   { id: "trips",     label: "Viagens",        icon: Plane },
   { id: "bookings",  label: "Reservas",       icon: Calendar },
+  { id: "quotes",    label: "Orçamentos",     icon: MessageSquare },
   { id: "users",     label: "Equipa",         icon: Users },
   { id: "settings",  label: "Definições",     icon: Settings },
 ];
@@ -212,7 +214,8 @@ export default function AdminPage() {
               />
             )}
             {view === "bookings" && <BookingsView />}
-            {!["dashboard", "trips", "edit", "bookings"].includes(view) && (
+            {view === "quotes"   && <QuotesView />}
+            {!["dashboard", "trips", "edit", "bookings", "quotes"].includes(view) && (
               <div className="bg-white rounded-2xl border border-[var(--line)] p-16 text-center">
                 <div className="font-display text-[28px]">{view}</div>
                 <p className="mt-2 text-[var(--muted)] text-[14px]">
@@ -717,6 +720,192 @@ function BookingsView() {
             <span>{filtered.length} pedido{filtered.length !== 1 ? "s" : ""}</span>
             <span>{filtered.filter(b => b.status === "pending").length} novos</span>
             <span>{filtered.filter(b => b.status === "confirmed").length} confirmados</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────── Quotes view */
+type ContactRequest = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  type: string;
+  subject: string | null;
+  message: string;
+  status: string;
+  created_at: string;
+};
+
+const CONTACT_TYPE_LABELS: Record<string, string> = {
+  orcamento:  "Orçamento",
+  informacao: "Informação",
+  ajuda:      "Ajuda",
+  outro:      "Outro",
+};
+
+function QuotesView() {
+  const [quotes,   setQuotes]   = useState<ContactRequest[]>([]);
+  const [search,   setSearch]   = useState("");
+  const [loading,  setLoading]  = useState(true);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+    const handler = () => setOpenMenu(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [openMenu]);
+
+  useEffect(() => {
+    createClient()
+      .from("contact_requests")
+      .select("*")
+      .eq("type", "orcamento")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setQuotes(data as ContactRequest[]);
+        setLoading(false);
+      });
+  }, []);
+
+  const filtered = quotes.filter((q) => {
+    if (!search) return true;
+    const s = search.toLowerCase();
+    return q.name.toLowerCase().includes(s) || (q.subject ?? "").toLowerCase().includes(s) || q.email.toLowerCase().includes(s);
+  });
+
+  async function markResponded(id: string) {
+    setOpenMenu(null);
+    const next = quotes.find((q) => q.id === id)?.status === "respondido" ? "novo" : "respondido";
+    setQuotes((prev) => prev.map((q) => q.id === id ? { ...q, status: next } : q));
+    await createClient().from("contact_requests").update({ status: next }).eq("id", id);
+  }
+
+  function exportCSV() {
+    const BOM = "﻿";
+    const headers = ["Nome", "Email", "Telefone", "Assunto", "Mensagem", "Estado", "Data"];
+    const rows = filtered.map((q) => [
+      q.name, q.email, q.phone ?? "", q.subject ?? "", q.message.replace(/,/g, ";").replace(/\n/g, " "),
+      q.status, new Date(q.created_at).toLocaleString("pt-PT"),
+    ]);
+    const csv = BOM + [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = `orcamentos-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  function fmtDate(iso: string) {
+    return new Date(iso).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h1 className="font-display text-[36px] tracking-tight">Orçamentos</h1>
+          <p className="text-[14px] text-[var(--muted)] mt-1">Pedidos de orçamento personalizado recebidos.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2">
+            <Search className="w-4 h-4 text-[var(--muted)]" />
+            <input
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Procurar por nome ou assunto…"
+              className="bg-transparent text-[13px] focus:outline-none w-52"
+            />
+          </div>
+          <button
+            onClick={exportCSV}
+            className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition"
+          >
+            <Download className="w-4 h-4" /> Exportar Excel
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-[var(--line)]">
+        <table className="w-full text-[14px]">
+          <thead>
+            <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)] bg-[var(--cream)]/40">
+              <th className="text-left font-medium p-4 rounded-tl-2xl">Cliente</th>
+              <th className="text-left font-medium p-4 hidden md:table-cell">Contacto</th>
+              <th className="text-left font-medium p-4 hidden lg:table-cell">Assunto</th>
+              <th className="text-left font-medium p-4 hidden sm:table-cell">Data</th>
+              <th className="text-left font-medium p-4 rounded-tr-2xl">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && (
+              <tr><td colSpan={5} className="p-12 text-center text-[var(--muted)] text-[13px]">A carregar...</td></tr>
+            )}
+            {!loading && filtered.length === 0 && (
+              <tr><td colSpan={5} className="p-12 text-center text-[var(--muted)] text-[13px]">
+                {search ? "Nenhum resultado." : "Ainda não há pedidos de orçamento."}
+              </td></tr>
+            )}
+            {filtered.map((q) => {
+              const responded = q.status === "respondido";
+              return (
+                <tr key={q.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
+                  {/* Cliente */}
+                  <td className="p-4">
+                    <div className={`font-medium tracking-tight ${responded ? "text-[var(--muted)]" : ""}`}>{q.name}</div>
+                    {q.message && (
+                      <div className="text-[12px] text-[var(--muted)] mt-1 leading-relaxed">{q.message}</div>
+                    )}
+                  </td>
+                  {/* Contacto */}
+                  <td className="p-4 hidden md:table-cell">
+                    <div className="flex flex-col gap-1">
+                      <a href={`mailto:${q.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
+                        <Mail className="w-3.5 h-3.5" /> {q.email}
+                      </a>
+                      {q.phone && (
+                        <a href={`tel:${q.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition">
+                          <Phone className="w-3.5 h-3.5" /> {q.phone}
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                  {/* Assunto */}
+                  <td className="p-4 hidden lg:table-cell">
+                    <span className="text-[13px] text-[var(--ink-soft)]">{q.subject ?? "—"}</span>
+                  </td>
+                  {/* Data */}
+                  <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">
+                    {fmtDate(q.created_at)}
+                  </td>
+                  {/* Estado */}
+                  <td className="p-4">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); markResponded(q.id); }}
+                      title={responded ? "Marcar como novo" : "Marcar como respondido"}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] tracking-tight transition ${
+                        responded
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                          : "bg-[var(--cream-2)] text-[var(--muted)] border-[var(--line)] hover:bg-[var(--line)]"
+                      }`}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      {responded ? "Respondido" : "Novo"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {!loading && filtered.length > 0 && (
+          <div className="px-4 py-3 border-t border-[var(--line)] bg-[var(--cream)]/40 text-[12px] text-[var(--muted)] tracking-tight flex gap-6">
+            <span>{filtered.length} pedido{filtered.length !== 1 ? "s" : ""}</span>
+            <span>{filtered.filter(q => q.status === "novo").length} por responder</span>
+            <span>{filtered.filter(q => q.status === "respondido").length} respondidos</span>
           </div>
         )}
       </div>

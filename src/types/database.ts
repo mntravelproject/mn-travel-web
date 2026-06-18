@@ -286,6 +286,44 @@ export interface Database {
           }
         ];
       };
+      contact_requests: {
+        Row: {
+          id: string;
+          name: string;
+          email: string;
+          phone: string | null;
+          type: string;
+          subject: string | null;
+          message: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          phone?: string | null;
+          type?: string;
+          subject?: string | null;
+          message: string;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          phone?: string | null;
+          type?: string;
+          subject?: string | null;
+          message?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       booking_requests: {
         Row: {
           id: string;
