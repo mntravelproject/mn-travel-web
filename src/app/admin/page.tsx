@@ -901,12 +901,13 @@ const BOOKING_STATUS: Record<BookingStatus, { label: string; cls: string }> = {
 };
 
 function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) {
-  const [bookings,  setBookings]  = useState<BookingRequest[]>([]);
-  const [search,    setSearch]    = useState("");
-  const [loading,   setLoading]   = useState(true);
-  const [openMenu,  setOpenMenu]  = useState<string | null>(null);
-  const [sort,      setSort]      = useState<SortState | null>({ key: "created_at", dir: "desc" });
-  const [page,      setPage]      = useState(1);
+  const [bookings,       setBookings]       = useState<BookingRequest[]>([]);
+  const [search,         setSearch]         = useState("");
+  const [loading,        setLoading]        = useState(true);
+  const [openMenu,       setOpenMenu]       = useState<string | null>(null);
+  const [sort,           setSort]           = useState<SortState | null>({ key: "created_at", dir: "desc" });
+  const [page,           setPage]           = useState(1);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!openMenu) return;
@@ -952,6 +953,11 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
     setOpenMenu(null);
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
     await createClient().from("booking_requests").update({ status }).eq("id", id);
+  }
+
+  async function deleteBooking(id: string) {
+    setBookings((prev) => prev.filter((b) => b.id !== id));
+    await createClient().from("booking_requests").delete().eq("id", id);
   }
 
   function exportCSV() {
@@ -1032,20 +1038,25 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
                   <td className="p-4 hidden xl:table-cell text-[var(--muted)] text-[13px]">{b.pax_count} pax</td>
                   <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(b.created_at)}</td>
                   <td className="p-4">
-                    <div className="relative inline-block">
-                      <button onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === b.id ? null : b.id); }} className="flex items-center gap-1">
-                        <Pill className={st?.cls}>{st?.label ?? b.status}</Pill>
-                        <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
+                    <div className="flex items-center gap-2">
+                      <div className="relative inline-block">
+                        <button onClick={(e) => { e.stopPropagation(); setOpenMenu(openMenu === b.id ? null : b.id); }} className="flex items-center gap-1">
+                          <Pill className={st?.cls}>{st?.label ?? b.status}</Pill>
+                          <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
+                        </button>
+                        {openMenu === b.id && (
+                          <div className="absolute left-0 top-8 z-20 bg-white border border-[var(--line)] rounded-xl shadow-lg py-1 min-w-[148px]">
+                            {(Object.entries(BOOKING_STATUS) as [BookingStatus, { label: string; cls: string }][]).map(([val, cfg]) => (
+                              <button key={val} onClick={() => updateStatus(b.id, val)} className="w-full text-left px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] flex items-center gap-2">
+                                <Pill className={`${cfg.cls} !text-[11px]`}>{cfg.label}</Pill>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={() => setPendingDeleteId(b.id)} className="p-1.5 rounded-lg text-[var(--muted)] hover:text-red-600 hover:bg-red-50 transition">
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                      {openMenu === b.id && (
-                        <div className="absolute left-0 top-8 z-20 bg-white border border-[var(--line)] rounded-xl shadow-lg py-1 min-w-[148px]">
-                          {(Object.entries(BOOKING_STATUS) as [BookingStatus, { label: string; cls: string }][]).map(([val, cfg]) => (
-                            <button key={val} onClick={() => updateStatus(b.id, val)} className="w-full text-left px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] flex items-center gap-2">
-                              <Pill className={`${cfg.cls} !text-[11px]`}>{cfg.label}</Pill>
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -1055,6 +1066,33 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
         </table>
         <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
       </div>
+
+      {pendingDeleteId && (() => {
+        const name = bookings.find((b) => b.id === pendingDeleteId)?.name ?? "este pedido";
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setPendingDeleteId(null)} />
+            <div className="relative bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </div>
+              <h2 className="font-display text-[22px] tracking-tight mb-2">Apagar pedido?</h2>
+              <p className="text-[14px] text-[var(--muted)] tracking-tight leading-relaxed mb-7">
+                Tens a certeza que queres apagar o pedido de <span className="text-[var(--ink)] font-medium">"{name}"</span>? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setPendingDeleteId(null)} className="flex-1 rounded-full border border-[var(--line)] py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">
+                  Cancelar
+                </button>
+                <button onClick={() => { deleteBooking(pendingDeleteId); setPendingDeleteId(null); }}
+                  className="flex-1 rounded-full bg-red-600 text-white py-2.5 text-[14px] tracking-tight hover:bg-red-700 transition">
+                  Apagar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1080,11 +1118,12 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
 };
 
 function QuotesView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) {
-  const [quotes,  setQuotes]  = useState<ContactRequest[]>([]);
-  const [search,  setSearch]  = useState("");
-  const [loading, setLoading] = useState(true);
-  const [sort,    setSort]    = useState<SortState | null>({ key: "created_at", dir: "desc" });
-  const [page,    setPage]    = useState(1);
+  const [quotes,         setQuotes]         = useState<ContactRequest[]>([]);
+  const [search,         setSearch]         = useState("");
+  const [loading,        setLoading]        = useState(true);
+  const [sort,           setSort]           = useState<SortState | null>({ key: "created_at", dir: "desc" });
+  const [page,           setPage]           = useState(1);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     createClient()
@@ -1124,6 +1163,11 @@ function QuotesView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) 
     const next = quotes.find((q) => q.id === id)?.status === "respondido" ? "novo" : "respondido";
     setQuotes((prev) => prev.map((q) => q.id === id ? { ...q, status: next } : q));
     await createClient().from("contact_requests").update({ status: next }).eq("id", id);
+  }
+
+  async function deleteQuote(id: string) {
+    setQuotes((prev) => prev.filter((q) => q.id !== id));
+    await createClient().from("contact_requests").delete().eq("id", id);
   }
 
   function exportCSV() {
@@ -1200,17 +1244,22 @@ function QuotesView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) 
                   <td className="p-4 hidden lg:table-cell"><span className="text-[13px] text-[var(--ink-soft)]">{q.subject ?? "—"}</span></td>
                   <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(q.created_at)}</td>
                   <td className="p-4">
-                    <button
-                      onClick={() => markResponded(q.id)}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] tracking-tight transition ${
-                        responded
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                          : "bg-[var(--cream-2)] text-[var(--muted)] border-[var(--line)] hover:bg-[var(--line)]"
-                      }`}
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      {responded ? "Respondido" : "Novo"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => markResponded(q.id)}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] tracking-tight transition ${
+                          responded
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                            : "bg-[var(--cream-2)] text-[var(--muted)] border-[var(--line)] hover:bg-[var(--line)]"
+                        }`}
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        {responded ? "Respondido" : "Novo"}
+                      </button>
+                      <button onClick={() => setPendingDeleteId(q.id)} className="p-1.5 rounded-lg text-[var(--muted)] hover:text-red-600 hover:bg-red-50 transition">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -1219,6 +1268,33 @@ function QuotesView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) 
         </table>
         <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
       </div>
+
+      {pendingDeleteId && (() => {
+        const name = quotes.find((q) => q.id === pendingDeleteId)?.name ?? "este orçamento";
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setPendingDeleteId(null)} />
+            <div className="relative bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl">
+              <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                <Trash2 className="w-4 h-4 text-red-600" />
+              </div>
+              <h2 className="font-display text-[22px] tracking-tight mb-2">Apagar orçamento?</h2>
+              <p className="text-[14px] text-[var(--muted)] tracking-tight leading-relaxed mb-7">
+                Tens a certeza que queres apagar o pedido de <span className="text-[var(--ink)] font-medium">"{name}"</span>? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setPendingDeleteId(null)} className="flex-1 rounded-full border border-[var(--line)] py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">
+                  Cancelar
+                </button>
+                <button onClick={() => { deleteQuote(pendingDeleteId); setPendingDeleteId(null); }}
+                  className="flex-1 rounded-full bg-red-600 text-white py-2.5 text-[14px] tracking-tight hover:bg-red-700 transition">
+                  Apagar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
