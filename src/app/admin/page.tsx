@@ -21,7 +21,7 @@ type View = "dashboard" | "trips" | "edit" | "bookings" | "quotes" | "clients" |
 const NAV = [
   { id: "dashboard", label: "Dashboard",  icon: LayoutDashboard },
   { id: "groups",    label: "Viagens",    icon: Plane },
-  { id: "bookings",  label: "Reservas",   icon: Calendar },
+  { id: "bookings",  label: "Pedidos de reserva", icon: Calendar },
   { id: "quotes",    label: "Orçamentos", icon: MessageSquare },
   { id: "trips",     label: "Destinos",   icon: Globe },
   { id: "clients",   label: "Clientes",   icon: Users },
@@ -78,6 +78,7 @@ export default function AdminPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [search,         setSearch]         = useState("");
   const [userName,       setUserName]       = useState("");
+  const [bookingsBadge,  setBookingsBadge]  = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -90,6 +91,12 @@ export default function AdminPage() {
         "Admin";
       setUserName(name);
     });
+    // Badge count: pedidos que ainda não estão confirmados nem cancelados
+    supabase
+      .from("booking_requests")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["pending", "contacted"])
+      .then(({ count }) => setBookingsBadge(count ?? 0));
   }, []);
 
   useEffect(() => {
@@ -194,17 +201,29 @@ export default function AdminPage() {
               <div className="mt-1 font-display text-[20px]">Painel MN</div>
             </div>
             <nav className="space-y-1">
-              {NAV.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => setView(id as View)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] tracking-tight transition ${
-                    view === id ? "bg-[var(--ink)] text-[var(--cream)]" : "text-[var(--ink-soft)] hover:bg-[var(--cream-2)]"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" strokeWidth={1.8} /> {label}
-                </button>
-              ))}
+              {NAV.map(({ id, label, icon: Icon }) => {
+                const isActive = view === id;
+                const badge = id === "bookings" && bookingsBadge > 0 ? bookingsBadge : 0;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setView(id as View)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13.5px] tracking-tight transition ${
+                      isActive ? "bg-[var(--ink)] text-[var(--cream)]" : "text-[var(--ink-soft)] hover:bg-[var(--cream-2)]"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+                    <span className="flex-1 text-left">{label}</span>
+                    {badge > 0 && (
+                      <span className={`text-[10px] font-semibold px-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full shrink-0 ${
+                        isActive ? "bg-white/25 text-white" : "bg-amber-500 text-white"
+                      }`}>
+                        {badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </nav>
             <div className="mt-8 pt-6 border-t border-[var(--line)]">
               <button
@@ -239,7 +258,7 @@ export default function AdminPage() {
                 onSaved={() => { setRefreshKey((k) => k + 1); setView("trips"); }}
               />
             )}
-            {view === "bookings" && <BookingsView />}
+            {view === "bookings" && <BookingsView onBadgeChange={setBookingsBadge} />}
             {view === "quotes"   && <QuotesView />}
             {view === "clients"  && <ClientsView />}
             {view === "groups"   && <GroupsView />}
@@ -563,7 +582,7 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
       {/* Bookings table */}
       <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden">
         <div className="p-6 flex items-center justify-between border-b border-[var(--line)]">
-          <h3 className="font-display text-[22px] tracking-tight">Reservas recentes</h3>
+          <h3 className="font-display text-[22px] tracking-tight">Pedidos de reserva recentes</h3>
           <button onClick={() => onNavigate("bookings")} className="text-[13px] tracking-tight link-underline">
             Ver todas →
           </button>
@@ -871,7 +890,7 @@ const BOOKING_STATUS: Record<BookingStatus, { label: string; cls: string }> = {
   cancelled: { label: "Cancelado",   cls: "!bg-red-50 !text-red-600 !border-red-200" },
 };
 
-function BookingsView() {
+function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) {
   const [bookings,  setBookings]  = useState<BookingRequest[]>([]);
   const [search,    setSearch]    = useState("");
   const [loading,   setLoading]   = useState(true);
@@ -896,6 +915,12 @@ function BookingsView() {
         setLoading(false);
       });
   }, []);
+
+  // Mantém o badge do sidebar sincronizado com o estado actual
+  useEffect(() => {
+    if (loading) return;
+    onBadgeChange?.(bookings.filter((b) => b.status === "pending" || b.status === "contacted").length);
+  }, [bookings, loading, onBadgeChange]);
 
   useEffect(() => { setPage(1); }, [search, sort]);
 
@@ -932,7 +957,7 @@ function BookingsView() {
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href = url; a.download = `reservas-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.href = url; a.download = `pedidos-reserva-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click(); URL.revokeObjectURL(url);
   }
 
@@ -946,8 +971,8 @@ function BookingsView() {
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-[36px] tracking-tight">Reservas</h1>
-          <p className="text-[14px] text-[var(--muted)] mt-1">Pedidos de reserva recebidos.</p>
+          <h1 className="font-display text-[36px] tracking-tight">Pedidos de reserva</h1>
+          <p className="text-[14px] text-[var(--muted)] mt-1">Todos os pedidos de reserva recebidos.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2">
