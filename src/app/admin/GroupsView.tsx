@@ -5,8 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Plus, ArrowLeft, Download, Search, Edit3, Trash2,
-  Check, X, AlertTriangle, ChevronRight,
-  Banknote, Smartphone, CreditCard,
+  X, AlertTriangle, ChevronRight,
+  Banknote, Smartphone, CreditCard, Check,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -14,24 +14,31 @@ type TripGroup = {
   id: string; title: string; destination: string;
   start_date: string; end_date: string;
   price_per_person: number; notes: string | null;
-  package_id: string | null;
-  created_at: string; updated_at: string;
+  package_id: string | null; created_at: string; updated_at: string;
 };
 type Passenger = {
-  id: string; trip_id: string; full_name: string;
-  id_card_number: string | null; id_card_expiry: string | null;
-  nif: string | null; date_of_birth: string | null;
-  nationality: string | null; phone: string | null; email: string | null;
-  notes: string | null; sort_order: number; created_at: string;
+  id: string; trip_id: string; client_id: string | null;
+  full_name: string; id_card_number: string | null; id_card_expiry: string | null;
+  nif: string | null; date_of_birth: string | null; nationality: string | null;
+  phone: string | null; email: string | null; notes: string | null;
+  sort_order: number; created_at: string;
 };
 type Payment = {
   id: string; passenger_id: string; amount: number;
   payment_date: string; method: string; notes: string | null; created_at: string;
 };
+type ClientOption = { id: string; name: string; email: string; phone: string | null };
+type PaxFormDocs = {
+  id_card_number: string; id_card_expiry: string; nif: string;
+  date_of_birth: string; nationality: string; notes: string;
+};
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const METHODS: Record<string, string> = {
   mbway: "MB Way", transfer: "Transferência", cash: "Dinheiro", card: "Cartão", other: "Outro",
+};
+const EMPTY_DOCS: PaxFormDocs = {
+  id_card_number: "", id_card_expiry: "", nif: "", date_of_birth: "", nationality: "Portuguesa", notes: "",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -43,9 +50,9 @@ function fmtDate(iso: string | null) {
   return new Date(iso + "T00:00:00").toLocaleDateString("pt-PT");
 }
 function payStatus(paid: number, total: number) {
-  if (paid <= 0)      return { label: "Por pagar", cls: "bg-red-100 text-red-700" };
-  if (paid >= total)  return { label: "Pago",      cls: "bg-emerald-100 text-emerald-700" };
-  return               { label: "Parcial",         cls: "bg-amber-100 text-amber-700" };
+  if (paid <= 0)     return { label: "Por pagar", cls: "bg-red-100 text-red-700" };
+  if (paid >= total) return { label: "Pago",      cls: "bg-emerald-100 text-emerald-700" };
+  return              { label: "Parcial",         cls: "bg-amber-100 text-amber-700" };
 }
 function ccExpired(expiry: string | null, tripEnd: string) {
   return !!expiry && expiry < tripEnd;
@@ -55,7 +62,7 @@ function ccExpired(expiry: string | null, tripEnd: string) {
 const iCls = "w-full px-3 py-2.5 bg-white border border-[var(--line)] rounded-xl text-[13px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition";
 const lCls = "block text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1";
 
-// ─── Modal (local, defined at module level to prevent re-render bug) ──────────
+// ─── Modal (module-level to prevent re-render bug) ────────────────────────────
 function Modal({ open, onClose, title, children, wide }: {
   open: boolean; onClose: () => void; title: string;
   children: React.ReactNode; wide?: boolean;
@@ -91,9 +98,8 @@ function Modal({ open, onClose, title, children, wide }: {
   );
 }
 
-// ─── Trip form ────────────────────────────────────────────────────────────────
+// ─── Trip Form ────────────────────────────────────────────────────────────────
 const EMPTY_TRIP = { title: "", destination: "", start_date: "", end_date: "", price_per_person: "", notes: "", package_id: "" };
-
 type PackageOption = { id: string; title: string; country: string; departure_date: string | null; return_date: string | null; price_from: number };
 
 function TripForm({ initial, onSave, onCancel }: {
@@ -120,12 +126,9 @@ function TripForm({ initial, onSave, onCancel }: {
     const pkg = packages.find((p) => p.id === id);
     if (!pkg) return;
     setForm((f) => ({
-      ...f,
-      package_id:       id,
-      title:            pkg.title,
-      destination:      pkg.country,
-      start_date:       pkg.departure_date ?? f.start_date,
-      end_date:         pkg.return_date    ?? f.end_date,
+      ...f, package_id: id, title: pkg.title, destination: pkg.country,
+      start_date: pkg.departure_date ?? f.start_date,
+      end_date:   pkg.return_date    ?? f.end_date,
       price_per_person: String(pkg.price_from),
     }));
   }
@@ -144,7 +147,6 @@ function TripForm({ initial, onSave, onCancel }: {
 
   return (
     <form onSubmit={submit} className="px-7 py-6 space-y-4">
-      {/* Package picker */}
       <div>
         <label className={lCls}>Viagem do catálogo</label>
         <select value={form.package_id} onChange={(e) => selectPackage(e.target.value)} className={iCls}>
@@ -159,9 +161,7 @@ function TripForm({ initial, onSave, onCancel }: {
           <p className="text-[11px] text-[var(--muted)] mt-1.5">Campos preenchidos automaticamente — podes editar abaixo.</p>
         )}
       </div>
-
       <div className="border-t border-[var(--line)]" />
-
       <div>
         <label className={lCls}>Nome do grupo *</label>
         <input value={form.title} onChange={f("title")} placeholder="ex: Marrocos 2026" className={iCls} />
@@ -203,81 +203,179 @@ function TripForm({ initial, onSave, onCancel }: {
   );
 }
 
-// ─── Passenger inline row (new / edit) ───────────────────────────────────────
-const EMPTY_PAX = {
-  full_name: "", id_card_number: "", id_card_expiry: "", nif: "",
-  date_of_birth: "", nationality: "Portuguesa", phone: "", email: "", notes: "",
-};
-
-function PassengerRowEdit({ initial, onSave, onCancel, index }: {
-  initial?: typeof EMPTY_PAX;
-  onSave: (d: typeof EMPTY_PAX) => Promise<void>;
-  onCancel: () => void;
-  index: number;
+// ─── Passenger Modal ──────────────────────────────────────────────────────────
+function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds }: {
+  open: boolean; onClose: () => void;
+  onAdd: (clientId: string, clientName: string, clientPhone: string | null, clientEmail: string | null, docs: PaxFormDocs) => Promise<void>;
+  onEdit: (id: string, docs: PaxFormDocs) => Promise<void>;
+  editPax: Passenger | null;
+  takenClientIds: Set<string>;
 }) {
-  const [form, setForm] = useState(initial ?? EMPTY_PAX);
-  const [saving, setSaving] = useState(false);
-  const nameRef = useRef<HTMLInputElement>(null);
-  useEffect(() => { nameRef.current?.focus(); }, []);
+  const isEdit = !!editPax;
+  const [clients,  setClients]  = useState<ClientOption[]>([]);
+  const [search,   setSearch]   = useState("");
+  const [selected, setSelected] = useState<ClientOption | null>(null);
+  const [docs,     setDocs]     = useState<PaxFormDocs>(EMPTY_DOCS);
+  const [saving,   setSaving]   = useState(false);
+  const [err,      setErr]      = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((p) => ({ ...p, [k]: e.target.value }));
+  useEffect(() => {
+    if (!open) return;
+    setErr(""); setSaving(false);
+    if (isEdit && editPax) {
+      setDocs({
+        id_card_number: editPax.id_card_number ?? "",
+        id_card_expiry: editPax.id_card_expiry ?? "",
+        nif:            editPax.nif ?? "",
+        date_of_birth:  editPax.date_of_birth ?? "",
+        nationality:    editPax.nationality ?? "Portuguesa",
+        notes:          editPax.notes ?? "",
+      });
+    } else {
+      setDocs(EMPTY_DOCS); setSelected(null); setSearch("");
+      setTimeout(() => searchRef.current?.focus(), 130);
+    }
+    createClient().from("clients").select("id, name, email, phone").order("name")
+      .then(({ data }) => { if (data) setClients(data as ClientOption[]); });
+  }, [open, isEdit, editPax]);
 
-  async function save() {
-    if (!form.full_name.trim()) { nameRef.current?.focus(); return; }
-    setSaving(true);
-    try { await onSave(form); } catch { setSaving(false); }
+  const filtered = clients.filter((c) => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q);
+  }).slice(0, 8);
+
+  const setD = (k: keyof PaxFormDocs) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setDocs((d) => ({ ...d, [k]: e.target.value }));
+
+  async function submit() {
+    if (!isEdit && !selected) { setErr("Selecciona um cliente da lista."); return; }
+    setSaving(true); setErr("");
+    try {
+      if (isEdit) {
+        await onEdit(editPax!.id, docs);
+      } else {
+        await onAdd(selected!.id, selected!.name, selected!.phone, selected!.email, docs);
+      }
+    } catch (ex) { setErr((ex as Error).message); setSaving(false); }
   }
 
-  const cell = "px-2 py-2 border-b border-r border-[var(--line)] last:border-r-0 bg-[var(--cream)]/80";
-  const inp  = "w-full bg-white border border-[var(--line)] rounded-lg px-2 py-1.5 text-[12px] focus:outline-none focus:border-[var(--ink)] min-w-0";
-
   return (
-    <tr>
-      <td className={`${cell} text-center text-[11px] text-[var(--muted)] w-10`}>{index}</td>
-      <td className={`${cell} min-w-[160px]`}>
-        <input ref={nameRef} value={form.full_name} onChange={set("full_name")}
-          placeholder="Nome completo *" className={inp} onKeyDown={(e) => e.key === "Enter" && save()} />
-      </td>
-      <td className={`${cell} min-w-[110px]`}>
-        <input value={form.id_card_number} onChange={set("id_card_number")}
-          placeholder="CC nº" className={inp} onKeyDown={(e) => e.key === "Enter" && save()} />
-      </td>
-      <td className={`${cell} min-w-[120px]`}>
-        <input type="date" value={form.id_card_expiry} onChange={set("id_card_expiry")} className={inp} />
-      </td>
-      <td className={`${cell} min-w-[90px]`}>
-        <input value={form.nif} onChange={set("nif")} placeholder="NIF" className={inp}
-          onKeyDown={(e) => e.key === "Enter" && save()} />
-      </td>
-      <td className={`${cell} min-w-[120px]`}>
-        <input type="date" value={form.date_of_birth} onChange={set("date_of_birth")} className={inp} />
-      </td>
-      <td className={`${cell} min-w-[100px]`}>
-        <input value={form.nationality} onChange={set("nationality")} placeholder="Nacion." className={inp}
-          onKeyDown={(e) => e.key === "Enter" && save()} />
-      </td>
-      <td className={`${cell} min-w-[110px]`}>
-        <input value={form.phone} onChange={set("phone")} placeholder="Telemóvel" className={inp}
-          onKeyDown={(e) => e.key === "Enter" && save()} />
-      </td>
-      <td className={`${cell} min-w-[150px]`}>
-        <input type="email" value={form.email} onChange={set("email")} placeholder="Email" className={inp}
-          onKeyDown={(e) => e.key === "Enter" && save()} />
-      </td>
-      <td className={cell} colSpan={2}>
-        <div className="flex items-center justify-center gap-1.5">
-          <button onClick={save} disabled={saving} title="Guardar (Enter)"
-            className="p-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition disabled:opacity-50">
-            <Check className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={onCancel} title="Cancelar"
-            className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--muted)] hover:text-red-600 transition">
-            <X className="w-3.5 h-3.5" />
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isEdit ? `Editar — ${editPax!.full_name}` : "Adicionar passageiro"}
+    >
+      <div className="px-7 py-6 space-y-5">
+
+        {/* Add mode: client picker */}
+        {!isEdit && (
+          <div>
+            <label className={lCls}>Cliente *</label>
+            {selected ? (
+              <div className="flex items-center justify-between bg-[var(--cream-2)] rounded-xl px-4 py-3 border border-[var(--line)]">
+                <div>
+                  <p className="text-[14px] font-medium">{selected.name}</p>
+                  <p className="text-[11px] text-[var(--muted)]">
+                    {selected.email}{selected.phone ? ` · ${selected.phone}` : ""}
+                  </p>
+                </div>
+                <button onClick={() => { setSelected(null); setSearch(""); setTimeout(() => searchRef.current?.focus(), 60); }}
+                  className="p-1.5 rounded-lg hover:bg-white transition text-[var(--muted)]">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-xl px-3 py-2.5 focus-within:border-[var(--ink)] transition">
+                  <Search className="w-3.5 h-3.5 text-[var(--muted)] shrink-0" />
+                  <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Pesquisar por nome ou email…"
+                    className="text-[13px] bg-transparent focus:outline-none w-full" />
+                </div>
+                <div className="mt-1 bg-white border border-[var(--line)] rounded-xl overflow-hidden shadow-md">
+                  {clients.length === 0 ? (
+                    <p className="px-4 py-3 text-[12px] text-[var(--muted)]">A carregar clientes…</p>
+                  ) : filtered.length === 0 ? (
+                    <p className="px-4 py-3 text-[12px] text-[var(--muted)]">Nenhum cliente encontrado.</p>
+                  ) : (
+                    filtered.map((c) => {
+                      const taken = takenClientIds.has(c.id);
+                      return (
+                        <button key={c.id} disabled={taken} onClick={() => setSelected(c)}
+                          className={`w-full text-left px-4 py-3 flex items-center justify-between border-b border-[var(--line)] last:border-0 transition ${taken ? "opacity-40 cursor-not-allowed" : "hover:bg-[var(--cream-2)]"}`}>
+                          <div>
+                            <p className="text-[13px] font-medium">{c.name}</p>
+                            <p className="text-[11px] text-[var(--muted)]">{c.email}{c.phone ? ` · ${c.phone}` : ""}</p>
+                          </div>
+                          {taken && <span className="text-[10px] text-[var(--muted)] shrink-0 ml-3 flex items-center gap-1"><Check className="w-3 h-3" />Já adicionado</span>}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Edit mode: read-only client header */}
+        {isEdit && editPax && (
+          <div className="bg-[var(--cream-2)] rounded-xl px-4 py-3 border border-[var(--line)]">
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-1">Cliente</p>
+            <p className="text-[14px] font-medium">{editPax.full_name}</p>
+            {editPax.email && <p className="text-[11px] text-[var(--muted)]">{editPax.email}</p>}
+          </div>
+        )}
+
+        <div className="border-t border-[var(--line)]" />
+
+        {/* Travel docs */}
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] mb-3">Documentos de viagem</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lCls}>CC nº</label>
+              <input value={docs.id_card_number} onChange={setD("id_card_number")}
+                placeholder="ex: 12345678 0 ZX4" className={iCls} />
+            </div>
+            <div>
+              <label className={lCls}>Validade CC</label>
+              <input type="date" value={docs.id_card_expiry} onChange={setD("id_card_expiry")} className={iCls} />
+            </div>
+            <div>
+              <label className={lCls}>NIF</label>
+              <input value={docs.nif} onChange={setD("nif")} placeholder="ex: 123456789" className={iCls} />
+            </div>
+            <div>
+              <label className={lCls}>Data de nascimento</label>
+              <input type="date" value={docs.date_of_birth} onChange={setD("date_of_birth")} className={iCls} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <label className={lCls}>Nacionalidade</label>
+            <input value={docs.nationality} onChange={setD("nationality")} placeholder="Portuguesa" className={iCls} />
+          </div>
+          <div className="mt-3">
+            <label className={lCls}>Notas</label>
+            <textarea rows={2} value={docs.notes} onChange={setD("notes")}
+              placeholder="Observações…" className={`${iCls} resize-none`} />
+          </div>
+        </div>
+
+        {err && <p className="text-[13px] text-red-600">{err}</p>}
+        <div className="flex gap-3 pb-1">
+          <button type="button" onClick={onClose}
+            className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] hover:bg-[var(--cream-2)] transition">Cancelar</button>
+          <button onClick={submit} disabled={saving}
+            className="flex-1 rounded-full bg-[var(--ink)] text-[var(--cream)] py-3 text-[14px] hover:bg-[var(--ink-soft)] transition disabled:opacity-50">
+            {saving ? "A guardar…" : "Guardar"}
           </button>
         </div>
-      </td>
-    </tr>
+      </div>
+    </Modal>
   );
 }
 
@@ -292,7 +390,7 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
     amount: "", payment_date: new Date().toISOString().slice(0, 10), method: "transfer", notes: "",
   });
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState("");
+  const [err,    setErr]    = useState("");
 
   const totalPaid   = payments.reduce((s, p) => s + p.amount, 0);
   const outstanding = Math.max(0, pricePerPerson - totalPaid);
@@ -312,7 +410,6 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
 
   return (
     <div className="px-7 py-6 space-y-6">
-      {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-[var(--line)] p-4">
           <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Total</p>
@@ -329,7 +426,6 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
       </div>
       <span className={`inline-flex text-[11px] px-2.5 py-0.5 rounded-full font-medium ${status.cls}`}>{status.label}</span>
 
-      {/* Payment list */}
       {payments.length > 0 && (
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] mb-3">Pagamentos registados</p>
@@ -358,7 +454,6 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
         </div>
       )}
 
-      {/* Add payment */}
       <form onSubmit={submit} className="space-y-3">
         <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Registar pagamento</p>
         <div className="grid grid-cols-2 gap-3">
@@ -376,8 +471,7 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
           </div>
           <div>
             <label className={lCls}>Método *</label>
-            <select value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}
-              className={iCls}>
+            <select value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))} className={iCls}>
               {Object.entries(METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
@@ -423,17 +517,18 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     if (list.length === 0) { setLoading(false); return; }
     const ids = list.map((t) => t.id);
 
-    const [{ data: paxData }, { data: paxIds }] = await Promise.all([
-      supabase.from("trip_passengers").select("id, trip_id").in("trip_id", ids),
-      supabase.from("trip_passengers").select("id").in("trip_id", ids),
-    ]);
+    const { data: paxData } = await supabase
+      .from("trip_passengers").select("id, trip_id").in("trip_id", ids);
 
-    const allPaxIds = (paxData ?? []).map((p) => (p as { id: string }).id);
-    const paxTripMap = new Map((paxData ?? []).map((p) => [(p as { id: string; trip_id: string }).id, (p as { id: string; trip_id: string }).trip_id]));
+    const allPaxIds  = (paxData ?? []).map((p) => (p as { id: string }).id);
+    const paxTripMap = new Map((paxData ?? []).map((p) => [
+      (p as { id: string; trip_id: string }).id,
+      (p as { id: string; trip_id: string }).trip_id,
+    ]));
 
     const sums: Record<string, { pax: number; paid: number }> = {};
     for (const t of list) sums[t.id] = { pax: 0, paid: 0 };
-    for (const p of paxData ?? []) { const r = p as { trip_id: string }; sums[r.trip_id].pax++; }
+    for (const p of paxData ?? []) sums[(p as { trip_id: string }).trip_id].pax++;
 
     if (allPaxIds.length > 0) {
       const { data: payData } = await supabase
@@ -447,7 +542,6 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
 
     setSummaries(sums);
     setLoading(false);
-    void paxIds; // silence unused warning
   }
 
   async function createTrip(data: typeof EMPTY_TRIP) {
@@ -455,8 +549,8 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     const { data: created, error } = await supabase.from("trip_groups").insert({
       title: data.title, destination: data.destination,
       start_date: data.start_date, end_date: data.end_date,
-      price_per_person: parseFloat(data.price_per_person), notes: data.notes || null,
-      package_id: data.package_id || null,
+      price_per_person: parseFloat(data.price_per_person),
+      notes: data.notes || null, package_id: data.package_id || null,
     }).select("*").single();
     if (error) throw new Error(error.message);
     setTrips((prev) => [created as TripGroup, ...prev]);
@@ -470,8 +564,8 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     const updates = {
       title: data.title, destination: data.destination,
       start_date: data.start_date, end_date: data.end_date,
-      price_per_person: parseFloat(data.price_per_person), notes: data.notes || null,
-      package_id: data.package_id || null,
+      price_per_person: parseFloat(data.price_per_person),
+      notes: data.notes || null, package_id: data.package_id || null,
     };
     const { error } = await supabase.from("trip_groups").update(updates).eq("id", editTrip.id);
     if (error) throw new Error(error.message);
@@ -534,7 +628,9 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
                         <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${status.cls}`}>{status.label}</span>
                       )}
                     </div>
-                    <p className="text-[13px] text-[var(--muted)] mt-0.5">{t.destination} · {dateRange(t.start_date, t.end_date)} · {fmt(t.price_per_person)}/pax</p>
+                    <p className="text-[13px] text-[var(--muted)] mt-0.5">
+                      {t.destination} · {dateRange(t.start_date, t.end_date)} · {fmt(t.price_per_person)}/pax
+                    </p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={(e) => { e.stopPropagation(); setEditTrip(t); }}
@@ -548,7 +644,6 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
                     <ChevronRight className="w-4 h-4 text-[var(--muted)] ml-1" />
                   </div>
                 </div>
-
                 <div className="mt-5 grid grid-cols-3 gap-6">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Passageiros</p>
@@ -563,7 +658,6 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
                     <p className="text-[24px] font-display tracking-tight mt-0.5 text-red-600">{fmt(missing)}</p>
                   </div>
                 </div>
-
                 {expected > 0 && (
                   <div className="mt-4">
                     <div className="h-1.5 bg-[var(--cream-2)] rounded-full overflow-hidden">
@@ -600,13 +694,13 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
 
 // ─── Trip Detail ──────────────────────────────────────────────────────────────
 function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void }) {
-  const [passengers, setPassengers] = useState<Passenger[]>([]);
-  const [payments,   setPayments]   = useState<Map<string, Payment[]>>(new Map());
-  const [loading,    setLoading]    = useState(true);
-  const [search,     setSearch]     = useState("");
-  const [addingNew,  setAddingNew]  = useState(false);
-  const [editingId,  setEditingId]  = useState<string | null>(null);
-  const [payPax,     setPayPax]     = useState<Passenger | null>(null);
+  const [passengers,   setPassengers]   = useState<Passenger[]>([]);
+  const [payments,     setPayments]     = useState<Map<string, Payment[]>>(new Map());
+  const [loading,      setLoading]      = useState(true);
+  const [search,       setSearch]       = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editPax,      setEditPax]      = useState<Passenger | null>(null);
+  const [payPax,       setPayPax]       = useState<Passenger | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -636,35 +730,41 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
   const getPaid = (id: string) => (payments.get(id) ?? []).reduce((s, p) => s + p.amount, 0);
 
-  async function addPassenger(data: typeof EMPTY_PAX) {
+  const takenClientIds = new Set(
+    passengers.map((p) => p.client_id).filter((id): id is string => !!id)
+  );
+
+  async function addPassenger(
+    clientId: string, clientName: string,
+    clientPhone: string | null, clientEmail: string | null,
+    docs: PaxFormDocs
+  ) {
     const supabase = createClient();
     const { data: created, error } = await supabase.from("trip_passengers").insert({
-      trip_id: trip.id, full_name: data.full_name.trim(),
-      id_card_number: data.id_card_number || null, id_card_expiry: data.id_card_expiry || null,
-      nif: data.nif || null, date_of_birth: data.date_of_birth || null,
-      nationality: data.nationality || "Portuguesa",
-      phone: data.phone || null, email: data.email || null, notes: data.notes || null,
+      trip_id: trip.id, client_id: clientId,
+      full_name: clientName, phone: clientPhone, email: clientEmail,
+      id_card_number: docs.id_card_number || null, id_card_expiry: docs.id_card_expiry || null,
+      nif: docs.nif || null, date_of_birth: docs.date_of_birth || null,
+      nationality: docs.nationality || "Portuguesa", notes: docs.notes || null,
       sort_order: passengers.length,
     }).select("*").single();
     if (error) throw new Error(error.message);
     setPassengers((p) => [...p, created as Passenger]);
     setPayments((m) => new Map(m).set((created as Passenger).id, []));
-    setAddingNew(false);
+    setShowAddModal(false);
   }
 
-  async function updatePassenger(id: string, data: typeof EMPTY_PAX) {
+  async function updatePassenger(id: string, docs: PaxFormDocs) {
     const supabase = createClient();
     const updates = {
-      full_name: data.full_name.trim(),
-      id_card_number: data.id_card_number || null, id_card_expiry: data.id_card_expiry || null,
-      nif: data.nif || null, date_of_birth: data.date_of_birth || null,
-      nationality: data.nationality || "Portuguesa",
-      phone: data.phone || null, email: data.email || null, notes: data.notes || null,
+      id_card_number: docs.id_card_number || null, id_card_expiry: docs.id_card_expiry || null,
+      nif: docs.nif || null, date_of_birth: docs.date_of_birth || null,
+      nationality: docs.nationality || "Portuguesa", notes: docs.notes || null,
     };
     const { error } = await supabase.from("trip_passengers").update(updates).eq("id", id);
     if (error) throw new Error(error.message);
     setPassengers((p) => p.map((x) => x.id === id ? { ...x, ...updates } : x));
-    setEditingId(null);
+    setEditPax(null);
   }
 
   async function deletePassenger(id: string) {
@@ -702,7 +802,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
   }
 
   function exportCSV() {
-    const BOM = "﻿";
+    const BOM     = "﻿";
     const headers = ["#","Nome","CC nº","Val. CC","CC Expirado?","NIF","Data Nasc.","Nacionalidade","Telemóvel","Email","Total pago","Em falta","Estado","Notas"];
     const rows = filtered.map((p, i) => {
       const paid   = getPaid(p.id);
@@ -762,7 +862,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
               className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] transition">
               <Download className="w-4 h-4" /> Exportar CSV
             </button>
-            <button onClick={() => { setAddingNew(true); setEditingId(null); }}
+            <button onClick={() => setShowAddModal(true)}
               className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] hover:bg-[var(--ink-soft)] transition">
               <Plus className="w-4 h-4" /> Adicionar passageiro
             </button>
@@ -806,10 +906,10 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
           className="bg-transparent text-[13px] focus:outline-none w-full" />
       </div>
 
-      {/* Passenger table */}
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ minWidth: 960 }}>
+          <table className="w-full" style={{ minWidth: 820 }}>
             <thead>
               <tr>
                 <th className={`${thCls} w-10 text-center rounded-tl-2xl`}>#</th>
@@ -819,24 +919,22 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                 <th className={`${thCls} min-w-[80px]`}>NIF</th>
                 <th className={`${thCls} min-w-[100px]`}>Data nasc.</th>
                 <th className={`${thCls} min-w-[95px]`}>Nacion.</th>
-                <th className={`${thCls} min-w-[105px]`}>Telemóvel</th>
-                <th className={`${thCls} min-w-[145px]`}>Email</th>
                 <th className={`${thCls} min-w-[105px]`}>Pagamento</th>
                 <th className={`${thCls} w-20 text-center rounded-tr-2xl`}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={11} className="text-center py-14 text-[13px] text-[var(--muted)]">A carregar...</td></tr>
+                <tr><td colSpan={9} className="text-center py-14 text-[13px] text-[var(--muted)]">A carregar...</td></tr>
               )}
-              {!loading && filtered.length === 0 && !addingNew && (
+              {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="text-center py-14">
+                  <td colSpan={9} className="text-center py-14">
                     <p className="text-[13px] text-[var(--muted)]">
                       {search ? "Nenhum passageiro encontrado." : "Nenhum passageiro ainda."}
                     </p>
                     {!search && (
-                      <button onClick={() => setAddingNew(true)}
+                      <button onClick={() => setShowAddModal(true)}
                         className="mt-3 inline-flex items-center gap-1.5 text-[13px] text-[var(--ink)] hover:underline">
                         <Plus className="w-4 h-4" /> Adicionar o primeiro passageiro
                       </button>
@@ -845,20 +943,6 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                 </tr>
               )}
               {!loading && filtered.map((p, i) => {
-                if (editingId === p.id) {
-                  return (
-                    <PassengerRowEdit key={p.id} index={i + 1}
-                      initial={{
-                        full_name: p.full_name, id_card_number: p.id_card_number ?? "",
-                        id_card_expiry: p.id_card_expiry ?? "", nif: p.nif ?? "",
-                        date_of_birth: p.date_of_birth ?? "", nationality: p.nationality ?? "Portuguesa",
-                        phone: p.phone ?? "", email: p.email ?? "", notes: p.notes ?? "",
-                      }}
-                      onSave={(data) => updatePassenger(p.id, data)}
-                      onCancel={() => setEditingId(null)}
-                    />
-                  );
-                }
                 const paid   = getPaid(p.id);
                 const out    = Math.max(0, trip.price_per_person - paid);
                 const status = payStatus(paid, trip.price_per_person);
@@ -877,8 +961,6 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                     <td className={tdCls}>{p.nif ?? <span className="text-[var(--muted)]">—</span>}</td>
                     <td className={tdCls}>{fmtDate(p.date_of_birth)}</td>
                     <td className={tdCls}>{p.nationality ?? <span className="text-[var(--muted)]">—</span>}</td>
-                    <td className={tdCls}>{p.phone ?? <span className="text-[var(--muted)]">—</span>}</td>
-                    <td className={`${tdCls} max-w-[145px] truncate`}>{p.email ?? <span className="text-[var(--muted)]">—</span>}</td>
                     <td className={tdCls}>
                       <button onClick={() => setPayPax(p)} className="text-left group/pay">
                         <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${status.cls}`}>
@@ -891,8 +973,8 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                     </td>
                     <td className={`${tdCls} text-center`}>
                       <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
-                        <button onClick={() => { setEditingId(p.id); setAddingNew(false); }}
-                          className="p-1.5 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar">
+                        <button onClick={() => setEditPax(p)}
+                          className="p-1.5 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar documentos">
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button onClick={() => deletePassenger(p.id)}
@@ -904,14 +986,6 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                   </tr>
                 );
               })}
-              {addingNew && (
-                <PassengerRowEdit
-                  key="new"
-                  index={filtered.length + 1}
-                  onSave={addPassenger}
-                  onCancel={() => setAddingNew(false)}
-                />
-              )}
             </tbody>
           </table>
         </div>
@@ -922,6 +996,26 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
           </div>
         )}
       </div>
+
+      {/* Add passenger modal */}
+      <PassengerModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={addPassenger}
+        onEdit={() => Promise.resolve()}
+        editPax={null}
+        takenClientIds={takenClientIds}
+      />
+
+      {/* Edit passenger modal */}
+      <PassengerModal
+        open={!!editPax}
+        onClose={() => setEditPax(null)}
+        onAdd={() => Promise.resolve()}
+        onEdit={updatePassenger}
+        editPax={editPax}
+        takenClientIds={takenClientIds}
+      />
 
       {/* Payment modal */}
       <Modal
@@ -948,7 +1042,6 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 // ─── Export ───────────────────────────────────────────────────────────────────
 export function GroupsView() {
   const [selectedTrip, setSelectedTrip] = useState<TripGroup | null>(null);
-
   if (selectedTrip) {
     return <TripDetailView trip={selectedTrip} onBack={() => setSelectedTrip(null)} />;
   }
