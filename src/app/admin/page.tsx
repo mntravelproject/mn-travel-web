@@ -36,13 +36,19 @@ type BookingRow = {
   package: { title: string; country: string; price_from: number } | null;
 };
 type DashboardData = {
-  pendingBookings: number;
-  newContacts: number;
-  totalClients: number;
-  publishedTrips: number;
-  recentBookings: BookingRow[];
-  topCountries: { name: string; count: number; pct: number }[];
-  monthlyChart: { month: string; count: number; pct: number }[];
+  revenueThisMonth:  number;
+  revenueLastMonth:  number;
+  activeBookings:    number;
+  bookingsThisMonth: number;
+  bookingsLastMonth: number;
+  contactsThisMonth: number;
+  contactsLastMonth: number;
+  conversionRate:    number;
+  conversionLast:    number;
+  pendingCount:      number;
+  recentBookings:    BookingRow[];
+  topCountries:      { name: string; count: number; pct: number }[];
+  monthlyChart:      { month: string; revenue: number; pct: number }[];
 };
 
 function relDate(iso: string): string {
@@ -296,41 +302,77 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
     async function load() {
       const supabase = createClient();
       const now = new Date();
-      const monthStart    = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const sixMonthsAgo  = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
+
+      const thisMonthStart = new Date(now.getFullYear(), now.getMonth(),     1).toISOString();
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+      const sixMonthsAgo   = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
 
       const [
-        { count: pendingBookings },
-        { count: newContacts },
-        { count: totalClients },
-        { count: publishedTrips },
+        { data: allBookingsRaw },
+        { data: paymentsAllRaw },
+        { count: contactsThisMonth },
+        { count: contactsLastMonth },
         { data: recentRaw },
-        { data: historyRaw },
       ] = await Promise.all([
+        // All booking requests: status + created_at + country for stats, chart, top countries
         supabase.from("booking_requests")
-          .select("id", { count: "exact", head: true })
-          .in("status", ["pending", "contacted"]),
+          .select("id, status, created_at, package:travel_packages(country)"),
+        // All trip payments since 6 months ago: for revenue stat + revenue chart
+        supabase.from("trip_payments")
+          .select("amount, payment_date")
+          .gte("payment_date", sixMonthsAgo),
+        // Contacts this month
         supabase.from("contact_requests")
           .select("id", { count: "exact", head: true })
-          .gte("created_at", monthStart),
-        supabase.from("clients")
-          .select("id", { count: "exact", head: true }),
-        supabase.from("travel_packages")
+          .gte("created_at", thisMonthStart),
+        // Contacts last month
+        supabase.from("contact_requests")
           .select("id", { count: "exact", head: true })
-          .eq("is_published", true),
+          .gte("created_at", lastMonthStart)
+          .lt("created_at", thisMonthStart),
+        // Recent 10 bookings for table (full join)
         supabase.from("booking_requests")
           .select("id, name, email, phone, package_id, created_at, status, pax_count, package:travel_packages(title, country, price_from)")
           .order("created_at", { ascending: false })
           .limit(10),
-        supabase.from("booking_requests")
-          .select("created_at, package:travel_packages(country)")
-          .gte("created_at", sixMonthsAgo),
       ]);
 
-      // Top countries from booking history
+      const allBookings = (allBookingsRaw ?? []) as {
+        id: string; status: string; created_at: string;
+        package?: { country?: string } | null;
+      }[];
+      const payments = (paymentsAllRaw ?? []) as { amount: number; payment_date: string }[];
+
+      // ── 1. Receita este mês / último mês ──────────────────────────
+      const revenueThisMonth = payments
+        .filter((p) => p.payment_date >= thisMonthStart)
+        .reduce((s, p) => s + p.amount, 0);
+      const revenueLastMonth = payments
+        .filter((p) => p.payment_date >= lastMonthStart && p.payment_date < thisMonthStart)
+        .reduce((s, p) => s + p.amount, 0);
+
+      // ── 2. Reservas ativas (total corrente) + este/último mês ─────
+      const activeBookings    = allBookings.filter((b) => ["pending", "contacted", "confirmed"].includes(b.status)).length;
+      const pendingCount      = allBookings.filter((b) => ["pending", "contacted"].includes(b.status)).length;
+      const bookingsThisMonth = allBookings.filter((b) => b.created_at >= thisMonthStart).length;
+      const bookingsLastMonth = allBookings.filter((b) => b.created_at >= lastMonthStart && b.created_at < thisMonthStart).length;
+
+      // ── 3. Conversão (all-time vs mês passado) ───────────────────
+      const nonCancelled   = allBookings.filter((b) => b.status !== "cancelled");
+      const confirmed      = allBookings.filter((b) => b.status === "confirmed");
+      const conversionRate = nonCancelled.length > 0 ? (confirmed.length / nonCancelled.length) * 100 : 0;
+
+      const lastMonthBks   = allBookings.filter((b) => b.created_at >= lastMonthStart && b.created_at < thisMonthStart);
+      const lmNonCancelled = lastMonthBks.filter((b) => b.status !== "cancelled");
+      const lmConfirmed    = lastMonthBks.filter((b) => b.status === "confirmed");
+      const conversionLast = lmNonCancelled.length > 0
+        ? (lmConfirmed.length / lmNonCancelled.length) * 100
+        : conversionRate;
+
+      // ── 4. Top países (a partir das reservas) ────────────────────
       const countryCounts: Record<string, number> = {};
-      for (const b of historyRaw ?? []) {
-        const country = (b as { package?: { country?: string } }).package?.country;
+      for (const b of allBookings) {
+        const country = b.package?.country;
         if (country) countryCounts[country] = (countryCounts[country] ?? 0) + 1;
       }
       const maxC = Math.max(...Object.values(countryCounts), 1);
@@ -338,7 +380,7 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
         .sort(([, a], [, b]) => b - a).slice(0, 4)
         .map(([name, count]) => ({ name, count, pct: Math.round((count / maxC) * 100) }));
 
-      // Monthly bookings chart (last 6 months)
+      // ── 5. Gráfico de receita mensal (últimos 6 meses) ───────────
       const monthKeys:   string[] = [];
       const monthLabels: string[] = [];
       for (let i = 5; i >= 0; i--) {
@@ -346,26 +388,27 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
         monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
         monthLabels.push(d.toLocaleDateString("pt-PT", { month: "short" }));
       }
-      const monthlyCounts: Record<string, number> = Object.fromEntries(monthKeys.map((k) => [k, 0]));
-      for (const b of historyRaw ?? []) {
-        const d = new Date((b as { created_at: string }).created_at);
+      const monthlyRevenue: Record<string, number> = Object.fromEntries(monthKeys.map((k) => [k, 0]));
+      for (const p of payments) {
+        const d = new Date(p.payment_date + "T00:00:00");
         const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        if (k in monthlyCounts) monthlyCounts[k]++;
+        if (k in monthlyRevenue) monthlyRevenue[k] += p.amount;
       }
-      const maxM = Math.max(...Object.values(monthlyCounts), 1);
+      const maxR = Math.max(...Object.values(monthlyRevenue), 1);
       const monthlyChart = monthKeys.map((k, i) => ({
-        month: monthLabels[i],
-        count: monthlyCounts[k],
-        pct:   Math.max(4, Math.round((monthlyCounts[k] / maxM) * 100)),
+        month:   monthLabels[i],
+        revenue: monthlyRevenue[k],
+        pct:     Math.max(4, Math.round((monthlyRevenue[k] / maxR) * 100)),
       }));
 
       setData({
-        pendingBookings: pendingBookings ?? 0,
-        newContacts:     newContacts     ?? 0,
-        totalClients:    totalClients    ?? 0,
-        publishedTrips:  publishedTrips  ?? 0,
-        recentBookings:  (recentRaw ?? []) as BookingRow[],
-        topCountries:    topCountries.length ? topCountries : [],
+        revenueThisMonth, revenueLastMonth,
+        activeBookings, bookingsThisMonth, bookingsLastMonth, pendingCount,
+        contactsThisMonth: contactsThisMonth ?? 0,
+        contactsLastMonth: contactsLastMonth ?? 0,
+        conversionRate, conversionLast,
+        recentBookings: (recentRaw ?? []) as BookingRow[],
+        topCountries:   topCountries.length ? topCountries : [],
         monthlyChart,
       });
       setLoading(false);
@@ -374,13 +417,12 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
   }, []);
 
   const sk = "animate-pulse bg-[var(--cream-2)] rounded-xl";
-
   if (loading) {
     return (
       <div className="space-y-8">
         <div className="h-12 w-64 rounded-xl bg-[var(--cream-2)] animate-pulse" />
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[0,1,2,3].map((i) => <div key={i} className={`${sk} h-32`} />)}
+          {[0,1,2,3].map((i) => <div key={i} className={`${sk} h-36`} />)}
         </div>
         <div className="grid lg:grid-cols-3 gap-4">
           <div className={`${sk} lg:col-span-2 h-64`} />
@@ -391,14 +433,44 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
     );
   }
 
+  const d = data!;
+  const fmtEur = (n: number) => n.toLocaleString("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
+  const pct    = (a: number, b: number) => b > 0 ? ((a - b) / b * 100).toFixed(1) : null;
+  const sign   = (n: number) => n >= 0 ? `+${n}` : String(n);
+
+  const revChangePct = pct(d.revenueThisMonth, d.revenueLastMonth);
+  const cntChangePct = pct(d.contactsThisMonth, d.contactsLastMonth);
+  const bkDelta      = d.bookingsThisMonth - d.bookingsLastMonth;
+  const convDelta    = (d.conversionRate - d.conversionLast).toFixed(1);
+
   const stats = [
-    { l: "Reservas por tratar", v: data!.pendingBookings,  sub: "pendentes ou a contactar" },
-    { l: "Consultas este mês",  v: data!.newContacts,      sub: "novos pedidos recebidos"  },
-    { l: "Clientes",            v: data!.totalClients,     sub: "registados na plataforma" },
-    { l: "Viagens publicadas",  v: data!.publishedTrips,   sub: "disponíveis no site"      },
+    {
+      l: "Receita este mês",
+      v: fmtEur(d.revenueThisMonth),
+      d: revChangePct ? `${Number(revChangePct) >= 0 ? "+" : ""}${revChangePct}%` : "—",
+      up: d.revenueThisMonth >= d.revenueLastMonth,
+    },
+    {
+      l: "Reservas ativas",
+      v: String(d.activeBookings),
+      d: `${sign(bkDelta)} este mês`,
+      up: bkDelta >= 0,
+    },
+    {
+      l: "Novas consultas",
+      v: String(d.contactsThisMonth),
+      d: cntChangePct ? `${Number(cntChangePct) >= 0 ? "+" : ""}${cntChangePct}%` : "—",
+      up: d.contactsThisMonth >= d.contactsLastMonth,
+    },
+    {
+      l: "Conversão",
+      v: `${d.conversionRate.toFixed(1)}%`,
+      d: `${Number(convDelta) >= 0 ? "+" : ""}${convDelta}%`,
+      up: d.conversionRate >= d.conversionLast,
+    },
   ];
 
-  const topDest = data!.topCountries[0];
+  const topDest = d.topCountries[0];
 
   return (
     <div className="space-y-8">
@@ -410,7 +482,7 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
         <div className="flex items-center gap-3">
           <button className="w-10 h-10 rounded-full border border-[var(--line)] flex items-center justify-center relative hover:border-[var(--ink)] transition">
             <Bell className="w-4 h-4" />
-            {data!.pendingBookings > 0 && (
+            {d.pendingCount > 0 && (
               <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--clay)]" />
             )}
           </button>
@@ -422,8 +494,11 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
         {stats.map((s) => (
           <div key={s.l} className="bg-white rounded-2xl p-6 border border-[var(--line)]">
             <div className="text-[12px] uppercase tracking-[0.16em] text-[var(--muted)]">{s.l}</div>
-            <div className="mt-3 font-display text-[40px] leading-none tracking-tight">{s.v}</div>
-            <div className="mt-3 text-[12px] text-[var(--muted)] tracking-tight">{s.sub}</div>
+            <div className="mt-3 font-display text-[32px] leading-none tracking-tight">{s.v}</div>
+            <div className={`mt-3 text-[12px] inline-flex items-center gap-1 tracking-tight ${s.up ? "text-emerald-700" : "text-[var(--clay-dark)]"}`}>
+              <TrendingUp className={`w-3.5 h-3.5 shrink-0 ${!s.up ? "rotate-180" : ""}`} />
+              {s.d}
+            </div>
           </div>
         ))}
       </div>
@@ -432,15 +507,17 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-[var(--line)]">
           <div className="mb-6">
-            <h3 className="font-display text-[22px] tracking-tight">Reservas · últimos 6 meses</h3>
-            <p className="text-[12px] text-[var(--muted)] tracking-tight mt-0.5">Número de pedidos de reserva</p>
+            <h3 className="font-display text-[22px] tracking-tight">Receita · últimos 6 meses</h3>
+            <p className="text-[12px] text-[var(--muted)] tracking-tight mt-0.5">Pagamentos recebidos em grupos</p>
           </div>
           <div className="h-52 flex items-end gap-3">
-            {data!.monthlyChart.map((m, i) => (
+            {d.monthlyChart.map((m, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                 <div className="relative w-full flex flex-col items-center">
-                  {m.count > 0 && (
-                    <span className="absolute -top-6 text-[10px] text-[var(--muted)] opacity-0 group-hover:opacity-100 transition">{m.count}</span>
+                  {m.revenue > 0 && (
+                    <span className="absolute -top-6 text-[10px] text-[var(--muted)] opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
+                      {fmtEur(m.revenue)}
+                    </span>
                   )}
                   <div
                     className="w-full bg-gradient-to-t from-[var(--ink)] to-[var(--ink-soft)] rounded-t-lg transition-all"
@@ -458,23 +535,25 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
           {topDest ? (
             <>
               <div className="mt-2 font-display text-[28px]">{topDest.name}</div>
-              <div className="mt-1 text-[13px] text-white/65 tracking-tight">{topDest.count} reserva{topDest.count !== 1 ? "s" : ""}</div>
+              <div className="mt-1 text-[13px] text-white/65 tracking-tight">
+                {Math.round(topDest.pct)}% das reservas
+              </div>
             </>
           ) : (
             <div className="mt-2 font-display text-[22px] text-white/40">Sem dados</div>
           )}
           <div className="mt-6 space-y-3 text-[13px]">
-            {data!.topCountries.map((r) => (
+            {d.topCountries.map((r) => (
               <div key={r.name}>
                 <div className="flex justify-between mb-1.5 text-white/75 tracking-tight">
-                  <span>{r.name}</span><span>{r.count}</span>
+                  <span>{r.name}</span><span>{r.count} reserva{r.count !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="h-1 bg-white/15 rounded-full overflow-hidden">
                   <div className="h-full bg-[var(--clay)] rounded-full" style={{ width: `${r.pct}%` }} />
                 </div>
               </div>
             ))}
-            {data!.topCountries.length === 0 && (
+            {d.topCountries.length === 0 && (
               <p className="text-white/40 text-[12px]">Ainda sem reservas com destino associado.</p>
             )}
           </div>
@@ -489,20 +568,20 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
             Ver todas →
           </button>
         </div>
-        {data!.recentBookings.length === 0 ? (
+        {d.recentBookings.length === 0 ? (
           <div className="py-16 text-center text-[14px] text-[var(--muted)]">Nenhuma reserva ainda.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-[14px]">
               <thead>
                 <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)]">
-                  {["Cliente", "Viagem", "Data", "Estado", "Pessoas", "Estimativa"].map((h, i) => (
+                  {["Cliente", "Viagem", "Data", "Estado", "Pax", "Estimativa"].map((h, i) => (
                     <th key={h} className={`font-medium p-4 ${i >= 4 ? "text-right" : "text-left"}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {data!.recentBookings.map((r) => {
+                {d.recentBookings.map((r) => {
                   const st  = STATUS_MAP[r.status] ?? { label: r.status, cls: "" };
                   const est = r.package ? r.pax_count * r.package.price_from : null;
                   return (
@@ -513,13 +592,11 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
                       </td>
                       <td className="p-4 text-[var(--ink-soft)]">{r.package?.title ?? <span className="text-[var(--muted)]">—</span>}</td>
                       <td className="p-4 text-[var(--muted)] tracking-tight whitespace-nowrap">{relDate(r.created_at)}</td>
-                      <td className="p-4">
-                        <Pill className={st.cls}>{st.label}</Pill>
-                      </td>
+                      <td className="p-4"><Pill className={st.cls}>{st.label}</Pill></td>
                       <td className="p-4 text-right text-[var(--muted)]">{r.pax_count}</td>
                       <td className="p-4 text-right font-medium tracking-tight">
                         {est != null
-                          ? est.toLocaleString("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
+                          ? fmtEur(est)
                           : <span className="text-[var(--muted)]">—</span>}
                       </td>
                     </tr>
