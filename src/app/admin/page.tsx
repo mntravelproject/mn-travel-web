@@ -762,6 +762,21 @@ function TripsList({
 }) {
   const [sort, setSort] = useState<SortState | null>({ key: "title", dir: "asc" });
   const [page, setPage] = useState(1);
+  const [seatsByPackage, setSeatsByPackage] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    createClient()
+      .from("booking_requests")
+      .select("package_id, pax_count")
+      .eq("status", "confirmed")
+      .then(({ data }) => {
+        const map: Record<string, number> = {};
+        for (const b of data ?? []) {
+          if (b.package_id) map[b.package_id] = (map[b.package_id] ?? 0) + (b.pax_count as number);
+        }
+        setSeatsByPackage(map);
+      });
+  }, []);
 
   const filtered = trips.filter(
     (t) =>
@@ -818,13 +833,14 @@ function TripsList({
               <Th label="Duração"  field="duration_days"  sort={sort} onSort={onSort} className="hidden md:table-cell" />
               <Th label="Partida"  field="departure_date" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
               <Th label="Preço"    field="price_from"     sort={sort} onSort={onSort} />
+              <Th label="Lugares"  field="available_seats" sort={sort} onSort={onSort} className="hidden lg:table-cell" />
               <Th label="Estado"   field="is_published"   sort={sort} onSort={onSort} className="hidden lg:table-cell" />
               <th className="text-right font-medium p-4 w-12 rounded-tr-2xl">·</th>
             </tr>
           </thead>
           <tbody>
             {paged.length === 0 && (
-              <tr><td colSpan={7} className="p-12 text-center text-[var(--muted)] text-[13px]">Nenhum destino encontrado.</td></tr>
+              <tr><td colSpan={8} className="p-12 text-center text-[var(--muted)] text-[13px]">Nenhum destino encontrado.</td></tr>
             )}
             {paged.map((t) => (
               <tr key={t.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/50">
@@ -854,6 +870,25 @@ function TripsList({
                   ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
                 </td>
                 <td className="p-4 font-medium tracking-tight">{formatPrice(t.price_from)}</td>
+                <td className="p-4 hidden lg:table-cell">
+                  {t.available_seats != null ? (() => {
+                    const taken = seatsByPackage[t.id] ?? 0;
+                    const total = t.available_seats;
+                    const pct   = Math.min(100, Math.round((taken / total) * 100));
+                    const color = taken >= total ? "bg-red-500" : taken >= total * 0.8 ? "bg-amber-500" : "bg-emerald-500";
+                    const textColor = taken >= total ? "text-red-600 font-semibold" : taken >= total * 0.8 ? "text-amber-700" : "text-[var(--ink)]";
+                    return (
+                      <div>
+                        <div className={`text-[13px] tracking-tight ${textColor}`}>
+                          {taken}<span className="text-[var(--muted)] font-normal">/{total}</span>
+                        </div>
+                        <div className="h-1 w-20 bg-[var(--cream-2)] rounded-full mt-1.5 overflow-hidden">
+                          <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })() : <span className="text-[var(--muted)] text-[13px]">—</span>}
+                </td>
                 <td className="p-4 hidden lg:table-cell">
                   {t.is_published ? (
                     <Pill className="!bg-emerald-50 !text-emerald-800 !border-emerald-200">Publicada</Pill>
@@ -888,9 +923,10 @@ type BookingRequest = {
   phone: string | null;
   message: string | null;
   pax_count: number;
+  package_id: string | null;
   status: BookingStatus;
   created_at: string;
-  package: { title: string } | null;
+  package: { title: string; available_seats: number | null } | null;
 };
 
 const BOOKING_STATUS: Record<BookingStatus, { label: string; cls: string }> = {
@@ -919,7 +955,7 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
   useEffect(() => {
     createClient()
       .from("booking_requests")
-      .select("id, name, email, phone, message, pax_count, status, created_at, package:travel_packages(title)")
+      .select("id, name, email, phone, message, pax_count, package_id, status, created_at, package:travel_packages(title, available_seats)")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setBookings(data as unknown as BookingRequest[]);
@@ -952,7 +988,27 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
   async function updateStatus(id: string, status: BookingStatus) {
     setOpenMenu(null);
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
-    await createClient().from("booking_requests").update({ status }).eq("id", id);
+    const supabase = createClient();
+    await supabase.from("booking_requests").update({ status }).eq("id", id);
+
+    // Ao confirmar ou cancelar, recalcula trip_status do destino
+    const booking = bookings.find((b) => b.id === id);
+    const pkgId   = booking?.package_id;
+    const seats   = booking?.package?.available_seats;
+    if (pkgId && seats != null && (status === "confirmed" || status === "cancelled")) {
+      const { data: confirmed } = await supabase
+        .from("booking_requests")
+        .select("pax_count")
+        .eq("package_id", pkgId)
+        .eq("status", "confirmed");
+      const taken = (confirmed ?? []).reduce((s: number, b: { pax_count: number }) => s + b.pax_count, 0);
+      const trip_status = taken >= seats
+        ? "esgotado"
+        : taken >= seats * 0.8
+          ? "ultimos_lugares"
+          : "disponivel";
+      await supabase.from("travel_packages").update({ trip_status }).eq("id", pkgId);
+    }
   }
 
   async function deleteBooking(id: string) {
