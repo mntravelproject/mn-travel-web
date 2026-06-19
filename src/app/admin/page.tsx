@@ -79,6 +79,7 @@ export default function AdminPage() {
   const [search,         setSearch]         = useState("");
   const [userName,       setUserName]       = useState("");
   const [bookingsBadge,  setBookingsBadge]  = useState(0);
+  const [quotesBadge,    setQuotesBadge]    = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -91,12 +92,19 @@ export default function AdminPage() {
         "Admin";
       setUserName(name);
     });
-    // Badge count: pedidos que ainda não estão confirmados nem cancelados
+    // Badge: reservas por tratar
     supabase
       .from("booking_requests")
       .select("id", { count: "exact", head: true })
       .in("status", ["pending", "contacted"])
       .then(({ count }) => setBookingsBadge(count ?? 0));
+    // Badge: orçamentos por responder
+    supabase
+      .from("contact_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("type", "orcamento")
+      .eq("status", "novo")
+      .then(({ count }) => setQuotesBadge(count ?? 0));
   }, []);
 
   useEffect(() => {
@@ -203,7 +211,9 @@ export default function AdminPage() {
             <nav className="space-y-1">
               {NAV.map(({ id, label, icon: Icon }) => {
                 const isActive = view === id;
-                const badge = id === "bookings" && bookingsBadge > 0 ? bookingsBadge : 0;
+                const badge = id === "bookings" && bookingsBadge > 0 ? bookingsBadge
+                           : id === "quotes"   && quotesBadge   > 0 ? quotesBadge
+                           : 0;
                 return (
                   <button
                     key={id}
@@ -259,7 +269,7 @@ export default function AdminPage() {
               />
             )}
             {view === "bookings" && <BookingsView onBadgeChange={setBookingsBadge} />}
-            {view === "quotes"   && <QuotesView />}
+            {view === "quotes"   && <QuotesView onBadgeChange={setQuotesBadge} />}
             {view === "clients"  && <ClientsView />}
             {view === "groups"   && <GroupsView />}
             {view === "users"    && <UsersView />}
@@ -1069,7 +1079,7 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
   outro:      "Outro",
 };
 
-function QuotesView() {
+function QuotesView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) {
   const [quotes,  setQuotes]  = useState<ContactRequest[]>([]);
   const [search,  setSearch]  = useState("");
   const [loading, setLoading] = useState(true);
@@ -1087,6 +1097,12 @@ function QuotesView() {
         setLoading(false);
       });
   }, []);
+
+  // Mantém o badge sincronizado quando os orçamentos mudam
+  useEffect(() => {
+    if (loading) return;
+    onBadgeChange?.(quotes.filter((q) => q.status === "novo").length);
+  }, [quotes, loading, onBadgeChange]);
 
   useEffect(() => { setPage(1); }, [search, sort]);
 
