@@ -589,8 +589,8 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-[36px] tracking-tight">Grupos</h1>
-          <p className="text-[14px] text-[var(--muted)] mt-1">Gestão de viagens e passageiros.</p>
+          <h1 className="font-display text-[36px] tracking-tight">Viagens</h1>
+          <p className="text-[14px] text-[var(--muted)] mt-1">Gestão de grupos, passageiros e pagamentos.</p>
         </div>
         <button onClick={() => setShowNew(true)}
           className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition">
@@ -603,7 +603,7 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
       ) : trips.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[var(--line)] p-16 text-center">
           <p className="font-display text-[22px] tracking-tight">Sem viagens</p>
-          <p className="mt-2 text-[var(--muted)] text-[14px]">Cria a primeira viagem para gerir passageiros e pagamentos.</p>
+          <p className="mt-2 text-[var(--muted)] text-[14px]">Cria a primeira viagem para gerir grupos, passageiros e pagamentos.</p>
           <button onClick={() => setShowNew(true)}
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] hover:bg-[var(--ink-soft)] transition">
             <Plus className="w-4 h-4" /> Nova viagem

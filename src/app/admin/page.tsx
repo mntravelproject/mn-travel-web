@@ -149,7 +149,7 @@ export default function AdminPage() {
       .select("*, category:categories(id, name, slug)")
       .single();
 
-    if (error) { console.error("Erro ao duplicar viagem:", error.message); return; }
+    if (error) { console.error("Erro ao duplicar destino:", error.message); return; }
     if (!data) return;
 
     // Copy gallery images
@@ -259,7 +259,7 @@ export default function AdminPage() {
 
       {/* ── Delete confirmation modal ── */}
       {pendingDeleteId && (() => {
-        const tripTitle = trips.find((t) => t.id === pendingDeleteId)?.title ?? "esta viagem";
+        const tripTitle = trips.find((t) => t.id === pendingDeleteId)?.title ?? "este destino";
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center px-6">
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setPendingDeleteId(null)} />
@@ -267,7 +267,7 @@ export default function AdminPage() {
               <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-5">
                 <Trash2 className="w-4 h-4 text-red-600" />
               </div>
-              <h2 className="font-display text-[22px] tracking-tight mb-2">Apagar viagem?</h2>
+              <h2 className="font-display text-[22px] tracking-tight mb-2">Apagar destino?</h2>
               <p className="text-[14px] text-[var(--muted)] tracking-tight leading-relaxed mb-7">
                 Tens a certeza que queres apagar <span className="text-[var(--ink)] font-medium">"{tripTitle}"</span>? Esta ação não pode ser desfeita.
               </p>
@@ -758,8 +758,8 @@ function TripsList({
     <div className="space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-[36px] tracking-tight">Viagens</h1>
-          <p className="text-[14px] text-[var(--muted)] mt-1">Gerir todos os pacotes do catálogo MN.</p>
+          <h1 className="font-display text-[36px] tracking-tight">Destinos</h1>
+          <p className="text-[14px] text-[var(--muted)] mt-1">Gerir todos os destinos do catálogo MN.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2">
@@ -767,7 +767,7 @@ function TripsList({
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Procurar viagens..."
+              placeholder="Procurar destinos..."
               className="bg-transparent text-[13px] focus:outline-none w-44"
             />
           </div>
@@ -775,7 +775,7 @@ function TripsList({
             onClick={onNew}
             className="inline-flex items-center gap-2 rounded-full bg-[var(--ink)] text-[var(--cream)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition"
           >
-            <Plus className="w-4 h-4" /> Nova viagem
+            <Plus className="w-4 h-4" /> Novo destino
           </button>
         </div>
       </div>
@@ -784,7 +784,7 @@ function TripsList({
         <table className="w-full text-[14px]">
           <thead>
             <tr className={thBase}>
-              <Th label="Viagem"   field="title"          sort={sort} onSort={onSort} className="rounded-tl-2xl" />
+              <Th label="Destino"  field="title"          sort={sort} onSort={onSort} className="rounded-tl-2xl" />
               <Th label="País"     field="country"        sort={sort} onSort={onSort} className="hidden lg:table-cell" />
               <Th label="Duração"  field="duration_days"  sort={sort} onSort={onSort} className="hidden md:table-cell" />
               <Th label="Partida"  field="departure_date" sort={sort} onSort={onSort} className="hidden xl:table-cell" />
@@ -795,7 +795,7 @@ function TripsList({
           </thead>
           <tbody>
             {paged.length === 0 && (
-              <tr><td colSpan={7} className="p-12 text-center text-[var(--muted)] text-[13px]">Nenhuma viagem encontrada.</td></tr>
+              <tr><td colSpan={7} className="p-12 text-center text-[var(--muted)] text-[13px]">Nenhum destino encontrado.</td></tr>
             )}
             {paged.map((t) => (
               <tr key={t.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/50">
@@ -2082,10 +2082,10 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             onClick={onBack}
             className="text-[13px] text-[var(--muted)] hover:text-[var(--ink)] inline-flex items-center gap-1.5 tracking-tight transition"
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Voltar a viagens
+            <ArrowLeft className="w-3.5 h-3.5" /> Voltar a destinos
           </button>
           <h1 className="font-display text-[36px] tracking-tight mt-2">
-            {trip ? "Editar viagem" : "Nova viagem"}
+            {trip ? "Editar destino" : "Novo destino"}
           </h1>
         </div>
         <div className="flex items-center gap-3">
