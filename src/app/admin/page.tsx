@@ -19,14 +19,14 @@ import { Pill } from "@/components/ui/Pill";
 type View = "dashboard" | "trips" | "edit" | "bookings" | "quotes" | "clients" | "groups" | "users" | "settings";
 
 const NAV = [
-  { id: "dashboard", label: "Dashboard",     icon: LayoutDashboard },
-  { id: "trips",     label: "Viagens",        icon: Plane },
-  { id: "bookings",  label: "Reservas",       icon: Calendar },
-  { id: "quotes",    label: "Orçamentos",     icon: MessageSquare },
-  { id: "clients",   label: "Clientes",       icon: Users },
-  { id: "groups",    label: "Grupos",         icon: Users },
-  { id: "users",     label: "Equipa",         icon: Users },
-  { id: "settings",  label: "Definições",     icon: Settings },
+  { id: "dashboard", label: "Dashboard",  icon: LayoutDashboard },
+  { id: "groups",    label: "Viagens",    icon: Plane },
+  { id: "bookings",  label: "Reservas",   icon: Calendar },
+  { id: "quotes",    label: "Orçamentos", icon: MessageSquare },
+  { id: "trips",     label: "Destinos",   icon: Globe },
+  { id: "clients",   label: "Clientes",   icon: Users },
+  { id: "users",     label: "Equipa",     icon: Users },
+  { id: "settings",  label: "Definições", icon: Settings },
 ];
 
 // ─── Dashboard types ──────────────────────────────────────────────────────────
