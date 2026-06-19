@@ -35,13 +35,35 @@ export default async function TripDetailPage({ params }: Props) {
   let remainingSeats: number | null = null;
   if (trip.available_seats != null) {
     const admin = createAdminClient();
-    const { data: bks } = await admin
-      .from("booking_requests")
-      .select("pax_count")
-      .eq("package_id", trip.id)
-      .eq("status", "confirmed");
-    const taken = (bks ?? []).reduce((s: number, b: { pax_count: number }) => s + b.pax_count, 0);
-    remainingSeats = Math.max(0, trip.available_seats - taken);
+
+    // Conta em paralelo: reservas confirmadas do site + passageiros adicionados no admin
+    const [{ data: bks }, { data: groups }] = await Promise.all([
+      admin
+        .from("booking_requests")
+        .select("pax_count")
+        .eq("package_id", trip.id)
+        .eq("status", "confirmed"),
+      admin
+        .from("trip_groups")
+        .select("id")
+        .eq("package_id", trip.id),
+    ]);
+
+    const bookingsTaken = (bks ?? []).reduce(
+      (s: number, b: { pax_count: number }) => s + b.pax_count, 0
+    );
+
+    const groupIds = (groups ?? []).map((g: { id: string }) => g.id);
+    let passengersTaken = 0;
+    if (groupIds.length > 0) {
+      const { count } = await admin
+        .from("trip_passengers")
+        .select("id", { count: "exact", head: true })
+        .in("trip_id", groupIds);
+      passengersTaken = count ?? 0;
+    }
+
+    remainingSeats = Math.max(0, trip.available_seats - bookingsTaken - passengersTaken);
   }
 
   return <TripDetailClient trip={trip} remainingSeats={remainingSeats} />;

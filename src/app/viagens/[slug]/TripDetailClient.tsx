@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Header } from "@/components/layout/Header";
@@ -27,11 +28,37 @@ const STATUS: Record<string, { label: string; cls: string }> = {
 };
 
 export function TripDetailClient({ trip, remainingSeats }: Props) {
-  const [activeImg, setActiveImg] = useState(0);
-  const [tab, setTab] = useState<"itinerary" | "includes" | "dates">("itinerary");
-  const [pax, setPax] = useState(2);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [activeImg,   setActiveImg]   = useState(0);
+  const [tab,         setTab]         = useState<"itinerary" | "includes" | "dates">("itinerary");
+  const [pax,         setPax]         = useState(2);
+  const [form,        setForm]        = useState({ name: "", email: "", phone: "", message: "" });
+  const [submitting,  setSubmitting]  = useState(false);
+  const [submitted,   setSubmitted]   = useState(false);
+  const [formError,   setFormError]   = useState("");
+  const checkInRef = useRef<HTMLInputElement>(null);
   const reduced = useReducedMotion();
+
+  async function handleBooking(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name || !form.email) { setFormError("Nome e email são obrigatórios."); return; }
+    setSubmitting(true);
+    setFormError("");
+    const { error } = await createClient()
+      .from("booking_requests")
+      .insert({
+        package_id:    trip.id,
+        name:          form.name,
+        email:         form.email,
+        phone:         form.phone  || null,
+        pax_count:     pax,
+        check_in_date: checkInRef.current?.value || null,
+        message:       form.message || null,
+        status:        "pending",
+      });
+    setSubmitting(false);
+    if (error) { setFormError("Erro ao enviar. Tente novamente."); }
+    else        { setSubmitted(true); }
+  }
 
   const gallery = trip.images ?? [];
   const itinerary = trip.itinerary ?? [];
@@ -276,22 +303,44 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     <div className="text-[12px] uppercase tracking-[0.18em] text-[var(--muted)]">desde</div>
                     <div className="mt-1 font-display text-[40px] leading-none">{formatPrice(trip.price_from)}</div>
                     <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">por pessoa · ocupação dupla</div>
+                    {remainingSeats != null && (
+                      <div className={`mt-1.5 text-[12px] font-medium tracking-tight ${
+                        remainingSeats === 0 ? "text-red-600" :
+                        remainingSeats <= 5  ? "text-amber-700" : "text-emerald-700"
+                      }`}>
+                        {remainingSeats === 0
+                          ? "Esgotado"
+                          : `${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""} disponíve${remainingSeats !== 1 ? "is" : "l"}`}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 text-[13px]">
                     <Star className="w-4 h-4 fill-current" /> {trip.rating}
                   </div>
                 </div>
 
-                <div className="space-y-3 mt-6">
+                {submitted ? (
+                  <div className="mt-6 py-8 text-center">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
+                      <Check className="w-6 h-6 text-emerald-600" />
+                    </div>
+                    <p className="font-display text-[20px] tracking-tight">Pedido enviado!</p>
+                    <p className="mt-2 text-[13px] text-[var(--muted)] leading-relaxed">
+                      Entraremos em contacto em breve para agendar a sua viagem.
+                    </p>
+                  </div>
+                ) : (
+                <form onSubmit={handleBooking} className="space-y-3 mt-6">
                   <div className="grid grid-cols-2 gap-3">
                     <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                       <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Check-in</span>
-                      <input type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
+                      <input ref={checkInRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
                     </label>
                     <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                       <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
                       <div className="flex items-center justify-between mt-1 text-[13px]">
                         <motion.button
+                          type="button"
                           whileHover={{ scale: reduced ? 1 : 1.15 }}
                           whileTap={{ scale: reduced ? 1 : 0.85 }}
                           transition={{ type: "spring", stiffness: 400, damping: 20 }}
@@ -302,6 +351,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                         </motion.button>
                         {pax} adultos
                         <motion.button
+                          type="button"
                           whileHover={{ scale: reduced ? 1 : 1.15 }}
                           whileTap={{ scale: reduced ? 1 : 0.85 }}
                           transition={{ type: "spring", stiffness: 400, damping: 20 }}
@@ -342,13 +392,17 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] resize-none transition-colors"
                   />
 
+                  {formError && <p className="text-[12px] text-red-600">{formError}</p>}
+
                   <motion.button
+                    type="submit"
+                    disabled={submitting}
                     whileHover={{ scale: reduced ? 1 : 1.02 }}
                     whileTap={{ scale: reduced ? 1 : 0.97 }}
                     transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 py-4 text-[15px] font-medium tracking-tight transition-colors mt-2"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 py-4 text-[15px] font-medium tracking-tight transition-colors mt-2 disabled:opacity-60"
                   >
-                    Pedir proposta personalizada <ArrowRight className="w-4 h-4" />
+                    {submitting ? "A enviar…" : <><span>Pedir proposta personalizada</span> <ArrowRight className="w-4 h-4" /></>}
                   </motion.button>
                   {trip.pdf_url && (
                     <a
@@ -360,10 +414,11 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                       <FileText className="w-4 h-4" /> Descarregar ficha da viagem
                     </a>
                   )}
-                  <button className="w-full text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
+                  <button type="button" className="w-full text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
                     Falar com curador agora →
                   </button>
-                </div>
+                </form>
+                )}
 
                 <div className="mt-6 pt-6 border-t border-[var(--line-2)] text-[12px] text-[var(--muted)] leading-relaxed">
                   <strong className="text-[var(--ink)] font-medium block mb-1">Sem compromisso</strong>
