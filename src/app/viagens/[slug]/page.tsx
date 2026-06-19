@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTripBySlug } from "@/lib/services/trips";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { TripDetailClient } from "./TripDetailClient";
 
 interface Props {
@@ -31,5 +32,17 @@ export default async function TripDetailPage({ params }: Props) {
 
   if (!trip) notFound();
 
-  return <TripDetailClient trip={trip} />;
+  let remainingSeats: number | null = null;
+  if (trip.available_seats != null) {
+    const admin = createAdminClient();
+    const { data: bks } = await admin
+      .from("booking_requests")
+      .select("pax_count")
+      .eq("package_id", trip.id)
+      .eq("status", "confirmed");
+    const taken = (bks ?? []).reduce((s: number, b: { pax_count: number }) => s + b.pax_count, 0);
+    remainingSeats = Math.max(0, trip.available_seats - taken);
+  }
+
+  return <TripDetailClient trip={trip} remainingSeats={remainingSeats} />;
 }

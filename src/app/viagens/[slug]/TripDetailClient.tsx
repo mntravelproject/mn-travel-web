@@ -14,6 +14,7 @@ import type { TravelPackageWithRelations } from "@/types/database";
 
 interface Props {
   trip: TravelPackageWithRelations;
+  remainingSeats: number | null;
 }
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -25,7 +26,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   em_breve:        { label: "Em breve",        cls: "!bg-[var(--cream-2)] !text-[var(--ink-soft)]" },
 };
 
-export function TripDetailClient({ trip }: Props) {
+export function TripDetailClient({ trip, remainingSeats }: Props) {
   const [activeImg, setActiveImg] = useState(0);
   const [tab, setTab] = useState<"itinerary" | "includes" | "dates">("itinerary");
   const [pax, setPax] = useState(2);
@@ -63,8 +64,8 @@ export function TripDetailClient({ trip }: Props) {
                   {trip.trip_status && STATUS[trip.trip_status] && (
                     <Pill className={STATUS[trip.trip_status].cls}>
                       {STATUS[trip.trip_status].label}
-                      {trip.available_seats != null && trip.trip_status !== "esgotado" && (
-                        <span className="ml-1 opacity-70">· {trip.available_seats} lugares</span>
+                      {remainingSeats != null && trip.trip_status !== "esgotado" && (
+                        <span className="ml-1 opacity-70">· {remainingSeats} lugar{remainingSeats !== 1 ? "es" : ""}</span>
                       )}
                     </Pill>
                   )}
@@ -248,7 +249,7 @@ export function TripDetailClient({ trip }: Props) {
                               {trip.trip_status && STATUS[trip.trip_status]
                                 ? STATUS[trip.trip_status].label
                                 : "Disponível"}
-                              {trip.available_seats != null && ` · ${trip.available_seats} lugares`}
+                              {remainingSeats != null && ` · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""} disponíve${remainingSeats !== 1 ? "is" : "l"}`}
                             </div>
                           </div>
                           <div className="text-right">
