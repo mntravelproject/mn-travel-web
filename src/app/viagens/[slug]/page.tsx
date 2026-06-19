@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getTripBySlug } from "@/lib/services/trips";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createPublicClient } from "@/lib/supabase/public";
 import { TripDetailClient } from "./TripDetailClient";
 
 interface Props {
@@ -34,36 +34,10 @@ export default async function TripDetailPage({ params }: Props) {
 
   let remainingSeats: number | null = null;
   if (trip.available_seats != null) {
-    const admin = createAdminClient();
-
-    // Conta em paralelo: reservas confirmadas do site + passageiros adicionados no admin
-    const [{ data: bks }, { data: groups }] = await Promise.all([
-      admin
-        .from("booking_requests")
-        .select("pax_count")
-        .eq("package_id", trip.id)
-        .eq("status", "confirmed"),
-      admin
-        .from("trip_groups")
-        .select("id")
-        .eq("package_id", trip.id),
-    ]);
-
-    const bookingsTaken = (bks ?? []).reduce(
-      (s: number, b: { pax_count: number }) => s + b.pax_count, 0
-    );
-
-    const groupIds = (groups ?? []).map((g: { id: string }) => g.id);
-    let passengersTaken = 0;
-    if (groupIds.length > 0) {
-      const { count } = await admin
-        .from("trip_passengers")
-        .select("id", { count: "exact", head: true })
-        .in("trip_id", groupIds);
-      passengersTaken = count ?? 0;
-    }
-
-    remainingSeats = Math.max(0, trip.available_seats - bookingsTaken - passengersTaken);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (createPublicClient() as any)
+      .rpc("get_remaining_seats", { package_uuid: trip.id });
+    remainingSeats = typeof data === "number" ? data : null;
   }
 
   return <TripDetailClient trip={trip} remainingSeats={remainingSeats} />;
