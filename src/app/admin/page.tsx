@@ -29,23 +29,39 @@ const NAV = [
   { id: "settings",  label: "Definições",     icon: Settings },
 ];
 
-const STATS = [
-  { l: "Receita este mês",  v: "€284 320", d: "+12.4%", up: true },
-  { l: "Reservas ativas",   v: "42",        d: "+6",     up: true },
-  { l: "Novas consultas",   v: "128",       d: "+18%",   up: true },
-  { l: "Conversão",         v: "23.1%",     d: "-1.2%",  up: false },
-];
+// ─── Dashboard types ──────────────────────────────────────────────────────────
+type BookingRow = {
+  id: string; name: string; email: string; phone: string | null;
+  package_id: string | null; created_at: string; status: string; pax_count: number;
+  package: { title: string; country: string; price_from: number } | null;
+};
+type DashboardData = {
+  pendingBookings: number;
+  newContacts: number;
+  totalClients: number;
+  publishedTrips: number;
+  recentBookings: BookingRow[];
+  topCountries: { name: string; count: number; pct: number }[];
+  monthlyChart: { month: string; count: number; pct: number }[];
+};
 
-const BOOKINGS = [
-  { name: "Joana Mendes",  trip: "Amalfi Coast", date: "Hoje, 14:32",   state: "Confirmado",  value: "€9 780"  },
-  { name: "Tomás Lopes",   trip: "Kyoto",        date: "Hoje, 10:18",   state: "Em proposta", value: "€14 480" },
-  { name: "Maria Vaz",     trip: "Maldivas",     date: "Ontem",         state: "Pago",        value: "€19 700" },
-  { name: "Pedro Rocha",   trip: "Patagónia",    date: "2 dias atrás",  state: "Confirmado",  value: "€22 840" },
-  { name: "Inês Antunes",  trip: "Marrocos",     date: "3 dias atrás",  state: "Em proposta", value: "€10 640" },
-];
+function relDate(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (hours < 1)  return "Agora";
+  if (hours < 24) return `Hoje, ${new Date(iso).toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit" })}`;
+  if (days  === 1) return "Ontem";
+  if (days  < 7)  return `${days} dias atrás`;
+  return new Date(iso).toLocaleDateString("pt-PT");
+}
 
-const BARS   = [60, 78, 52, 91, 68, 100];
-const MONTHS = ["Nov", "Dez", "Jan", "Fev", "Mar", "Abr"];
+const STATUS_MAP: Record<string, { label: string; cls: string }> = {
+  pending:   { label: "Pendente",    cls: "!bg-amber-50 !text-amber-800 !border-amber-200" },
+  contacted: { label: "Contactado",  cls: "!bg-blue-50 !text-blue-800 !border-blue-200" },
+  confirmed: { label: "Confirmado",  cls: "!bg-[var(--cream-2)]" },
+  cancelled: { label: "Cancelado",   cls: "!bg-red-50 !text-red-700 !border-red-200" },
+};
 
 export default function AdminPage() {
   const router = useRouter();
@@ -273,6 +289,117 @@ export default function AdminPage() {
 
 /* ─────────────────────────────────────────────────────── Dashboard */
 function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; userName: string }) {
+  const [data,    setData]    = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const now = new Date();
+      const monthStart    = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const sixMonthsAgo  = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
+
+      const [
+        { count: pendingBookings },
+        { count: newContacts },
+        { count: totalClients },
+        { count: publishedTrips },
+        { data: recentRaw },
+        { data: historyRaw },
+      ] = await Promise.all([
+        supabase.from("booking_requests")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["pending", "contacted"]),
+        supabase.from("contact_requests")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", monthStart),
+        supabase.from("clients")
+          .select("id", { count: "exact", head: true }),
+        supabase.from("travel_packages")
+          .select("id", { count: "exact", head: true })
+          .eq("is_published", true),
+        supabase.from("booking_requests")
+          .select("id, name, email, phone, package_id, created_at, status, pax_count, package:travel_packages(title, country, price_from)")
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase.from("booking_requests")
+          .select("created_at, package:travel_packages(country)")
+          .gte("created_at", sixMonthsAgo),
+      ]);
+
+      // Top countries from booking history
+      const countryCounts: Record<string, number> = {};
+      for (const b of historyRaw ?? []) {
+        const country = (b as { package?: { country?: string } }).package?.country;
+        if (country) countryCounts[country] = (countryCounts[country] ?? 0) + 1;
+      }
+      const maxC = Math.max(...Object.values(countryCounts), 1);
+      const topCountries = Object.entries(countryCounts)
+        .sort(([, a], [, b]) => b - a).slice(0, 4)
+        .map(([name, count]) => ({ name, count, pct: Math.round((count / maxC) * 100) }));
+
+      // Monthly bookings chart (last 6 months)
+      const monthKeys:   string[] = [];
+      const monthLabels: string[] = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+        monthLabels.push(d.toLocaleDateString("pt-PT", { month: "short" }));
+      }
+      const monthlyCounts: Record<string, number> = Object.fromEntries(monthKeys.map((k) => [k, 0]));
+      for (const b of historyRaw ?? []) {
+        const d = new Date((b as { created_at: string }).created_at);
+        const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        if (k in monthlyCounts) monthlyCounts[k]++;
+      }
+      const maxM = Math.max(...Object.values(monthlyCounts), 1);
+      const monthlyChart = monthKeys.map((k, i) => ({
+        month: monthLabels[i],
+        count: monthlyCounts[k],
+        pct:   Math.max(4, Math.round((monthlyCounts[k] / maxM) * 100)),
+      }));
+
+      setData({
+        pendingBookings: pendingBookings ?? 0,
+        newContacts:     newContacts     ?? 0,
+        totalClients:    totalClients    ?? 0,
+        publishedTrips:  publishedTrips  ?? 0,
+        recentBookings:  (recentRaw ?? []) as BookingRow[],
+        topCountries:    topCountries.length ? topCountries : [],
+        monthlyChart,
+      });
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const sk = "animate-pulse bg-[var(--cream-2)] rounded-xl";
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="h-12 w-64 rounded-xl bg-[var(--cream-2)] animate-pulse" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[0,1,2,3].map((i) => <div key={i} className={`${sk} h-32`} />)}
+        </div>
+        <div className="grid lg:grid-cols-3 gap-4">
+          <div className={`${sk} lg:col-span-2 h-64`} />
+          <div className={`${sk} h-64`} />
+        </div>
+        <div className={`${sk} h-64`} />
+      </div>
+    );
+  }
+
+  const stats = [
+    { l: "Reservas por tratar", v: data!.pendingBookings,  sub: "pendentes ou a contactar" },
+    { l: "Consultas este mês",  v: data!.newContacts,      sub: "novos pedidos recebidos"  },
+    { l: "Clientes",            v: data!.totalClients,     sub: "registados na plataforma" },
+    { l: "Viagens publicadas",  v: data!.publishedTrips,   sub: "disponíveis no site"      },
+  ];
+
+  const topDest = data!.topCountries[0];
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
@@ -283,20 +410,20 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
         <div className="flex items-center gap-3">
           <button className="w-10 h-10 rounded-full border border-[var(--line)] flex items-center justify-center relative hover:border-[var(--ink)] transition">
             <Bell className="w-4 h-4" />
-            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--clay)]" />
+            {data!.pendingBookings > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--clay)]" />
+            )}
           </button>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <div key={s.l} className="bg-white rounded-2xl p-6 border border-[var(--line)]">
             <div className="text-[12px] uppercase tracking-[0.16em] text-[var(--muted)]">{s.l}</div>
-            <div className="mt-3 font-display text-[36px] leading-none tracking-tight">{s.v}</div>
-            <div className={`mt-3 text-[12px] inline-flex items-center gap-1 tracking-tight ${s.up ? "text-emerald-700" : "text-[var(--clay-dark)]"}`}>
-              <TrendingUp className={`w-3.5 h-3.5 ${!s.up ? "rotate-180" : ""}`} /> {s.d}
-            </div>
+            <div className="mt-3 font-display text-[40px] leading-none tracking-tight">{s.v}</div>
+            <div className="mt-3 text-[12px] text-[var(--muted)] tracking-tight">{s.sub}</div>
           </div>
         ))}
       </div>
@@ -304,24 +431,23 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
       {/* Chart + top destination */}
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-[var(--line)]">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="font-display text-[22px] tracking-tight">Receita · últimos 6 meses</h3>
-              <p className="text-[12px] text-[var(--muted)] tracking-tight">Reservas confirmadas</p>
-            </div>
-            <select className="text-[12px] border border-[var(--line)] rounded-full px-3 py-1.5 focus:outline-none">
-              <option>6 meses</option>
-              <option>12 meses</option>
-            </select>
+          <div className="mb-6">
+            <h3 className="font-display text-[22px] tracking-tight">Reservas · últimos 6 meses</h3>
+            <p className="text-[12px] text-[var(--muted)] tracking-tight mt-0.5">Número de pedidos de reserva</p>
           </div>
           <div className="h-52 flex items-end gap-3">
-            {BARS.map((h, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <div
-                  className="w-full bg-gradient-to-t from-[var(--ink)] to-[var(--ink-soft)] rounded-t-lg"
-                  style={{ height: `${h}%` }}
-                />
-                <div className="text-[11px] text-[var(--muted)] tracking-tight">{MONTHS[i]}</div>
+            {data!.monthlyChart.map((m, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                <div className="relative w-full flex flex-col items-center">
+                  {m.count > 0 && (
+                    <span className="absolute -top-6 text-[10px] text-[var(--muted)] opacity-0 group-hover:opacity-100 transition">{m.count}</span>
+                  )}
+                  <div
+                    className="w-full bg-gradient-to-t from-[var(--ink)] to-[var(--ink-soft)] rounded-t-lg transition-all"
+                    style={{ height: `${m.pct}%` }}
+                  />
+                </div>
+                <div className="text-[11px] text-[var(--muted)] tracking-tight capitalize">{m.month}</div>
               </div>
             ))}
           </div>
@@ -329,24 +455,28 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
 
         <div className="bg-[var(--ink)] text-[var(--cream)] rounded-2xl p-6">
           <div className="text-[11px] uppercase tracking-[0.18em] text-white/50">Top destino</div>
-          <div className="mt-2 font-display text-[28px]">Itália</div>
-          <div className="mt-1 text-[13px] text-white/65 tracking-tight">38% das reservas Q1</div>
+          {topDest ? (
+            <>
+              <div className="mt-2 font-display text-[28px]">{topDest.name}</div>
+              <div className="mt-1 text-[13px] text-white/65 tracking-tight">{topDest.count} reserva{topDest.count !== 1 ? "s" : ""}</div>
+            </>
+          ) : (
+            <div className="mt-2 font-display text-[22px] text-white/40">Sem dados</div>
+          )}
           <div className="mt-6 space-y-3 text-[13px]">
-            {[
-              { l: "Itália",    v: 38 },
-              { l: "Japão",     v: 21 },
-              { l: "Maldivas",  v: 18 },
-              { l: "Patagónia", v: 12 },
-            ].map((r) => (
-              <div key={r.l}>
+            {data!.topCountries.map((r) => (
+              <div key={r.name}>
                 <div className="flex justify-between mb-1.5 text-white/75 tracking-tight">
-                  <span>{r.l}</span><span>{r.v}%</span>
+                  <span>{r.name}</span><span>{r.count}</span>
                 </div>
                 <div className="h-1 bg-white/15 rounded-full overflow-hidden">
-                  <div className="h-full bg-[var(--clay)] rounded-full" style={{ width: `${r.v}%` }} />
+                  <div className="h-full bg-[var(--clay)] rounded-full" style={{ width: `${r.pct}%` }} />
                 </div>
               </div>
             ))}
+            {data!.topCountries.length === 0 && (
+              <p className="text-white/40 text-[12px]">Ainda sem reservas com destino associado.</p>
+            )}
           </div>
         </div>
       </div>
@@ -355,43 +485,50 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
       <div className="bg-white rounded-2xl border border-[var(--line)] overflow-hidden">
         <div className="p-6 flex items-center justify-between border-b border-[var(--line)]">
           <h3 className="font-display text-[22px] tracking-tight">Reservas recentes</h3>
-          <button
-            onClick={() => onNavigate("trips")}
-            className="text-[13px] tracking-tight link-underline"
-          >
+          <button onClick={() => onNavigate("bookings")} className="text-[13px] tracking-tight link-underline">
             Ver todas →
           </button>
         </div>
-        <table className="w-full text-[14px]">
-          <thead>
-            <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)]">
-              {["Cliente", "Viagem", "Data", "Estado", "Valor"].map((h, i) => (
-                <th key={h} className={`font-medium p-4 ${i === 4 ? "text-right" : "text-left"}`}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {BOOKINGS.map((r, i) => (
-              <tr key={i} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/50">
-                <td className="p-4 font-medium tracking-tight">{r.name}</td>
-                <td className="p-4 text-[var(--ink-soft)]">{r.trip}</td>
-                <td className="p-4 text-[var(--muted)] tracking-tight">{r.date}</td>
-                <td className="p-4">
-                  <Pill className={
-                    r.state === "Pago"
-                      ? "!bg-emerald-50 !text-emerald-800 !border-emerald-200"
-                      : r.state === "Confirmado"
-                      ? "!bg-[var(--cream-2)]"
-                      : "!bg-[var(--clay-soft)] !text-[var(--clay-dark)] !border-transparent"
-                  }>
-                    {r.state}
-                  </Pill>
-                </td>
-                <td className="p-4 text-right font-medium tracking-tight">{r.value}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {data!.recentBookings.length === 0 ? (
+          <div className="py-16 text-center text-[14px] text-[var(--muted)]">Nenhuma reserva ainda.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-[14px]">
+              <thead>
+                <tr className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] border-b border-[var(--line)]">
+                  {["Cliente", "Viagem", "Data", "Estado", "Pessoas", "Estimativa"].map((h, i) => (
+                    <th key={h} className={`font-medium p-4 ${i >= 4 ? "text-right" : "text-left"}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data!.recentBookings.map((r) => {
+                  const st  = STATUS_MAP[r.status] ?? { label: r.status, cls: "" };
+                  const est = r.package ? r.pax_count * r.package.price_from : null;
+                  return (
+                    <tr key={r.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/50">
+                      <td className="p-4 font-medium tracking-tight">
+                        <div>{r.name}</div>
+                        {r.email && <div className="text-[12px] text-[var(--muted)] font-normal">{r.email}</div>}
+                      </td>
+                      <td className="p-4 text-[var(--ink-soft)]">{r.package?.title ?? <span className="text-[var(--muted)]">—</span>}</td>
+                      <td className="p-4 text-[var(--muted)] tracking-tight whitespace-nowrap">{relDate(r.created_at)}</td>
+                      <td className="p-4">
+                        <Pill className={st.cls}>{st.label}</Pill>
+                      </td>
+                      <td className="p-4 text-right text-[var(--muted)]">{r.pax_count}</td>
+                      <td className="p-4 text-right font-medium tracking-tight">
+                        {est != null
+                          ? est.toLocaleString("pt-PT", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
+                          : <span className="text-[var(--muted)]">—</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
