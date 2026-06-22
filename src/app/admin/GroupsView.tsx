@@ -958,7 +958,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
       .eq("trip_id", trip.id)
       .order("sort_order").order("created_at");
 
-    const paxList = (paxData ?? []) as Passenger[];
+    const paxList = (paxData ?? []) as unknown as Passenger[];
     setPassengers(paxList);
 
     if (paxList.length > 0) {
