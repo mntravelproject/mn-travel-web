@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "motion/react";
@@ -1466,6 +1466,15 @@ function ClientsView() {
   const [form,       setForm]       = useState({ name: "", email: "", phone: "", country: "", notes: "", id_card_number: "", id_card_expiry: "", nif: "", date_of_birth: "", nationality: "" });
   const [saving,     setSaving]     = useState(false);
   const [formError,  setFormError]  = useState("");
+  const [expanded,   setExpanded]   = useState<Set<string>>(new Set());
+
+  function toggleExpand(id: string) {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     loadClients();
@@ -1620,49 +1629,87 @@ function ClientsView() {
                 {search ? "Nenhum cliente encontrado." : "Ainda não há clientes registados."}
               </td></tr>
             )}
-            {paged.map((c) => (
-              <tr key={c.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[var(--cream-2)] border border-[var(--line)] flex items-center justify-center shrink-0">
-                      <UserCircle className="w-5 h-5 text-[var(--muted)]" strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <div className="font-medium tracking-tight">{c.name}</div>
-                      {c.notes && <div className="text-[12px] text-[var(--muted)] mt-0.5 max-w-[220px] truncate">{c.notes}</div>}
-                    </div>
-                  </div>
-                </td>
-                <td className="p-4 hidden md:table-cell">
-                  {c.email ? (
-                    <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
-                      <Mail className="w-3.5 h-3.5" /> {c.email}
-                    </a>
-                  ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
-                </td>
-                <td className="p-4 hidden lg:table-cell">
-                  {c.phone ? (
-                    <a href={`tel:${c.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition">
-                      <Phone className="w-3.5 h-3.5" /> {c.phone}
-                    </a>
-                  ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
-                </td>
-                <td className="p-4 hidden xl:table-cell">
-                  {c.country ? (
-                    <span className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)]">
-                      <Globe className="w-3.5 h-3.5 text-[var(--muted)]" /> {c.country}
-                    </span>
-                  ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
-                </td>
-                <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(c.created_at)}</td>
-                <td className="p-4 text-right">
-                  <div className="inline-flex items-center gap-1">
-                    <button onClick={() => openEdit(c)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar"><Edit3 className="w-4 h-4" /></button>
-                    <button onClick={() => deleteClient(c.id)} className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition" title="Apagar"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {paged.map((c) => {
+              const isOpen = expanded.has(c.id);
+              const docFields = [
+                { label: "CC nº",            value: (c as any).id_card_number },
+                { label: "Validade CC",       value: (c as any).id_card_expiry ? new Date((c as any).id_card_expiry + "T00:00:00").toLocaleDateString("pt-PT") : null },
+                { label: "NIF",               value: (c as any).nif },
+                { label: "Data de nascimento",value: (c as any).date_of_birth  ? new Date((c as any).date_of_birth  + "T00:00:00").toLocaleDateString("pt-PT") : null },
+                { label: "Nacionalidade",     value: (c as any).nationality },
+                { label: "Telefone",          value: c.phone },
+                { label: "Email",             value: c.email },
+                { label: "País",              value: c.country },
+                { label: "Notas",             value: c.notes },
+              ].filter(f => f.value);
+              return (
+                <Fragment key={c.id}>
+                  <tr
+                    onClick={() => toggleExpand(c.id)}
+                    className={`border-b border-[var(--line)] cursor-pointer hover:bg-[var(--cream)]/40 transition-colors ${isOpen ? "bg-[var(--cream)]/40" : ""} ${!isOpen ? "last:border-0" : ""}`}
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-[var(--cream-2)] border border-[var(--line)] flex items-center justify-center shrink-0">
+                          <UserCircle className="w-5 h-5 text-[var(--muted)]" strokeWidth={1.5} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium tracking-tight">{c.name}</div>
+                          {c.notes && !isOpen && <div className="text-[12px] text-[var(--muted)] mt-0.5 max-w-[220px] truncate">{c.notes}</div>}
+                        </div>
+                        <ChevronDown className={`w-4 h-4 text-[var(--muted)] transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`} />
+                      </div>
+                    </td>
+                    <td className="p-4 hidden md:table-cell">
+                      {c.email ? (
+                        <a href={`mailto:${c.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
+                          <Mail className="w-3.5 h-3.5" /> {c.email}
+                        </a>
+                      ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
+                    </td>
+                    <td className="p-4 hidden lg:table-cell">
+                      {c.phone ? (
+                        <a href={`tel:${c.phone}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition">
+                          <Phone className="w-3.5 h-3.5" /> {c.phone}
+                        </a>
+                      ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
+                    </td>
+                    <td className="p-4 hidden xl:table-cell">
+                      {c.country ? (
+                        <span className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)]">
+                          <Globe className="w-3.5 h-3.5 text-[var(--muted)]" /> {c.country}
+                        </span>
+                      ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
+                    </td>
+                    <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(c.created_at)}</td>
+                    <td className="p-4 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        <button onClick={e => { e.stopPropagation(); openEdit(c); }} className="p-2 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar"><Edit3 className="w-4 h-4" /></button>
+                        <button onClick={e => { e.stopPropagation(); deleteClient(c.id); }} className="p-2 rounded-lg hover:bg-[var(--cream-2)] text-[var(--clay-dark)] transition" title="Apagar"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr className="border-b border-[var(--line)] last:border-0 bg-[var(--cream)]/20">
+                      <td colSpan={6} className="px-6 pb-5 pt-2">
+                        {docFields.length === 0 ? (
+                          <p className="text-[13px] text-[var(--muted)]">Sem dados adicionais registados.</p>
+                        ) : (
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-3">
+                            {docFields.map(f => (
+                              <div key={f.label}>
+                                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-0.5">{f.label}</p>
+                                <p className="text-[13px] font-medium text-[var(--ink)]">{f.value}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
         <Pagination page={page} total={totalPages} count={sorted.length} onPage={setPage} />
