@@ -124,7 +124,6 @@ function TripForm({ initial, onSave, onCancel }: {
     createClient()
       .from("travel_packages")
       .select("id, title, country, departure_date, return_date, price_from")
-      .eq("is_published", true)
       .order("departure_date", { ascending: true })
       .then(({ data }) => { if (data) setPackages(data as PackageOption[]); });
   }, []);
