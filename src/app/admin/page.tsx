@@ -1632,16 +1632,16 @@ function ClientsView() {
             {paged.map((c) => {
               const isOpen = expanded.has(c.id);
               const docFields = [
-                { label: "CC nº",            value: (c as any).id_card_number },
+                { label: "CC nº",            value: (c as any).id_card_number ?? null },
                 { label: "Validade CC",       value: (c as any).id_card_expiry ? new Date((c as any).id_card_expiry + "T00:00:00").toLocaleDateString("pt-PT") : null },
-                { label: "NIF",               value: (c as any).nif },
+                { label: "NIF",               value: (c as any).nif ?? null },
                 { label: "Data de nascimento",value: (c as any).date_of_birth  ? new Date((c as any).date_of_birth  + "T00:00:00").toLocaleDateString("pt-PT") : null },
-                { label: "Nacionalidade",     value: (c as any).nationality },
-                { label: "Telefone",          value: c.phone },
-                { label: "Email",             value: c.email },
-                { label: "País",              value: c.country },
-                { label: "Notas",             value: c.notes },
-              ].filter(f => f.value);
+                { label: "Nacionalidade",     value: (c as any).nationality ?? null },
+                { label: "Telefone",          value: c.phone ?? null },
+                { label: "Email",             value: c.email ?? null },
+                { label: "País",              value: c.country ?? null },
+                { label: "Notas",             value: c.notes ?? null },
+              ];
               return (
                 <Fragment key={c.id}>
                   <tr
@@ -1692,18 +1692,16 @@ function ClientsView() {
                   {isOpen && (
                     <tr className="border-b border-[var(--line)] last:border-0 bg-[var(--cream)]/20">
                       <td colSpan={6} className="px-6 pb-5 pt-2">
-                        {docFields.length === 0 ? (
-                          <p className="text-[13px] text-[var(--muted)]">Sem dados adicionais registados.</p>
-                        ) : (
-                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-3">
-                            {docFields.map(f => (
-                              <div key={f.label}>
-                                <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-0.5">{f.label}</p>
-                                <p className="text-[13px] font-medium text-[var(--ink)]">{f.value}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-3">
+                          {docFields.map(f => (
+                            <div key={f.label}>
+                              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-0.5">{f.label}</p>
+                              {f.value
+                                ? <p className="text-[13px] font-medium text-[var(--ink)]">{f.value}</p>
+                                : <p className="text-[13px] text-[var(--muted)]">—</p>}
+                            </div>
+                          ))}
+                        </div>
                       </td>
                     </tr>
                   )}
