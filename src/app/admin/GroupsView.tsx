@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Plus, ArrowLeft, Download, Search, Edit3, Trash2,
-  X, AlertTriangle, ChevronRight, ChevronDown,
+  X, AlertTriangle, ChevronRight, ChevronDown, ChevronsUpDown,
   Banknote, Smartphone, CreditCard, Check, Receipt,
 } from "lucide-react";
 
@@ -1303,12 +1303,34 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
         </div>
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2 max-w-sm">
-        <Search className="w-4 h-4 text-[var(--muted)] shrink-0" />
-        <input value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar por nome, tel., email, CC…"
-          className="bg-transparent text-[13px] focus:outline-none w-full" />
+      {/* Search + expand/collapse all */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-full px-4 py-2 max-w-sm flex-1">
+          <Search className="w-4 h-4 text-[var(--muted)] shrink-0" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar por nome, tel., email, CC…"
+            className="bg-transparent text-[13px] focus:outline-none w-full" />
+        </div>
+        {roomGroups.some(g => g.companions.length > 0) && (() => {
+          const expandableKeys = roomGroups.filter(g => g.companions.length > 0).map(g => g.main.room_id ?? g.main.id);
+          const allExpanded = expandableKeys.every(k => expandedRooms.has(k));
+          return (
+            <button
+              onClick={() => {
+                if (allExpanded) {
+                  setExpandedRooms(new Set());
+                } else {
+                  setExpandedRooms(new Set(expandableKeys));
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-white px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] transition whitespace-nowrap"
+            >
+              {allExpanded
+                ? <><ChevronsUpDown className="w-3.5 h-3.5" /> Fechar todos</>
+                : <><ChevronsUpDown className="w-3.5 h-3.5" /> Expandir todos</>}
+            </button>
+          );
+        })()}
       </div>
 
       {/* Table */}
