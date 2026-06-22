@@ -1283,7 +1283,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                         <div>{p.full_name}</div>
                         {hasComp && (
                           <div className="text-[10px] text-[var(--muted)] mt-0.5">
-                            {ROOM_TYPES[p.room_type]?.label ?? p.room_type} · titular · {roomSz} pax
+                            {ROOM_TYPES[p.room_type]?.label ?? p.room_type} · titular · {companions.length + 1} pax
                           </div>
                         )}
                       </td>
