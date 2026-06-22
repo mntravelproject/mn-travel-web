@@ -1671,10 +1671,8 @@ function ClientsView() {
       <Modal open={showForm} onClose={() => setShowForm(false)} title={editClient ? "Editar cliente" : "Novo cliente"}>
         <form onSubmit={saveClient} className="px-7 py-6 space-y-4">
           {[
-            { label: "Nome completo *", key: "name",    type: "text",  placeholder: "Nome do cliente" },
-            { label: "Email",           key: "email",   type: "email", placeholder: "email@exemplo.pt" },
-            { label: "Telefone",        key: "phone",   type: "tel",   placeholder: "+351 9xx xxx xxx" },
-            { label: "País",            key: "country", type: "text",  placeholder: "Portugal" },
+            { label: "Nome completo *", key: "name",  type: "text",  placeholder: "Nome do cliente" },
+            { label: "Email",           key: "email", type: "email", placeholder: "email@exemplo.pt" },
           ].map(({ label, key, type, placeholder }) => (
             <div key={key}>
               <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">{label}</label>
@@ -1687,26 +1685,16 @@ function ClientsView() {
               />
             </div>
           ))}
-          <div>
-            <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Notas</label>
-            <textarea
-              rows={3}
-              value={form.notes}
-              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-              placeholder="Observações sobre o cliente…"
-              className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition resize-none"
-            />
-          </div>
 
           {/* Documentos de viagem */}
           <div className="border-t border-[var(--line)] pt-4 space-y-3">
             <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Documentos de viagem</p>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "CC nº",    key: "id_card_number", type: "text", placeholder: "ex: 12345678 0 ZX4" },
-                { label: "Validade CC", key: "id_card_expiry", type: "date", placeholder: "" },
-                { label: "NIF",      key: "nif",            type: "text", placeholder: "ex: 123456789" },
-                { label: "Data de nascimento", key: "date_of_birth", type: "date", placeholder: "" },
+                { label: "CC nº",              key: "id_card_number", type: "text", placeholder: "ex: 12345678 0 ZX4" },
+                { label: "Validade CC",        key: "id_card_expiry", type: "date", placeholder: "" },
+                { label: "NIF",                key: "nif",            type: "text", placeholder: "ex: 123456789" },
+                { label: "Data de nascimento", key: "date_of_birth",  type: "date", placeholder: "" },
               ].map(({ label, key, type, placeholder }) => (
                 <div key={key}>
                   <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">{label}</label>
@@ -1730,6 +1718,25 @@ function ClientsView() {
                 className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
               />
             </div>
+          </div>
+
+          {/* Telefone e País */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Telefone", key: "phone",   type: "tel",  placeholder: "+351 9xx xxx xxx" },
+              { label: "País",     key: "country", type: "text", placeholder: "Portugal" },
+            ].map(({ label, key, type, placeholder }) => (
+              <div key={key}>
+                <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">{label}</label>
+                <input
+                  type={type}
+                  value={form[key as keyof typeof form]}
+                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
+                />
+              </div>
+            ))}
           </div>
 
           {formError && <p className="text-[13px] text-red-600">{formError}</p>}
