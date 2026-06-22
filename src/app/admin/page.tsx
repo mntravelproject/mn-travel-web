@@ -1446,6 +1446,11 @@ type Client = {
   phone: string | null;
   country: string | null;
   notes: string | null;
+  id_card_number: string | null;
+  id_card_expiry: string | null;
+  nif: string | null;
+  date_of_birth: string | null;
+  nationality: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -1458,7 +1463,7 @@ function ClientsView() {
   const [page,       setPage]       = useState(1);
   const [showForm,   setShowForm]   = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
-  const [form,       setForm]       = useState({ name: "", email: "", phone: "", country: "", notes: "" });
+  const [form,       setForm]       = useState({ name: "", email: "", phone: "", country: "", notes: "", id_card_number: "", id_card_expiry: "", nif: "", date_of_birth: "", nationality: "" });
   const [saving,     setSaving]     = useState(false);
   const [formError,  setFormError]  = useState("");
 
@@ -1482,14 +1487,14 @@ function ClientsView() {
 
   function openNew() {
     setEditClient(null);
-    setForm({ name: "", email: "", phone: "", country: "", notes: "" });
+    setForm({ name: "", email: "", phone: "", country: "", notes: "", id_card_number: "", id_card_expiry: "", nif: "", date_of_birth: "", nationality: "" });
     setFormError("");
     setShowForm(true);
   }
 
   function openEdit(c: Client) {
     setEditClient(c);
-    setForm({ name: c.name, email: c.email, phone: c.phone ?? "", country: c.country ?? "", notes: c.notes ?? "" });
+    setForm({ name: c.name, email: c.email, phone: c.phone ?? "", country: c.country ?? "", notes: c.notes ?? "", id_card_number: c.id_card_number ?? "", id_card_expiry: c.id_card_expiry ?? "", nif: c.nif ?? "", date_of_birth: c.date_of_birth ?? "", nationality: c.nationality ?? "" });
     setFormError("");
     setShowForm(true);
   }
@@ -1502,19 +1507,28 @@ function ClientsView() {
     const supabase = createClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const clientsTable = supabase.from("clients") as any;
+    const docFields = {
+      id_card_number: form.id_card_number || null,
+      id_card_expiry: form.id_card_expiry || null,
+      nif:            form.nif || null,
+      date_of_birth:  form.date_of_birth || null,
+      nationality:    form.nationality || null,
+    };
     if (editClient) {
       const { error } = await clientsTable.update({
         name: form.name,
         email: form.email || null,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
+        ...docFields,
       }).eq("id", editClient.id);
       if (error) { setFormError(error.message); setSaving(false); return; }
-      setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null } : c));
+      setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null, ...docFields } : c));
     } else {
       const { data, error } = await clientsTable.insert({
         name: form.name,
         email: form.email || null,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
+        ...docFields,
       }).select("*").single();
       if (error) { setFormError(error.message); setSaving(false); return; }
       if (data) setClients((prev) => [data as Client, ...prev]);
@@ -1683,6 +1697,41 @@ function ClientsView() {
               className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition resize-none"
             />
           </div>
+
+          {/* Documentos de viagem */}
+          <div className="border-t border-[var(--line)] pt-4 space-y-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Documentos de viagem</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: "CC nº",    key: "id_card_number", type: "text", placeholder: "ex: 12345678 0 ZX4" },
+                { label: "Validade CC", key: "id_card_expiry", type: "date", placeholder: "" },
+                { label: "NIF",      key: "nif",            type: "text", placeholder: "ex: 123456789" },
+                { label: "Data de nascimento", key: "date_of_birth", type: "date", placeholder: "" },
+              ].map(({ label, key, type, placeholder }) => (
+                <div key={key}>
+                  <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">{label}</label>
+                  <input
+                    type={type}
+                    value={form[key as keyof typeof form]}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
+                  />
+                </div>
+              ))}
+            </div>
+            <div>
+              <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Nacionalidade</label>
+              <input
+                type="text"
+                value={form.nationality}
+                onChange={(e) => setForm((f) => ({ ...f, nationality: e.target.value }))}
+                placeholder="Portuguesa"
+                className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
+              />
+            </div>
+          </div>
+
           {formError && <p className="text-[13px] text-red-600">{formError}</p>}
           <div className="flex gap-3 pt-1 pb-1">
             <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">Cancelar</button>
