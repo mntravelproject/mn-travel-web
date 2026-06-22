@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, Fragment } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Plus, ArrowLeft, Download, Search, Edit3, Trash2,
-  X, AlertTriangle, ChevronRight,
+  X, AlertTriangle, ChevronRight, ChevronDown,
   Banknote, Smartphone, CreditCard, Check, Receipt,
 } from "lucide-react";
 
@@ -947,8 +947,13 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
   const [showAddModal,  setShowAddModal]  = useState(false);
   const [editPax,       setEditPax]       = useState<Passenger | null>(null);
   const [payPax,        setPayPax]        = useState<Passenger | null>(null);
-  const [showExpenses,  setShowExpenses]  = useState(false);
-  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [showExpenses,   setShowExpenses]   = useState(false);
+  const [totalExpenses,  setTotalExpenses]  = useState(0);
+  const [expandedRooms,  setExpandedRooms]  = useState<Set<string>>(new Set());
+
+  function toggleRoom(key: string) {
+    setExpandedRooms(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -1118,6 +1123,26 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
       (p.id_card_number ?? "").toLowerCase().includes(q);
   });
 
+  const roomGroups = (() => {
+    const out: { main: Passenger; companions: Passenger[] }[] = [];
+    const done = new Set<string>();
+    for (const p of passengers) {
+      if (done.has(p.id) || !p.is_main_occupant) continue;
+      const comps = p.room_id ? passengers.filter(c => c.room_id === p.room_id && !c.is_main_occupant) : [];
+      out.push({ main: p, companions: comps });
+      done.add(p.id); comps.forEach(c => done.add(c.id));
+    }
+    for (const p of passengers) { if (!done.has(p.id)) out.push({ main: p, companions: [] }); }
+    return out;
+  })();
+
+  const filteredGroups = !search ? roomGroups : roomGroups.filter(({ main, companions }) => {
+    const q = search.toLowerCase();
+    const m = (p: Passenger) => p.full_name.toLowerCase().includes(q) || (p.phone ?? "").includes(q) ||
+      (p.email ?? "").toLowerCase().includes(q) || (p.id_card_number ?? "").toLowerCase().includes(q);
+    return m(main) || companions.some(m);
+  });
+
   const thCls = "text-left text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] px-3 py-3 border-b border-[var(--line)] whitespace-nowrap font-medium bg-[var(--cream)]/40";
   const tdCls = "px-3 py-3 text-[12px] border-b border-[var(--line)] whitespace-nowrap";
 
@@ -1216,7 +1241,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
               {loading && (
                 <tr><td colSpan={9} className="text-center py-14 text-[13px] text-[var(--muted)]">A carregar...</td></tr>
               )}
-              {!loading && filtered.length === 0 && (
+              {!loading && filteredGroups.length === 0 && (
                 <tr>
                   <td colSpan={9} className="text-center py-14">
                     <p className="text-[13px] text-[var(--muted)]">
@@ -1231,37 +1256,51 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                   </td>
                 </tr>
               )}
-              {!loading && filtered.map((p, i) => {
+              {!loading && filteredGroups.map(({ main: p, companions }, groupIdx) => {
                 const paid     = getPaid(p.id);
-                const roomSz   = p.is_main_occupant ? roomSizeFor(p) : 1;
+                const roomSz   = roomSizeFor(p);
                 const totalDue = trip.price_per_person * roomSz;
                 const out      = Math.max(0, totalDue - paid);
                 const status   = payStatus(paid, totalDue);
                 const warn     = ccExpired(p.id_card_expiry, trip.end_date);
+                const hasComp  = companions.length > 0;
+                const isOpen   = expandedRooms.has(p.room_id ?? p.id);
                 return (
-                  <tr key={p.id} className={`hover:bg-[var(--cream)]/30 group ${!p.is_main_occupant ? "bg-[var(--cream)]/20" : ""}`}>
-                    <td className={`${tdCls} text-center text-[var(--muted)]`}>{i + 1}</td>
-                    <td className={`${tdCls} font-medium`}>
-                      <div>{p.full_name}</div>
-                      {p.room_type !== "individual" && (
-                        <div className="text-[10px] text-[var(--muted)] mt-0.5">
-                          {ROOM_TYPES[p.room_type]?.label ?? p.room_type}
-                          {" · "}{p.is_main_occupant ? "titular" : "acompanhante"}
+                  <Fragment key={p.id}>
+                    {/* Main / titular row */}
+                    <tr
+                      className={`hover:bg-[var(--cream)]/30 group ${hasComp ? "cursor-pointer" : ""}`}
+                      onClick={hasComp ? () => toggleRoom(p.room_id ?? p.id) : undefined}
+                    >
+                      <td className={`${tdCls} text-center text-[var(--muted)]`}>
+                        <div className="flex items-center justify-center gap-1">
+                          {hasComp
+                            ? (isOpen
+                                ? <ChevronDown className="w-3.5 h-3.5 text-[var(--muted)]" />
+                                : <ChevronRight className="w-3.5 h-3.5 text-[var(--muted)]" />)
+                            : null}
+                          <span>{groupIdx + 1}</span>
                         </div>
-                      )}
-                    </td>
-                    <td className={tdCls}>{p.id_card_number ?? <span className="text-[var(--muted)]">—</span>}</td>
-                    <td className={tdCls}>
-                      <span className={`inline-flex items-center gap-1 ${warn ? "text-amber-600 font-medium" : ""}`}>
-                        {warn && <span title="CC expira antes da viagem"><AlertTriangle className="w-3 h-3 shrink-0" /></span>}
-                        {fmtDate(p.id_card_expiry)}
-                      </span>
-                    </td>
-                    <td className={tdCls}>{p.nif ?? <span className="text-[var(--muted)]">—</span>}</td>
-                    <td className={tdCls}>{fmtDate(p.date_of_birth)}</td>
-                    <td className={tdCls}>{p.nationality ?? <span className="text-[var(--muted)]">—</span>}</td>
-                    <td className={tdCls}>
-                      {p.is_main_occupant ? (
+                      </td>
+                      <td className={`${tdCls} font-medium`}>
+                        <div>{p.full_name}</div>
+                        {hasComp && (
+                          <div className="text-[10px] text-[var(--muted)] mt-0.5">
+                            {ROOM_TYPES[p.room_type]?.label ?? p.room_type} · titular · {roomSz} pax
+                          </div>
+                        )}
+                      </td>
+                      <td className={tdCls}>{p.id_card_number ?? <span className="text-[var(--muted)]">—</span>}</td>
+                      <td className={tdCls}>
+                        <span className={`inline-flex items-center gap-1 ${warn ? "text-amber-600 font-medium" : ""}`}>
+                          {warn && <span title="CC expira antes da viagem"><AlertTriangle className="w-3 h-3 shrink-0" /></span>}
+                          {fmtDate(p.id_card_expiry)}
+                        </span>
+                      </td>
+                      <td className={tdCls}>{p.nif ?? <span className="text-[var(--muted)]">—</span>}</td>
+                      <td className={tdCls}>{fmtDate(p.date_of_birth)}</td>
+                      <td className={tdCls}>{p.nationality ?? <span className="text-[var(--muted)]">—</span>}</td>
+                      <td className={tdCls} onClick={e => e.stopPropagation()}>
                         <button onClick={() => setPayPax(p)} className="text-left group/pay">
                           <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${status.cls}`}>
                             {status.label}
@@ -1271,25 +1310,66 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                             {roomSz > 1 && ` · ${roomSz} pax`}
                           </span>
                         </button>
-                      ) : (
-                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-[var(--cream-2)] text-[var(--muted)]">
-                          Incluído no quarto
-                        </span>
-                      )}
-                    </td>
-                    <td className={`${tdCls} text-center`}>
-                      <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
-                        <button onClick={() => setEditPax(p)}
-                          className="p-1.5 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar documentos">
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => deletePassenger(p.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--clay-dark)] transition" title="Apagar">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                      <td className={`${tdCls} text-center`} onClick={e => e.stopPropagation()}>
+                        <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                          <button onClick={() => setEditPax(p)}
+                            className="p-1.5 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar documentos">
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => deletePassenger(p.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--clay-dark)] transition" title="Apagar">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {/* Companion rows (accordion children) */}
+                    {hasComp && isOpen && companions.map((c) => {
+                      const cWarn = ccExpired(c.id_card_expiry, trip.end_date);
+                      return (
+                        <tr key={c.id} className="bg-[var(--cream)]/40 group border-t-0">
+                          <td className={`${tdCls} text-center text-[var(--muted)] border-t-0`} />
+                          <td className={`${tdCls} border-t-0`}>
+                            <div className="flex items-center gap-2 pl-4">
+                              <div className="w-px h-8 bg-[var(--line)] shrink-0" />
+                              <div>
+                                <div className="text-[12px] font-medium text-[var(--ink)]">{c.full_name}</div>
+                                <div className="text-[10px] text-[var(--muted)]">Acompanhante</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className={`${tdCls} text-[12px] border-t-0`}>{c.id_card_number ?? <span className="text-[var(--muted)]">—</span>}</td>
+                          <td className={`${tdCls} border-t-0`}>
+                            <span className={`inline-flex items-center gap-1 text-[12px] ${cWarn ? "text-amber-600 font-medium" : ""}`}>
+                              {cWarn && <span title="CC expira antes da viagem"><AlertTriangle className="w-3 h-3 shrink-0" /></span>}
+                              {fmtDate(c.id_card_expiry)}
+                            </span>
+                          </td>
+                          <td className={`${tdCls} text-[12px] border-t-0`}>{c.nif ?? <span className="text-[var(--muted)]">—</span>}</td>
+                          <td className={`${tdCls} text-[12px] border-t-0`}>{fmtDate(c.date_of_birth)}</td>
+                          <td className={`${tdCls} text-[12px] border-t-0`}>{c.nationality ?? <span className="text-[var(--muted)]">—</span>}</td>
+                          <td className={`${tdCls} border-t-0`}>
+                            <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-[var(--cream-2)] text-[var(--muted)]">
+                              Incluído no quarto
+                            </span>
+                          </td>
+                          <td className={`${tdCls} text-center border-t-0`}>
+                            <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
+                              <button onClick={() => setEditPax(c)}
+                                className="p-1.5 rounded-lg hover:bg-[var(--cream-2)] transition" title="Editar documentos">
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => deletePassenger(c.id)}
+                                className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--clay-dark)] transition" title="Apagar">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -1298,7 +1378,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
         {passengers.length > 0 && (
           <div className="px-4 py-3 border-t border-[var(--line)] text-[12px] text-[var(--muted)]">
             {passengers.length} passageiro{passengers.length !== 1 ? "s" : ""}
-            {search && ` · ${filtered.length} encontrado${filtered.length !== 1 ? "s" : ""}`}
+            {search && ` · ${filteredGroups.reduce((s, g) => s + 1 + g.companions.length, 0)} encontrado${filteredGroups.length !== 1 ? "s" : ""}`}
           </div>
         )}
       </div>
