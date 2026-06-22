@@ -803,7 +803,8 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
 
   async function createTrip(data: typeof EMPTY_TRIP) {
     const supabase = createClient();
-    const { data: created, error } = await supabase.from("trip_groups").insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: created, error } = await (supabase.from("trip_groups") as any).insert({
       title: data.title, destination: data.destination,
       start_date: data.start_date, end_date: data.end_date,
       price_per_person:      parseFloat(data.price_per_person),
@@ -828,7 +829,8 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
       triple_supplement:     parseFloat(data.triple_supplement)     || 0,
       notes: data.notes || null, package_id: data.package_id || null,
     };
-    const { error } = await supabase.from("trip_groups").update(updates).eq("id", editTrip.id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("trip_groups") as any).update(updates).eq("id", editTrip.id);
     if (error) throw new Error(error.message);
     setTrips((prev) => prev.map((t) => t.id === editTrip.id ? { ...t, ...updates } : t));
     setEditTrip(null);
