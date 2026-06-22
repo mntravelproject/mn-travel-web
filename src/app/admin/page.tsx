@@ -2444,7 +2444,6 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
                   <input
                     type="date"
                     value={form.return_date}
-                    min={form.departure_date || undefined}
                     onChange={(e) => setForm({ ...form, return_date: e.target.value })}
                     className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
                   />
