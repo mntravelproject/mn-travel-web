@@ -1687,8 +1687,7 @@ function ClientsView() {
           ))}
 
           {/* Documentos de viagem */}
-          <div className="border-t border-[var(--line)] pt-4 space-y-3">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Documentos de viagem</p>
+          <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: "CC nº",              key: "id_card_number", type: "text", placeholder: "ex: 12345678 0 ZX4" },
