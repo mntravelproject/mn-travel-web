@@ -994,7 +994,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     const roomId   = roomType !== "individual" ? crypto.randomUUID() : null;
     const baseSort = passengers.length;
 
-    const { data: mainCreated, error: mainErr } = await supabase.from("trip_passengers").insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const paxTable = supabase.from("trip_passengers") as any;
+    const { data: mainCreated, error: mainErr } = await paxTable.insert({
       trip_id: trip.id, client_id: main.clientId,
       full_name: main.clientName, phone: main.clientPhone, email: main.clientEmail,
       id_card_number: main.docs.id_card_number || null, id_card_expiry: main.docs.id_card_expiry || null,
@@ -1010,7 +1012,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
     for (let i = 0; i < companions.length; i++) {
       const c = companions[i];
-      const { data: compCreated, error: compErr } = await supabase.from("trip_passengers").insert({
+      const { data: compCreated, error: compErr } = await paxTable.insert({
         trip_id: trip.id, client_id: c.id,
         full_name: c.name, phone: c.phone, email: c.email,
         nationality: "Portuguesa", sort_order: baseSort + 1 + i,
