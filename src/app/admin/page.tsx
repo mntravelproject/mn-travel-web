@@ -1600,6 +1600,18 @@ function ClientsView() {
             <Search className="w-4 h-4 text-[var(--muted)]" />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Procurar por nome, email ou país…" className="bg-transparent text-[13px] focus:outline-none w-56" />
           </div>
+          {(() => {
+            const allExpanded = paged.length > 0 && paged.every(c => expanded.has(c.id));
+            return (
+              <button
+                onClick={() => allExpanded ? setExpanded(new Set()) : setExpanded(prev => new Set([...prev, ...paged.map(c => c.id)]))}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-white px-4 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition whitespace-nowrap"
+              >
+                <ChevronDown className={`w-4 h-4 transition-transform ${allExpanded ? "rotate-180" : ""}`} />
+                {allExpanded ? "Fechar todos" : "Expandir todos"}
+              </button>
+            );
+          })()}
           <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-5 py-2.5 text-[14px] tracking-tight hover:bg-[var(--cream-2)] transition">
             <Download className="w-4 h-4" /> Exportar
           </button>
