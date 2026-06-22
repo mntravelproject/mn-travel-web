@@ -1471,20 +1471,20 @@ function ClientsView() {
 
   async function saveClient(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.email) { setFormError("Nome e email são obrigatórios."); return; }
+    if (!form.name) { setFormError("O nome é obrigatório."); return; }
     setSaving(true);
     setFormError("");
     const supabase = createClient();
     if (editClient) {
       const { error } = await supabase.from("clients").update({
-        name: form.name, email: form.email,
+        name: form.name, email: form.email || null,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
       }).eq("id", editClient.id);
       if (error) { setFormError(error.message); setSaving(false); return; }
       setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null } : c));
     } else {
       const { data, error } = await supabase.from("clients").insert({
-        name: form.name, email: form.email,
+        name: form.name, email: form.email || null,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
       }).select("*").single();
       if (error) { setFormError(error.message); setSaving(false); return; }
@@ -1591,9 +1591,11 @@ function ClientsView() {
                   </div>
                 </td>
                 <td className="p-4 hidden md:table-cell">
-                  <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
-                    <Mail className="w-3.5 h-3.5" /> {c.email}
-                  </a>
+                  {c.email ? (
+                    <a href={`mailto:${c.email}`} className="flex items-center gap-1.5 text-[13px] text-[var(--ink-soft)] hover:text-[var(--ink)] transition">
+                      <Mail className="w-3.5 h-3.5" /> {c.email}
+                    </a>
+                  ) : <span className="text-[var(--muted)] text-[13px]">—</span>}
                 </td>
                 <td className="p-4 hidden lg:table-cell">
                   {c.phone ? (
@@ -1627,7 +1629,7 @@ function ClientsView() {
         <form onSubmit={saveClient} className="px-7 py-6 space-y-4">
           {[
             { label: "Nome completo *", key: "name",    type: "text",  placeholder: "Nome do cliente" },
-            { label: "Email *",         key: "email",   type: "email", placeholder: "email@exemplo.pt" },
+            { label: "Email",           key: "email",   type: "email", placeholder: "email@exemplo.pt" },
             { label: "Telefone",        key: "phone",   type: "tel",   placeholder: "+351 9xx xxx xxx" },
             { label: "País",            key: "country", type: "text",  placeholder: "Portugal" },
           ].map(({ label, key, type, placeholder }) => (
