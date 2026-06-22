@@ -1229,7 +1229,7 @@ function QuotesView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }) 
   const filtered = quotes.filter((q) => {
     if (!search) return true;
     const s = search.toLowerCase();
-    return q.name.toLowerCase().includes(s) || (q.subject ?? "").toLowerCase().includes(s) || q.email.toLowerCase().includes(s);
+    return q.name.toLowerCase().includes(s) || (q.subject ?? "").toLowerCase().includes(s) || (q.email ?? "").toLowerCase().includes(s);
   });
 
   const sorted = applySortFilter(filtered as unknown as Record<string, unknown>[], sort) as unknown as typeof filtered;
@@ -1547,7 +1547,7 @@ function ClientsView() {
   const filtered = clients.filter((c) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.country ?? "").toLowerCase().includes(q);
+    return c.name.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q) || (c.country ?? "").toLowerCase().includes(q);
   });
 
   const sorted     = applySortFilter(filtered as unknown as Record<string, unknown>[], sort) as unknown as typeof filtered;
