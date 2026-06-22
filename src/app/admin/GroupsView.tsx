@@ -32,7 +32,11 @@ type Expense = {
   id: string; trip_id: string; description: string; amount: number;
   expense_date: string; category: string; notes: string | null; created_at: string;
 };
-type ClientOption = { id: string; name: string; email: string; phone: string | null };
+type ClientOption = {
+  id: string; name: string; email: string | null; phone: string | null;
+  id_card_number: string | null; id_card_expiry: string | null;
+  nif: string | null; date_of_birth: string | null; nationality: string | null; notes: string | null;
+};
 type PaxFormDocs = {
   id_card_number: string; id_card_expiry: string; nif: string;
   date_of_birth: string; nationality: string; notes: string;
@@ -218,45 +222,66 @@ function TripForm({ initial, onSave, onCancel }: {
 }
 
 // ─── Passenger Modal ──────────────────────────────────────────────────────────
-type MainPassengerInput = {
-  clientId: string; clientName: string;
-  clientPhone: string | null; clientEmail: string | null;
-  docs: PaxFormDocs;
-};
+type PersonInput = { client: ClientOption; docs: PaxFormDocs };
+
+type PersonSlot = { client: ClientOption | null; docs: PaxFormDocs; search: string; showDrop: boolean };
+const emptySlot = (): PersonSlot => ({ client: null, docs: { ...EMPTY_DOCS }, search: "", showDrop: false });
+
+function renderDocFields(
+  d: PaxFormDocs,
+  setD: (k: keyof PaxFormDocs) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void,
+) {
+  return (
+    <div className="space-y-3 pt-3 border-t border-[var(--line-2)]">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Documentos de viagem</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div><label className={lCls}>CC nº</label>
+          <input value={d.id_card_number} onChange={setD("id_card_number")} placeholder="ex: 12345678 0 ZX4" className={iCls} /></div>
+        <div><label className={lCls}>Validade CC</label>
+          <input type="date" value={d.id_card_expiry} onChange={setD("id_card_expiry")} className={iCls} /></div>
+        <div><label className={lCls}>NIF</label>
+          <input value={d.nif} onChange={setD("nif")} placeholder="ex: 123456789" className={iCls} /></div>
+        <div><label className={lCls}>Data de nascimento</label>
+          <input type="date" value={d.date_of_birth} onChange={setD("date_of_birth")} className={iCls} /></div>
+      </div>
+      <div><label className={lCls}>Nacionalidade</label>
+        <input value={d.nationality} onChange={setD("nationality")} placeholder="Portuguesa" className={iCls} /></div>
+      <div><label className={lCls}>Notas</label>
+        <textarea rows={2} value={d.notes} onChange={setD("notes")} placeholder="Observações…" className={`${iCls} resize-none`} /></div>
+    </div>
+  );
+}
 
 function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds }: {
   open: boolean; onClose: () => void;
-  onAdd: (main: MainPassengerInput, roomType: string, companions: ClientOption[]) => Promise<void>;
+  onAdd: (main: PersonInput, roomType: string, companions: PersonInput[]) => Promise<void>;
   onEdit: (id: string, docs: PaxFormDocs) => Promise<void>;
   editPax: Passenger | null;
   takenClientIds: Set<string>;
 }) {
   const isEdit = !!editPax;
-  const [clients,    setClients]    = useState<ClientOption[]>([]);
-  const [search,     setSearch]     = useState("");
-  const [selected,   setSelected]   = useState<ClientOption | null>(null);
-  const [docs,       setDocs]       = useState<PaxFormDocs>(EMPTY_DOCS);
-  const [roomType,   setRoomType]   = useState("individual");
-  const [companions,       setCompanions]       = useState<(ClientOption | null)[]>([]);
-  const [companionSearches, setCompanionSearches] = useState<string[]>([]);
-  const [openCompSlot,      setOpenCompSlot]      = useState<number | null>(null);
-  const [saving,           setSaving]            = useState(false);
-  const [err,              setErr]               = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [clients,  setClients]  = useState<ClientOption[]>([]);
+  const [roomType, setRoomType] = useState("individual");
+  const [slots,    setSlots]    = useState<PersonSlot[]>([emptySlot()]);
+  const [editDocs, setEditDocs] = useState<PaxFormDocs>(EMPTY_DOCS);
+  const [saving,   setSaving]   = useState(false);
+  const [err,      setErr]      = useState("");
 
   function handleRoomTypeChange(type: string) {
+    const cap = ROOM_TYPES[type].capacity;
     setRoomType(type);
-    const slots = ROOM_TYPES[type].capacity - 1;
-    setCompanions(Array(slots).fill(null));
-    setCompanionSearches(Array(slots).fill(""));
-    setOpenCompSlot(null);
+    setSlots(prev => {
+      const next = [...prev];
+      while (next.length < cap) next.push(emptySlot());
+      return next.slice(0, cap);
+    });
   }
 
   useEffect(() => {
     if (!open) return;
     setErr(""); setSaving(false);
     if (isEdit && editPax) {
-      setDocs({
+      setEditDocs({
         id_card_number: editPax.id_card_number ?? "",
         id_card_expiry: editPax.id_card_expiry ?? "",
         nif:            editPax.nif ?? "",
@@ -265,238 +290,164 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
         notes:          editPax.notes ?? "",
       });
     } else {
-      setDocs(EMPTY_DOCS); setSelected(null); setSearch("");
-      setRoomType("individual"); setCompanions([]); setCompanionSearches([]); setOpenCompSlot(null);
-      setTimeout(() => searchRef.current?.focus(), 130);
+      setRoomType("individual");
+      setSlots([emptySlot()]);
     }
-    createClient().from("clients").select("id, name, email, phone").order("name")
-      .then(({ data }) => { if (data) setClients(data as ClientOption[]); });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (createClient() as any).from("clients")
+      .select("id, name, email, phone, id_card_number, id_card_expiry, nif, date_of_birth, nationality, notes")
+      .order("name")
+      .then(({ data }: { data: ClientOption[] | null }) => { if (data) setClients(data); });
   }, [open, isEdit, editPax]);
 
-  const filtered = clients.filter((c) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return c.name.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q);
-  }).slice(0, 8);
+  function selectClient(i: number, c: ClientOption) {
+    setSlots(prev => {
+      const next = [...prev];
+      next[i] = {
+        ...next[i], client: c, search: "", showDrop: false,
+        docs: {
+          id_card_number: c.id_card_number ?? "",
+          id_card_expiry: c.id_card_expiry ?? "",
+          nif:            c.nif ?? "",
+          date_of_birth:  c.date_of_birth ?? "",
+          nationality:    c.nationality ?? "Portuguesa",
+          notes:          c.notes ?? "",
+        },
+      };
+      return next;
+    });
+  }
 
-  const setD = (k: keyof PaxFormDocs) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      setDocs((d) => ({ ...d, [k]: e.target.value }));
+  function clearSlot(i: number) {
+    setSlots(prev => { const n = [...prev]; n[i] = emptySlot(); return n; });
+  }
+
+  function setSlotDoc(i: number, k: keyof PaxFormDocs) {
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setSlots(prev => {
+        const n = [...prev];
+        n[i] = { ...n[i], docs: { ...n[i].docs, [k]: e.target.value } };
+        return n;
+      });
+    };
+  }
+
+  function eligibleClients(i: number) {
+    const taken = new Set(takenClientIds);
+    slots.forEach((s, j) => { if (j !== i && s.client) taken.add(s.client.id); });
+    const q = (slots[i]?.search ?? "").toLowerCase();
+    return clients
+      .filter(c => !taken.has(c.id) && (!q || c.name.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q)))
+      .slice(0, 8);
+  }
 
   async function submit() {
-    if (!isEdit && !selected) { setErr("Selecciona um cliente da lista."); return; }
+    if (!isEdit && !slots[0].client) { setErr("Selecciona o cliente principal."); return; }
     setSaving(true); setErr("");
     try {
       if (isEdit) {
-        await onEdit(editPax!.id, docs);
+        await onEdit(editPax!.id, editDocs);
       } else {
-        await onAdd(
-          { clientId: selected!.id, clientName: selected!.name, clientPhone: selected!.phone, clientEmail: selected!.email, docs },
-          roomType,
-          companions.filter((c): c is ClientOption => c !== null),
-        );
+        const companions = slots.slice(1).filter(s => s.client !== null).map(s => ({ client: s.client!, docs: s.docs }));
+        await onAdd({ client: slots[0].client!, docs: slots[0].docs }, roomType, companions);
       }
     } catch (ex) { setErr((ex as Error).message); setSaving(false); }
   }
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={isEdit ? `Editar — ${editPax!.full_name}` : "Adicionar passageiro"}
-    >
-      <div className="px-7 py-6 space-y-5">
+    <Modal open={open} onClose={onClose} title={isEdit ? `Editar — ${editPax!.full_name}` : "Adicionar passageiro"} wide>
+      <div className="px-7 py-6 space-y-4">
 
-        {/* Add mode: client picker */}
-        {!isEdit && (
-          <div>
-            <label className={lCls}>Cliente *</label>
-            {selected ? (
-              <div className="flex items-center justify-between bg-[var(--cream-2)] rounded-xl px-4 py-3 border border-[var(--line)]">
-                <div>
-                  <p className="text-[14px] font-medium">{selected.name}</p>
-                  <p className="text-[11px] text-[var(--muted)]">
-                    {selected.email}{selected.phone ? ` · ${selected.phone}` : ""}
-                  </p>
-                </div>
-                <button onClick={() => { setSelected(null); setSearch(""); setTimeout(() => searchRef.current?.focus(), 60); }}
-                  className="p-1.5 rounded-lg hover:bg-white transition text-[var(--muted)]">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-xl px-3 py-2.5 focus-within:border-[var(--ink)] transition">
-                  <Search className="w-3.5 h-3.5 text-[var(--muted)] shrink-0" />
-                  <input ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Pesquisar por nome ou email…"
-                    className="text-[13px] bg-transparent focus:outline-none w-full" />
-                </div>
-                <div className="mt-1 bg-white border border-[var(--line)] rounded-xl overflow-hidden shadow-md">
-                  {clients.length === 0 ? (
-                    <p className="px-4 py-3 text-[12px] text-[var(--muted)]">A carregar clientes…</p>
-                  ) : filtered.length === 0 ? (
-                    <p className="px-4 py-3 text-[12px] text-[var(--muted)]">Nenhum cliente encontrado.</p>
-                  ) : (
-                    filtered.map((c) => {
-                      const taken = takenClientIds.has(c.id);
-                      return (
-                        <button key={c.id} disabled={taken} onClick={() => setSelected(c)}
-                          className={`w-full text-left px-4 py-3 flex items-center justify-between border-b border-[var(--line)] last:border-0 transition ${taken ? "opacity-40 cursor-not-allowed" : "hover:bg-[var(--cream-2)]"}`}>
-                          <div>
-                            <p className="text-[13px] font-medium">{c.name}</p>
-                            <p className="text-[11px] text-[var(--muted)]">{c.email ?? "—"}{c.phone ? ` · ${c.phone}` : ""}</p>
-                          </div>
-                          {taken && <span className="text-[10px] text-[var(--muted)] shrink-0 ml-3 flex items-center gap-1"><Check className="w-3 h-3" />Já adicionado</span>}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Edit mode: read-only client header */}
+        {/* ── Modo edição ── */}
         {isEdit && editPax && (
-          <div className="bg-[var(--cream-2)] rounded-xl px-4 py-3 border border-[var(--line)]">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-1">Cliente</p>
-            <p className="text-[14px] font-medium">{editPax.full_name}</p>
-            {editPax.email && <p className="text-[11px] text-[var(--muted)]">{editPax.email}</p>}
-          </div>
-        )}
-
-        {/* Room type (add mode only) */}
-        {!isEdit && (
-          <div>
-            <label className={lCls}>Tipo de alojamento</label>
-            <div className="grid grid-cols-4 gap-2">
-              {Object.entries(ROOM_TYPES).map(([k, v]) => (
-                <button key={k} type="button" onClick={() => handleRoomTypeChange(k)}
-                  className={`py-2 px-2 rounded-xl border text-[12px] text-center transition ${
-                    roomType === k
-                      ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]"
-                      : "border-[var(--line)] hover:border-[var(--ink-soft)]"
-                  }`}>
-                  {v.label}
-                </button>
-              ))}
+          <>
+            <div className="bg-[var(--cream-2)] rounded-xl px-4 py-3 border border-[var(--line)]">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-1">Cliente</p>
+              <p className="text-[14px] font-medium">{editPax.full_name}</p>
+              {editPax.email && <p className="text-[11px] text-[var(--muted)]">{editPax.email}</p>}
             </div>
-          </div>
+            {renderDocFields(editDocs, k => e => setEditDocs(d => ({ ...d, [k]: e.target.value })))}
+          </>
         )}
 
-        {/* Companions (add mode, non-individual) */}
-        {!isEdit && roomType !== "individual" && (
-          <div className="space-y-2">
-            <label className={lCls}>Acompanhantes do quarto</label>
-            {Array.from({ length: ROOM_TYPES[roomType].capacity - 1 }).map((_, i) => {
-              const slotSearch   = companionSearches[i] ?? "";
-              const slotSelected = companions[i];
-              const eligibleClients = clients.filter((c) =>
-                !takenClientIds.has(c.id) &&
-                c.id !== selected?.id &&
-                !companions.some((cp, j) => j !== i && cp?.id === c.id)
-              );
-              const filteredCompClients = slotSearch
-                ? eligibleClients.filter(c => c.name.toLowerCase().includes(slotSearch.toLowerCase()) || (c.email ?? "").toLowerCase().includes(slotSearch.toLowerCase()))
-                : eligibleClients;
-              return (
-                <div key={i} className="relative">
-                  <label className={lCls}>Acompanhante {i + 1}</label>
+        {/* ── Modo adição ── */}
+        {!isEdit && (
+          <>
+            {/* Tipo de alojamento */}
+            <div>
+              <label className={lCls}>Tipo de alojamento</label>
+              <div className="grid grid-cols-4 gap-2">
+                {Object.entries(ROOM_TYPES).map(([k, v]) => (
+                  <button key={k} type="button" onClick={() => handleRoomTypeChange(k)}
+                    className={`py-2 px-2 rounded-xl border text-[12px] text-center transition ${
+                      roomType === k ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]" : "border-[var(--line)] hover:border-[var(--ink-soft)]"
+                    }`}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Secção por pessoa */}
+            {slots.map((slot, i) => (
+              <div key={i} className="rounded-2xl border border-[var(--line)] p-4 space-y-4 bg-white">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--ink)]">
+                  {i === 0 ? "Passageiro principal" : `Acompanhante ${i}`}
+                </p>
+
+                {/* Selector de cliente */}
+                {slot.client ? (
+                  <div className="flex items-center justify-between bg-[var(--cream-2)] rounded-xl px-4 py-3 border border-[var(--line)]">
+                    <div>
+                      <p className="text-[14px] font-medium">{slot.client.name}</p>
+                      <p className="text-[11px] text-[var(--muted)]">{slot.client.email ?? "—"}{slot.client.phone ? ` · ${slot.client.phone}` : ""}</p>
+                    </div>
+                    <button onClick={() => clearSlot(i)} className="p-1.5 rounded-lg hover:bg-white transition text-[var(--muted)]">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
                   <div className="relative">
-                    <input
-                      type="text"
-                      value={slotSelected ? slotSelected.name : slotSearch}
-                      placeholder="Pesquisar cliente..."
-                      onFocus={() => setOpenCompSlot(i)}
-                      onBlur={() => setTimeout(() => setOpenCompSlot(null), 150)}
-                      onChange={(e) => {
-                        if (slotSelected) setCompanions(prev => { const n = [...prev]; n[i] = null; return n; });
-                        setCompanionSearches(prev => { const n = [...prev]; n[i] = e.target.value; return n; });
-                        setOpenCompSlot(i);
-                      }}
-                      className={`${iCls} pr-7`}
-                    />
-                    {slotSelected && (
-                      <button
-                        type="button"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setCompanions(prev => { const n = [...prev]; n[i] = null; return n; });
-                          setCompanionSearches(prev => { const n = [...prev]; n[i] = ""; return n; });
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)] transition"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                    <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-xl px-3 py-2.5 focus-within:border-[var(--ink)] transition">
+                      <Search className="w-3.5 h-3.5 text-[var(--muted)] shrink-0" />
+                      <input
+                        value={slot.search}
+                        onChange={e => setSlots(prev => { const n = [...prev]; n[i] = { ...n[i], search: e.target.value, showDrop: true }; return n; })}
+                        onFocus={() => setSlots(prev => { const n = [...prev]; n[i] = { ...n[i], showDrop: true }; return n; })}
+                        onBlur={() => setTimeout(() => setSlots(prev => { const n = [...prev]; n[i] = { ...n[i], showDrop: false }; return n; }), 150)}
+                        placeholder="Pesquisar por nome ou email…"
+                        className="text-[13px] bg-transparent focus:outline-none w-full"
+                      />
+                    </div>
+                    {slot.showDrop && (
+                      <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-[var(--line)] rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                        {eligibleClients(i).length === 0 ? (
+                          <p className="px-4 py-3 text-[12px] text-[var(--muted)]">Nenhum cliente encontrado.</p>
+                        ) : eligibleClients(i).map(c => {
+                          const alreadyIn = takenClientIds.has(c.id);
+                          return (
+                            <button key={c.id} disabled={alreadyIn}
+                              onMouseDown={() => selectClient(i, c)}
+                              className={`w-full text-left px-4 py-3 flex items-center justify-between border-b border-[var(--line)] last:border-0 transition ${alreadyIn ? "opacity-40 cursor-not-allowed" : "hover:bg-[var(--cream-2)]"}`}>
+                              <div>
+                                <p className="text-[13px] font-medium">{c.name}</p>
+                                <p className="text-[11px] text-[var(--muted)]">{c.email ?? "—"}{c.phone ? ` · ${c.phone}` : ""}</p>
+                              </div>
+                              {alreadyIn && <span className="text-[10px] text-[var(--muted)] shrink-0 ml-3 flex items-center gap-1"><Check className="w-3 h-3" />Já adicionado</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-                  {openCompSlot === i && (
-                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-[var(--line)] rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                      {filteredCompClients.length === 0 ? (
-                        <p className="px-3 py-3 text-[12px] text-[var(--muted)]">Nenhum cliente encontrado.</p>
-                      ) : filteredCompClients.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onMouseDown={() => {
-                            setCompanions(prev => { const n = [...prev]; n[i] = c; return n; });
-                            setCompanionSearches(prev => { const n = [...prev]; n[i] = ""; return n; });
-                            setOpenCompSlot(null);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-[var(--cream)] transition"
-                        >
-                          <div className="text-[13px] font-medium">{c.name}</div>
-                          {(c.email || c.phone) && (
-                            <div className="text-[11px] text-[var(--muted)]">
-                              {c.email ?? ""}{c.email && c.phone ? " · " : ""}{c.phone ?? ""}
-                            </div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                )}
+
+                {/* Documentos de viagem */}
+                {renderDocFields(slot.docs, k => setSlotDoc(i, k))}
+              </div>
+            ))}
+          </>
         )}
-
-        <div className="border-t border-[var(--line)]" />
-
-        {/* Travel docs */}
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] mb-3">Documentos de viagem</p>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={lCls}>CC nº</label>
-              <input value={docs.id_card_number} onChange={setD("id_card_number")}
-                placeholder="ex: 12345678 0 ZX4" className={iCls} />
-            </div>
-            <div>
-              <label className={lCls}>Validade CC</label>
-              <input type="date" value={docs.id_card_expiry} onChange={setD("id_card_expiry")} className={iCls} />
-            </div>
-            <div>
-              <label className={lCls}>NIF</label>
-              <input value={docs.nif} onChange={setD("nif")} placeholder="ex: 123456789" className={iCls} />
-            </div>
-            <div>
-              <label className={lCls}>Data de nascimento</label>
-              <input type="date" value={docs.date_of_birth} onChange={setD("date_of_birth")} className={iCls} />
-            </div>
-          </div>
-          <div className="mt-3">
-            <label className={lCls}>Nacionalidade</label>
-            <input value={docs.nationality} onChange={setD("nationality")} placeholder="Portuguesa" className={iCls} />
-          </div>
-          <div className="mt-3">
-            <label className={lCls}>Notas</label>
-            <textarea rows={2} value={docs.notes} onChange={setD("notes")}
-              placeholder="Observações…" className={`${iCls} resize-none`} />
-          </div>
-        </div>
 
         {err && <p className="text-[13px] text-red-600">{err}</p>}
         <div className="flex gap-3 pb-1">
@@ -1042,16 +993,30 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     passengers.map((p) => p.client_id).filter((id): id is string => !!id)
   );
 
-  async function addPassenger(main: MainPassengerInput, roomType: string, companions: ClientOption[]) {
+  async function addPassenger(main: PersonInput, roomType: string, companions: PersonInput[]) {
     const supabase = createClient();
     const roomId   = roomType !== "individual" ? crypto.randomUUID() : null;
     const baseSort = passengers.length;
 
+    // Sync doc fields back to clients table
+    const syncDocs = async (clientId: string, docs: PaxFormDocs) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("clients").update({
+        id_card_number: docs.id_card_number || null,
+        id_card_expiry: docs.id_card_expiry || null,
+        nif:            docs.nif || null,
+        date_of_birth:  docs.date_of_birth || null,
+        nationality:    docs.nationality || null,
+      }).eq("id", clientId);
+    };
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const paxTable = supabase.from("trip_passengers") as any;
+
+    await syncDocs(main.client.id, main.docs);
     const { data: mainCreated, error: mainErr } = await paxTable.insert({
-      trip_id: trip.id, client_id: main.clientId,
-      full_name: main.clientName, phone: main.clientPhone, email: main.clientEmail,
+      trip_id: trip.id, client_id: main.client.id,
+      full_name: main.client.name, phone: main.client.phone, email: main.client.email,
       id_card_number: main.docs.id_card_number || null, id_card_expiry: main.docs.id_card_expiry || null,
       nif: main.docs.nif || null, date_of_birth: main.docs.date_of_birth || null,
       nationality: main.docs.nationality || "Portuguesa", notes: main.docs.notes || null,
@@ -1064,11 +1029,15 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     newPayments.set((mainCreated as Passenger).id, []);
 
     for (let i = 0; i < companions.length; i++) {
-      const c = companions[i];
+      const comp = companions[i];
+      await syncDocs(comp.client.id, comp.docs);
       const { data: compCreated, error: compErr } = await paxTable.insert({
-        trip_id: trip.id, client_id: c.id,
-        full_name: c.name, phone: c.phone, email: c.email,
-        nationality: "Portuguesa", sort_order: baseSort + 1 + i,
+        trip_id: trip.id, client_id: comp.client.id,
+        full_name: comp.client.name, phone: comp.client.phone, email: comp.client.email,
+        id_card_number: comp.docs.id_card_number || null, id_card_expiry: comp.docs.id_card_expiry || null,
+        nif: comp.docs.nif || null, date_of_birth: comp.docs.date_of_birth || null,
+        nationality: comp.docs.nationality || "Portuguesa", notes: comp.docs.notes || null,
+        sort_order: baseSort + 1 + i,
         room_type: roomType, room_id: roomId, is_main_occupant: false,
       }).select("*").single();
       if (compErr) throw new Error(compErr.message);
