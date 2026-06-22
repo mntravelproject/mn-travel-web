@@ -1020,6 +1020,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (createClient().from("trip_passengers") as any).update({ is_gift: !current }).eq("id", paxId);
     setPassengers(prev => prev.map(p => p.id === paxId ? { ...p, is_gift: !current } : p));
+    setPayPax(prev => prev?.id === paxId ? { ...prev, is_gift: !current } : prev);
   }
 
   function effectivePrice(roomType: string | undefined) {
