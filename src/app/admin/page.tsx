@@ -1475,18 +1475,20 @@ function ClientsView() {
     setSaving(true);
     setFormError("");
     const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const clientsTable = supabase.from("clients") as any;
     if (editClient) {
-      const { error } = await supabase.from("clients").update({
+      const { error } = await clientsTable.update({
         name: form.name,
-        ...(form.email ? { email: form.email } : {}),
+        email: form.email || null,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
       }).eq("id", editClient.id);
       if (error) { setFormError(error.message); setSaving(false); return; }
       setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null } : c));
     } else {
-      const { data, error } = await supabase.from("clients").insert({
+      const { data, error } = await clientsTable.insert({
         name: form.name,
-        ...(form.email ? { email: form.email } : {}),
+        email: form.email || null,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
       }).select("*").single();
       if (error) { setFormError(error.message); setSaving(false); return; }
