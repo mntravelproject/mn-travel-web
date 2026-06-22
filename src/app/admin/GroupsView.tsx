@@ -22,6 +22,7 @@ type Passenger = {
   nif: string | null; date_of_birth: string | null; nationality: string | null;
   phone: string | null; email: string | null; notes: string | null;
   sort_order: number; created_at: string;
+  room_type: string; room_id: string | null; is_main_occupant: boolean;
 };
 type Payment = {
   id: string; passenger_id: string; amount: number;
@@ -40,6 +41,12 @@ type PaxFormDocs = {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const METHODS: Record<string, string> = {
   mbway: "MB Way", transfer: "Transferência", cash: "Dinheiro", card: "Cartão", other: "Outro",
+};
+const ROOM_TYPES: Record<string, { label: string; capacity: number }> = {
+  individual: { label: "Individual",  capacity: 1 },
+  duplo:      { label: "Duplo",       capacity: 2 },
+  triplo:     { label: "Triplo",      capacity: 3 },
+  quadruplo:  { label: "Quádruplo",   capacity: 4 },
 };
 const EXPENSE_CATEGORIES: Record<string, string> = {
   voo: "Voo", hotel: "Hotel", transporte: "Transporte",
@@ -211,21 +218,35 @@ function TripForm({ initial, onSave, onCancel }: {
 }
 
 // ─── Passenger Modal ──────────────────────────────────────────────────────────
+type MainPassengerInput = {
+  clientId: string; clientName: string;
+  clientPhone: string | null; clientEmail: string | null;
+  docs: PaxFormDocs;
+};
+
 function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds }: {
   open: boolean; onClose: () => void;
-  onAdd: (clientId: string, clientName: string, clientPhone: string | null, clientEmail: string | null, docs: PaxFormDocs) => Promise<void>;
+  onAdd: (main: MainPassengerInput, roomType: string, companions: ClientOption[]) => Promise<void>;
   onEdit: (id: string, docs: PaxFormDocs) => Promise<void>;
   editPax: Passenger | null;
   takenClientIds: Set<string>;
 }) {
   const isEdit = !!editPax;
-  const [clients,  setClients]  = useState<ClientOption[]>([]);
-  const [search,   setSearch]   = useState("");
-  const [selected, setSelected] = useState<ClientOption | null>(null);
-  const [docs,     setDocs]     = useState<PaxFormDocs>(EMPTY_DOCS);
-  const [saving,   setSaving]   = useState(false);
-  const [err,      setErr]      = useState("");
+  const [clients,    setClients]    = useState<ClientOption[]>([]);
+  const [search,     setSearch]     = useState("");
+  const [selected,   setSelected]   = useState<ClientOption | null>(null);
+  const [docs,       setDocs]       = useState<PaxFormDocs>(EMPTY_DOCS);
+  const [roomType,   setRoomType]   = useState("individual");
+  const [companions, setCompanions] = useState<(ClientOption | null)[]>([]);
+  const [saving,     setSaving]     = useState(false);
+  const [err,        setErr]        = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+
+  function handleRoomTypeChange(type: string) {
+    setRoomType(type);
+    const slots = ROOM_TYPES[type].capacity - 1;
+    setCompanions(Array(slots).fill(null));
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -241,6 +262,7 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
       });
     } else {
       setDocs(EMPTY_DOCS); setSelected(null); setSearch("");
+      setRoomType("individual"); setCompanions([]);
       setTimeout(() => searchRef.current?.focus(), 130);
     }
     createClient().from("clients").select("id, name, email, phone").order("name")
@@ -264,7 +286,11 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
       if (isEdit) {
         await onEdit(editPax!.id, docs);
       } else {
-        await onAdd(selected!.id, selected!.name, selected!.phone, selected!.email, docs);
+        await onAdd(
+          { clientId: selected!.id, clientName: selected!.name, clientPhone: selected!.phone, clientEmail: selected!.email, docs },
+          roomType,
+          companions.filter((c): c is ClientOption => c !== null),
+        );
       }
     } catch (ex) { setErr((ex as Error).message); setSaving(false); }
   }
@@ -334,6 +360,58 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
             <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-1">Cliente</p>
             <p className="text-[14px] font-medium">{editPax.full_name}</p>
             {editPax.email && <p className="text-[11px] text-[var(--muted)]">{editPax.email}</p>}
+          </div>
+        )}
+
+        {/* Room type (add mode only) */}
+        {!isEdit && (
+          <div>
+            <label className={lCls}>Tipo de alojamento</label>
+            <div className="grid grid-cols-4 gap-2">
+              {Object.entries(ROOM_TYPES).map(([k, v]) => (
+                <button key={k} type="button" onClick={() => handleRoomTypeChange(k)}
+                  className={`py-2 px-2 rounded-xl border text-[12px] text-center transition ${
+                    roomType === k
+                      ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--cream)]"
+                      : "border-[var(--line)] hover:border-[var(--ink-soft)]"
+                  }`}>
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Companions (add mode, non-individual) */}
+        {!isEdit && roomType !== "individual" && (
+          <div className="space-y-2">
+            <label className={lCls}>Acompanhantes do quarto</label>
+            {Array.from({ length: ROOM_TYPES[roomType].capacity - 1 }).map((_, i) => (
+              <div key={i}>
+                <label className={lCls}>Acompanhante {i + 1}</label>
+                <select
+                  value={companions[i]?.id ?? ""}
+                  onChange={(e) => {
+                    const client = clients.find((c) => c.id === e.target.value) ?? null;
+                    setCompanions((prev) => { const n = [...prev]; n[i] = client; return n; });
+                  }}
+                  className={iCls}
+                >
+                  <option value="">— Seleccionar cliente —</option>
+                  {clients
+                    .filter((c) =>
+                      !takenClientIds.has(c.id) &&
+                      c.id !== selected?.id &&
+                      !companions.some((cp, j) => j !== i && cp?.id === c.id)
+                    )
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.email ? ` · ${c.email}` : ""}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ))}
           </div>
         )}
 
@@ -903,29 +981,48 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
   useEffect(() => { load(); }, [load]);
 
-  const getPaid = (id: string) => (payments.get(id) ?? []).reduce((s, p) => s + p.amount, 0);
+  const getPaid      = (id: string) => (payments.get(id) ?? []).reduce((s, p) => s + p.amount, 0);
+  const roomSizeFor  = (pax: Passenger) =>
+    pax.room_id ? passengers.filter((p) => p.room_id === pax.room_id).length : 1;
 
   const takenClientIds = new Set(
     passengers.map((p) => p.client_id).filter((id): id is string => !!id)
   );
 
-  async function addPassenger(
-    clientId: string, clientName: string,
-    clientPhone: string | null, clientEmail: string | null,
-    docs: PaxFormDocs
-  ) {
+  async function addPassenger(main: MainPassengerInput, roomType: string, companions: ClientOption[]) {
     const supabase = createClient();
-    const { data: created, error } = await supabase.from("trip_passengers").insert({
-      trip_id: trip.id, client_id: clientId,
-      full_name: clientName, phone: clientPhone, email: clientEmail,
-      id_card_number: docs.id_card_number || null, id_card_expiry: docs.id_card_expiry || null,
-      nif: docs.nif || null, date_of_birth: docs.date_of_birth || null,
-      nationality: docs.nationality || "Portuguesa", notes: docs.notes || null,
-      sort_order: passengers.length,
+    const roomId   = roomType !== "individual" ? crypto.randomUUID() : null;
+    const baseSort = passengers.length;
+
+    const { data: mainCreated, error: mainErr } = await supabase.from("trip_passengers").insert({
+      trip_id: trip.id, client_id: main.clientId,
+      full_name: main.clientName, phone: main.clientPhone, email: main.clientEmail,
+      id_card_number: main.docs.id_card_number || null, id_card_expiry: main.docs.id_card_expiry || null,
+      nif: main.docs.nif || null, date_of_birth: main.docs.date_of_birth || null,
+      nationality: main.docs.nationality || "Portuguesa", notes: main.docs.notes || null,
+      sort_order: baseSort, room_type: roomType, room_id: roomId, is_main_occupant: true,
     }).select("*").single();
-    if (error) throw new Error(error.message);
-    setPassengers((p) => [...p, created as Passenger]);
-    setPayments((m) => new Map(m).set((created as Passenger).id, []));
+    if (mainErr) throw new Error(mainErr.message);
+
+    const newPax: Passenger[] = [mainCreated as Passenger];
+    const newPayments = new Map<string, Payment[]>();
+    newPayments.set((mainCreated as Passenger).id, []);
+
+    for (let i = 0; i < companions.length; i++) {
+      const c = companions[i];
+      const { data: compCreated, error: compErr } = await supabase.from("trip_passengers").insert({
+        trip_id: trip.id, client_id: c.id,
+        full_name: c.name, phone: c.phone, email: c.email,
+        nationality: "Portuguesa", sort_order: baseSort + 1 + i,
+        room_type: roomType, room_id: roomId, is_main_occupant: false,
+      }).select("*").single();
+      if (compErr) throw new Error(compErr.message);
+      newPax.push(compCreated as Passenger);
+      newPayments.set((compCreated as Passenger).id, []);
+    }
+
+    setPassengers((prev) => [...prev, ...newPax]);
+    setPayments((m) => { const n = new Map(m); for (const [k, v] of newPayments) n.set(k, v); return n; });
     setShowAddModal(false);
   }
 
@@ -978,14 +1075,19 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
   function exportCSV() {
     const BOM     = "﻿";
-    const headers = ["#","Nome","CC nº","Val. CC","CC Expirado?","NIF","Data Nasc.","Nacionalidade","Telemóvel","Email","Total pago","Em falta","Estado","Notas"];
+    const headers = ["#","Nome","Alojamento","CC nº","Val. CC","CC Expirado?","NIF","Data Nasc.","Nacionalidade","Telemóvel","Email","Total pago","Em falta","Estado","Notas"];
     const rows = filtered.map((p, i) => {
-      const paid   = getPaid(p.id);
-      const out    = Math.max(0, trip.price_per_person - paid);
-      const status = payStatus(paid, trip.price_per_person);
-      const warn   = ccExpired(p.id_card_expiry, trip.end_date) ? "⚠ EXPIRADO" : "";
+      const paid     = getPaid(p.id);
+      const csvRoomSz = p.is_main_occupant ? roomSizeFor(p) : 0;
+      const csvDue    = trip.price_per_person * csvRoomSz;
+      const out      = Math.max(0, csvDue - paid);
+      const status   = payStatus(paid, csvDue);
+      const warn     = ccExpired(p.id_card_expiry, trip.end_date) ? "⚠ EXPIRADO" : "";
+      const roomLabel = ROOM_TYPES[p.room_type]?.label ?? p.room_type;
+      const role      = p.is_main_occupant ? "titular" : "acompanhante";
       return [
-        i + 1, p.full_name, p.id_card_number ?? "", fmtDate(p.id_card_expiry), warn,
+        i + 1, p.full_name, p.room_type === "individual" ? "Individual" : `${roomLabel} (${role})`,
+        p.id_card_number ?? "", fmtDate(p.id_card_expiry), warn,
         p.nif ?? "", fmtDate(p.date_of_birth), p.nationality ?? "",
         p.phone ?? "", p.email ?? "",
         paid.toFixed(2).replace(".", ","), out.toFixed(2).replace(".", ","),
@@ -1128,14 +1230,24 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                 </tr>
               )}
               {!loading && filtered.map((p, i) => {
-                const paid   = getPaid(p.id);
-                const out    = Math.max(0, trip.price_per_person - paid);
-                const status = payStatus(paid, trip.price_per_person);
-                const warn   = ccExpired(p.id_card_expiry, trip.end_date);
+                const paid     = getPaid(p.id);
+                const roomSz   = p.is_main_occupant ? roomSizeFor(p) : 1;
+                const totalDue = trip.price_per_person * roomSz;
+                const out      = Math.max(0, totalDue - paid);
+                const status   = payStatus(paid, totalDue);
+                const warn     = ccExpired(p.id_card_expiry, trip.end_date);
                 return (
-                  <tr key={p.id} className="hover:bg-[var(--cream)]/30 group">
+                  <tr key={p.id} className={`hover:bg-[var(--cream)]/30 group ${!p.is_main_occupant ? "bg-[var(--cream)]/20" : ""}`}>
                     <td className={`${tdCls} text-center text-[var(--muted)]`}>{i + 1}</td>
-                    <td className={`${tdCls} font-medium`}>{p.full_name}</td>
+                    <td className={`${tdCls} font-medium`}>
+                      <div>{p.full_name}</div>
+                      {p.room_type !== "individual" && (
+                        <div className="text-[10px] text-[var(--muted)] mt-0.5">
+                          {ROOM_TYPES[p.room_type]?.label ?? p.room_type}
+                          {" · "}{p.is_main_occupant ? "titular" : "acompanhante"}
+                        </div>
+                      )}
+                    </td>
                     <td className={tdCls}>{p.id_card_number ?? <span className="text-[var(--muted)]">—</span>}</td>
                     <td className={tdCls}>
                       <span className={`inline-flex items-center gap-1 ${warn ? "text-amber-600 font-medium" : ""}`}>
@@ -1147,14 +1259,21 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                     <td className={tdCls}>{fmtDate(p.date_of_birth)}</td>
                     <td className={tdCls}>{p.nationality ?? <span className="text-[var(--muted)]">—</span>}</td>
                     <td className={tdCls}>
-                      <button onClick={() => setPayPax(p)} className="text-left group/pay">
-                        <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${status.cls}`}>
-                          {status.label}
+                      {p.is_main_occupant ? (
+                        <button onClick={() => setPayPax(p)} className="text-left group/pay">
+                          <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${status.cls}`}>
+                            {status.label}
+                          </span>
+                          <span className="block text-[10px] text-[var(--muted)] mt-0.5 group-hover/pay:text-[var(--ink)] transition">
+                            {fmt(paid)} · {fmt(out)} em falta
+                            {roomSz > 1 && ` · ${roomSz} pax`}
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-[var(--cream-2)] text-[var(--muted)]">
+                          Incluído no quarto
                         </span>
-                        <span className="block text-[10px] text-[var(--muted)] mt-0.5 group-hover/pay:text-[var(--ink)] transition">
-                          {fmt(paid)} · {fmt(out)} em falta
-                        </span>
-                      </button>
+                      )}
                     </td>
                     <td className={`${tdCls} text-center`}>
                       <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
@@ -1224,7 +1343,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
           <PaymentModal
             passenger={payPax}
             payments={payments.get(payPax.id) ?? []}
-            pricePerPerson={trip.price_per_person}
+            pricePerPerson={trip.price_per_person * roomSizeFor(payPax)}
             onAdd={(data) => addPayment(payPax.id, data)}
             onDelete={(payId) => deletePayment(payPax.id, payId)}
             onClose={() => setPayPax(null)}
