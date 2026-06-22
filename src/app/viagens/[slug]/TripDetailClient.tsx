@@ -23,9 +23,16 @@ const ease = [0.16, 1, 0.3, 1] as const;
 const STATUS: Record<string, { label: string; cls: string }> = {
   disponivel:      { label: "Disponível",      cls: "!bg-emerald-50 !text-emerald-800 !border-emerald-200" },
   ultimos_lugares: { label: "Últimos lugares", cls: "!bg-amber-50 !text-amber-800 !border-amber-200" },
-  esgotado:        { label: "Esgotado",        cls: "!bg-red-50 !text-red-600 !border-red-200" },
+  esgotado:        { label: "Não disponível",  cls: "!bg-red-50 !text-red-600 !border-red-200" },
   em_breve:        { label: "Em breve",        cls: "!bg-[var(--cream-2)] !text-[var(--ink-soft)]" },
 };
+
+function seatBadge(remaining: number | null, dbStatus: string | null) {
+  if (remaining === 0) return { label: "Não disponível", cls: "!bg-red-50 !text-red-600 !border-red-200" };
+  if (remaining !== null && remaining <= 5) return { label: "Últimos lugares", cls: "!bg-amber-50 !text-amber-800 !border-amber-200" };
+  if (dbStatus && STATUS[dbStatus]) return STATUS[dbStatus];
+  return STATUS.disponivel;
+}
 
 export function TripDetailClient({ trip, remainingSeats }: Props) {
   const [activeImg,   setActiveImg]   = useState(0);
@@ -62,6 +69,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
 
   const gallery = trip.images ?? [];
   const itinerary = trip.itinerary ?? [];
+  const availability = seatBadge(remainingSeats, trip.trip_status ?? null);
 
   return (
     <>
@@ -88,10 +96,10 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                       {trip.tag}
                     </Pill>
                   )}
-                  {trip.trip_status && STATUS[trip.trip_status] && (
-                    <Pill className={STATUS[trip.trip_status].cls}>
-                      {STATUS[trip.trip_status].label}
-                      {remainingSeats != null && trip.trip_status !== "esgotado" && (
+                  {(trip.trip_status || remainingSeats !== null) && (
+                    <Pill className={availability.cls}>
+                      {availability.label}
+                      {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 && (
                         <span className="ml-1 opacity-70">· {remainingSeats} lugar{remainingSeats !== 1 ? "es" : ""}</span>
                       )}
                     </Pill>
@@ -273,10 +281,9 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                               {trip.return_date && ` — ${formatTripDate(trip.return_date)}`}
                             </div>
                             <div className="text-[12px] text-[var(--muted)] mt-1 tracking-tight">
-                              {trip.trip_status && STATUS[trip.trip_status]
-                                ? STATUS[trip.trip_status].label
-                                : "Disponível"}
-                              {remainingSeats != null && ` · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""} disponíve${remainingSeats !== 1 ? "is" : "l"}`}
+                              {availability.label}
+                              {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 &&
+                                ` · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`}
                             </div>
                           </div>
                           <div className="text-right">
@@ -303,14 +310,16 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     <div className="text-[12px] uppercase tracking-[0.18em] text-[var(--muted)]">desde</div>
                     <div className="mt-1 font-display text-[40px] leading-none">{formatPrice(trip.price_from)}</div>
                     <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">por pessoa · ocupação dupla</div>
-                    {remainingSeats != null && (
+                    {remainingSeats !== null && (
                       <div className={`mt-1.5 text-[12px] font-medium tracking-tight ${
                         remainingSeats === 0 ? "text-red-600" :
                         remainingSeats <= 5  ? "text-amber-700" : "text-emerald-700"
                       }`}>
                         {remainingSeats === 0
-                          ? "Esgotado"
-                          : `${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""} disponíve${remainingSeats !== 1 ? "is" : "l"}`}
+                          ? "Não disponível"
+                          : remainingSeats <= 5
+                            ? `Últimos lugares · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`
+                            : `${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""} disponíve${remainingSeats !== 1 ? "is" : "l"}`}
                       </div>
                     )}
                   </div>

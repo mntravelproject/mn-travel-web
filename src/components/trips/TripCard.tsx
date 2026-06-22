@@ -45,13 +45,28 @@ export function TripCard({ trip, large = false, className }: TripCardProps) {
 
           {/* Top badges */}
           <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-            {trip.tag ? (
-              <Pill className="!bg-white/85 !border-transparent text-[var(--ink)]">
-                {trip.tag}
-              </Pill>
-            ) : (
-              <span />
-            )}
+            <div className="flex flex-col gap-2 items-start">
+              {trip.tag && (
+                <Pill className="!bg-white/85 !border-transparent text-[var(--ink)]">
+                  {trip.tag}
+                </Pill>
+              )}
+              {trip.trip_status && trip.trip_status !== "disponivel" && (
+                <Pill className={
+                  trip.trip_status === "esgotado"
+                    ? "!bg-red-500/90 !border-transparent !text-white"
+                    : trip.trip_status === "ultimos_lugares"
+                      ? "!bg-amber-500/90 !border-transparent !text-white"
+                      : "!bg-white/85 !border-transparent text-[var(--ink)]"
+                }>
+                  {trip.trip_status === "esgotado"
+                    ? "Não disponível"
+                    : trip.trip_status === "ultimos_lugares"
+                      ? "Últimos lugares"
+                      : trip.trip_status}
+                </Pill>
+              )}
+            </div>
             <motion.button
               whileHover={reduced ? {} : { scale: 1.12 }}
               whileTap={reduced ? {} : { scale: 0.9 }}
