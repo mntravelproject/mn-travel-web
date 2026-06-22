@@ -1477,14 +1477,14 @@ function ClientsView() {
     const supabase = createClient();
     if (editClient) {
       const { error } = await supabase.from("clients").update({
-        name: form.name, email: form.email || null,
+        name: form.name, email: form.email || undefined,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
       }).eq("id", editClient.id);
       if (error) { setFormError(error.message); setSaving(false); return; }
       setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null } : c));
     } else {
       const { data, error } = await supabase.from("clients").insert({
-        name: form.name, email: form.email || null,
+        name: form.name, email: form.email || undefined,
         phone: form.phone || null, country: form.country || null, notes: form.notes || null,
       }).select("*").single();
       if (error) { setFormError(error.message); setSaving(false); return; }
