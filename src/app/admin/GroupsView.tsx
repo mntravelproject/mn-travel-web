@@ -24,6 +24,7 @@ type Passenger = {
   phone: string | null; email: string | null; notes: string | null;
   sort_order: number; created_at: string;
   room_type: string; room_id: string | null; is_main_occupant: boolean;
+  is_gift: boolean;
 };
 type Payment = {
   id: string; passenger_id: string; amount: number;
@@ -482,21 +483,28 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
 }
 
 // ─── Payment Modal ────────────────────────────────────────────────────────────
-function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, onClose }: {
-  passenger: Passenger; payments: Payment[]; pricePerPerson: number;
+function PaymentModal({ passenger, payments, pricePerPerson, isGift, onAdd, onDelete, onToggleGift, onClose }: {
+  passenger: Passenger; payments: Payment[]; pricePerPerson: number; isGift: boolean;
   onAdd: (d: { amount: number; payment_date: string; method: string; notes: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onToggleGift: () => Promise<void>;
   onClose: () => void;
 }) {
   const [form, setForm] = useState({
     amount: "", payment_date: new Date().toISOString().slice(0, 10), method: "transfer", notes: "",
   });
-  const [saving, setSaving] = useState(false);
-  const [err,    setErr]    = useState("");
+  const [saving,       setSaving]       = useState(false);
+  const [togglingGift, setTogglingGift] = useState(false);
+  const [err,          setErr]          = useState("");
 
   const totalPaid   = payments.reduce((s, p) => s + p.amount, 0);
-  const outstanding = Math.max(0, pricePerPerson - totalPaid);
-  const status      = payStatus(totalPaid, pricePerPerson);
+  const outstanding = isGift ? 0 : Math.max(0, pricePerPerson - totalPaid);
+  const status      = isGift ? { label: "Pago", cls: "bg-emerald-100 text-emerald-700" } : payStatus(totalPaid, pricePerPerson);
+
+  async function handleToggleGift() {
+    setTogglingGift(true);
+    try { await onToggleGift(); } finally { setTogglingGift(false); }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -512,6 +520,21 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
 
   return (
     <div className="px-7 py-6 space-y-6">
+      {/* Oferta toggle */}
+      <button
+        type="button"
+        onClick={handleToggleGift}
+        disabled={togglingGift}
+        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition ${
+          isGift ? "bg-emerald-50 border-emerald-200" : "bg-white border-[var(--line)] hover:border-[var(--ink)]"
+        }`}
+      >
+        <span className="text-[13px] font-medium">Oferta</span>
+        <span className={`w-10 h-6 rounded-full relative flex-shrink-0 transition-colors ${isGift ? "bg-emerald-500" : "bg-[var(--cream-2)]"}`}>
+          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${isGift ? "right-0.5" : "left-0.5 border border-[var(--line-2)]"}`} />
+        </span>
+      </button>
+
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-[var(--line)] p-4">
           <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Total</p>
@@ -556,7 +579,11 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
         </div>
       )}
 
-      <form onSubmit={submit} className="space-y-3">
+      {isGift && (
+        <p className="text-[13px] text-emerald-600 text-center py-2">Este passageiro tem a viagem como oferta — sem valor a pagar.</p>
+      )}
+
+      {!isGift && <form onSubmit={submit} className="space-y-3">
         <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Registar pagamento</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -592,7 +619,7 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
             {saving ? "A guardar…" : "Registar pagamento"}
           </button>
         </div>
-      </form>
+      </form>}
     </div>
   );
 }
@@ -989,6 +1016,12 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     setExpandedRooms(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
   }
 
+  async function toggleGift(paxId: string, current: boolean) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (createClient().from("trip_passengers") as any).update({ is_gift: !current }).eq("id", paxId);
+    setPassengers(prev => prev.map(p => p.id === paxId ? { ...p, is_gift: !current } : p));
+  }
+
   function effectivePrice(roomType: string | undefined) {
     if (roomType === "individual") return trip.price_per_person + (trip.individual_supplement ?? 0);
     if (roomType === "triplo" || roomType === "quadruplo") return Math.max(0, trip.price_per_person - (trip.triple_supplement ?? 0));
@@ -1143,9 +1176,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     const headers = ["#","Nome","Alojamento","CC nº","Val. CC","CC Expirado?","NIF","Data Nasc.","Nacionalidade","Telemóvel","Email","Total pago","Em falta","Estado","Notas"];
     const rows = filtered.map((p, i) => {
       const paid   = getPaid(p.id);
-      const due    = effectivePrice(p.room_type);
-      const out    = Math.max(0, due - paid);
-      const status = payStatus(paid, due);
+      const due    = p.is_gift ? 0 : effectivePrice(p.room_type);
+      const out    = p.is_gift ? 0 : Math.max(0, due - paid);
+      const status = p.is_gift ? { label: "Pago", cls: "" } : payStatus(paid, due);
       const warn     = ccExpired(p.id_card_expiry, trip.end_date) ? "⚠ EXPIRADO" : "";
       const roomLabel = ROOM_TYPES[p.room_type]?.label ?? p.room_type;
       const role      = p.is_main_occupant ? "titular" : "acompanhante";
@@ -1166,7 +1199,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     a.click(); URL.revokeObjectURL(url);
   }
 
-  const totalExpected    = passengers.reduce((s, p) => s + effectivePrice(p.room_type), 0);
+  const totalExpected    = passengers.reduce((s, p) => s + (p.is_gift ? 0 : effectivePrice(p.room_type)), 0);
   const totalPaidAll     = passengers.reduce((s, p) => s + getPaid(p.id), 0);
   const totalOutstanding = Math.max(0, totalExpected - totalPaidAll);
   const pct              = totalExpected > 0 ? Math.min(100, (totalPaidAll / totalExpected) * 100) : 0;
@@ -1315,9 +1348,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
               )}
               {!loading && filteredGroups.map(({ main: p, companions }, groupIdx) => {
                 const paid     = getPaid(p.id);
-                const totalDue = effectivePrice(p.room_type);
-                const out      = Math.max(0, totalDue - paid);
-                const status   = payStatus(paid, totalDue);
+                const totalDue = p.is_gift ? 0 : effectivePrice(p.room_type);
+                const out      = p.is_gift ? 0 : Math.max(0, totalDue - paid);
+                const status   = p.is_gift ? { label: "Pago", cls: "bg-emerald-100 text-emerald-700" } : payStatus(paid, totalDue);
                 const warn     = ccExpired(p.id_card_expiry, trip.end_date);
                 const hasComp  = companions.length > 0;
                 const isOpen   = expandedRooms.has(p.room_id ?? p.id);
@@ -1382,9 +1415,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                     {/* Companion rows (accordion children) */}
                     {hasComp && isOpen && companions.map((c) => {
                       const cPaid   = getPaid(c.id);
-                      const cDue    = effectivePrice(c.room_type);
-                      const cOut    = Math.max(0, cDue - cPaid);
-                      const cStatus = payStatus(cPaid, cDue);
+                      const cDue    = c.is_gift ? 0 : effectivePrice(c.room_type);
+                      const cOut    = c.is_gift ? 0 : Math.max(0, cDue - cPaid);
+                      const cStatus = c.is_gift ? { label: "Pago", cls: "bg-emerald-100 text-emerald-700" } : payStatus(cPaid, cDue);
                       const cWarn   = ccExpired(c.id_card_expiry, trip.end_date);
                       return (
                         <tr key={c.id} className="bg-[var(--cream)]/40 group border-t-0">
@@ -1490,8 +1523,10 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
             passenger={payPax}
             payments={payments.get(payPax.id) ?? []}
             pricePerPerson={effectivePrice(payPax.room_type)}
+            isGift={payPax.is_gift}
             onAdd={(data) => addPayment(payPax.id, data)}
             onDelete={(payId) => deletePayment(payPax.id, payId)}
+            onToggleGift={() => toggleGift(payPax.id, payPax.is_gift)}
             onClose={() => setPayPax(null)}
           />
         )}
