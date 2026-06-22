@@ -1084,11 +1084,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     const BOM     = "﻿";
     const headers = ["#","Nome","Alojamento","CC nº","Val. CC","CC Expirado?","NIF","Data Nasc.","Nacionalidade","Telemóvel","Email","Total pago","Em falta","Estado","Notas"];
     const rows = filtered.map((p, i) => {
-      const paid     = getPaid(p.id);
-      const csvRoomSz = p.is_main_occupant ? roomSizeFor(p) : 0;
-      const csvDue    = trip.price_per_person * csvRoomSz;
-      const out      = Math.max(0, csvDue - paid);
-      const status   = payStatus(paid, csvDue);
+      const paid   = getPaid(p.id);
+      const out    = Math.max(0, trip.price_per_person - paid);
+      const status = payStatus(paid, trip.price_per_person);
       const warn     = ccExpired(p.id_card_expiry, trip.end_date) ? "⚠ EXPIRADO" : "";
       const roomLabel = ROOM_TYPES[p.room_type]?.label ?? p.room_type;
       const role      = p.is_main_occupant ? "titular" : "acompanhante";
@@ -1258,8 +1256,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
               )}
               {!loading && filteredGroups.map(({ main: p, companions }, groupIdx) => {
                 const paid     = getPaid(p.id);
-                const roomSz   = roomSizeFor(p);
-                const totalDue = trip.price_per_person * roomSz;
+                const totalDue = trip.price_per_person;
                 const out      = Math.max(0, totalDue - paid);
                 const status   = payStatus(paid, totalDue);
                 const warn     = ccExpired(p.id_card_expiry, trip.end_date);
@@ -1307,7 +1304,6 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                           </span>
                           <span className="block text-[10px] text-[var(--muted)] mt-0.5 group-hover/pay:text-[var(--ink)] transition">
                             {fmt(paid)} · {fmt(out)} em falta
-                            {roomSz > 1 && ` · ${roomSz} pax`}
                           </span>
                         </button>
                       </td>
@@ -1326,7 +1322,10 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                     </tr>
                     {/* Companion rows (accordion children) */}
                     {hasComp && isOpen && companions.map((c) => {
-                      const cWarn = ccExpired(c.id_card_expiry, trip.end_date);
+                      const cPaid   = getPaid(c.id);
+                      const cOut    = Math.max(0, trip.price_per_person - cPaid);
+                      const cStatus = payStatus(cPaid, trip.price_per_person);
+                      const cWarn   = ccExpired(c.id_card_expiry, trip.end_date);
                       return (
                         <tr key={c.id} className="bg-[var(--cream)]/40 group border-t-0">
                           <td className={`${tdCls} text-center text-[var(--muted)] border-t-0`} />
@@ -1350,9 +1349,14 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                           <td className={`${tdCls} text-[12px] border-t-0`}>{fmtDate(c.date_of_birth)}</td>
                           <td className={`${tdCls} text-[12px] border-t-0`}>{c.nationality ?? <span className="text-[var(--muted)]">—</span>}</td>
                           <td className={`${tdCls} border-t-0`}>
-                            <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-medium bg-[var(--cream-2)] text-[var(--muted)]">
-                              Incluído no quarto
-                            </span>
+                            <button onClick={() => setPayPax(c)} className="text-left group/pay">
+                              <span className={`inline-block text-[10px] px-2 py-0.5 rounded-full font-medium ${cStatus.cls}`}>
+                                {cStatus.label}
+                              </span>
+                              <span className="block text-[10px] text-[var(--muted)] mt-0.5 group-hover/pay:text-[var(--ink)] transition">
+                                {fmt(cPaid)} · {fmt(cOut)} em falta
+                              </span>
+                            </button>
                           </td>
                           <td className={`${tdCls} text-center border-t-0`}>
                             <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition">
@@ -1425,7 +1429,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
           <PaymentModal
             passenger={payPax}
             payments={payments.get(payPax.id) ?? []}
-            pricePerPerson={trip.price_per_person * roomSizeFor(payPax)}
+            pricePerPerson={trip.price_per_person}
             onAdd={(data) => addPayment(payPax.id, data)}
             onDelete={(payId) => deletePayment(payPax.id, payId)}
             onClose={() => setPayPax(null)}
