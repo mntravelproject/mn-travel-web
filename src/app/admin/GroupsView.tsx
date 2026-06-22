@@ -843,12 +843,6 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     setTrips((prev) => prev.filter((x) => x.id !== t.id));
   }
 
-  function effectivePrice(roomType: string | undefined) {
-    if (roomType === "individual") return trip.price_per_person + (trip.individual_supplement ?? 0);
-    if (roomType === "triplo" || roomType === "quadruplo") return Math.max(0, trip.price_per_person - (trip.triple_supplement ?? 0));
-    return trip.price_per_person;
-  }
-
   function dateRange(s: string, e: string) {
     const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
     const start = fmtDate(s) ? new Date(s + "T00:00:00").toLocaleDateString("pt-PT", opts) : "—";
@@ -986,6 +980,12 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
   function toggleRoom(key: string) {
     setExpandedRooms(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  }
+
+  function effectivePrice(roomType: string | undefined) {
+    if (roomType === "individual") return trip.price_per_person + (trip.individual_supplement ?? 0);
+    if (roomType === "triplo" || roomType === "quadruplo") return Math.max(0, trip.price_per_person - (trip.triple_supplement ?? 0));
+    return trip.price_per_person;
   }
 
   const load = useCallback(async () => {
