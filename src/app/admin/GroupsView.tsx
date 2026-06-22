@@ -237,15 +237,19 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
   const [selected,   setSelected]   = useState<ClientOption | null>(null);
   const [docs,       setDocs]       = useState<PaxFormDocs>(EMPTY_DOCS);
   const [roomType,   setRoomType]   = useState("individual");
-  const [companions, setCompanions] = useState<(ClientOption | null)[]>([]);
-  const [saving,     setSaving]     = useState(false);
-  const [err,        setErr]        = useState("");
+  const [companions,       setCompanions]       = useState<(ClientOption | null)[]>([]);
+  const [companionSearches, setCompanionSearches] = useState<string[]>([]);
+  const [openCompSlot,      setOpenCompSlot]      = useState<number | null>(null);
+  const [saving,           setSaving]            = useState(false);
+  const [err,              setErr]               = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
   function handleRoomTypeChange(type: string) {
     setRoomType(type);
     const slots = ROOM_TYPES[type].capacity - 1;
     setCompanions(Array(slots).fill(null));
+    setCompanionSearches(Array(slots).fill(""));
+    setOpenCompSlot(null);
   }
 
   useEffect(() => {
@@ -262,7 +266,7 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
       });
     } else {
       setDocs(EMPTY_DOCS); setSelected(null); setSearch("");
-      setRoomType("individual"); setCompanions([]);
+      setRoomType("individual"); setCompanions([]); setCompanionSearches([]); setOpenCompSlot(null);
       setTimeout(() => searchRef.current?.focus(), 130);
     }
     createClient().from("clients").select("id, name, email, phone").order("name")
@@ -386,32 +390,76 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
         {!isEdit && roomType !== "individual" && (
           <div className="space-y-2">
             <label className={lCls}>Acompanhantes do quarto</label>
-            {Array.from({ length: ROOM_TYPES[roomType].capacity - 1 }).map((_, i) => (
-              <div key={i}>
-                <label className={lCls}>Acompanhante {i + 1}</label>
-                <select
-                  value={companions[i]?.id ?? ""}
-                  onChange={(e) => {
-                    const client = clients.find((c) => c.id === e.target.value) ?? null;
-                    setCompanions((prev) => { const n = [...prev]; n[i] = client; return n; });
-                  }}
-                  className={iCls}
-                >
-                  <option value="">— Seleccionar cliente —</option>
-                  {clients
-                    .filter((c) =>
-                      !takenClientIds.has(c.id) &&
-                      c.id !== selected?.id &&
-                      !companions.some((cp, j) => j !== i && cp?.id === c.id)
-                    )
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}{c.email ? ` · ${c.email}` : ""}
-                      </option>
-                    ))}
-                </select>
-              </div>
-            ))}
+            {Array.from({ length: ROOM_TYPES[roomType].capacity - 1 }).map((_, i) => {
+              const slotSearch   = companionSearches[i] ?? "";
+              const slotSelected = companions[i];
+              const eligibleClients = clients.filter((c) =>
+                !takenClientIds.has(c.id) &&
+                c.id !== selected?.id &&
+                !companions.some((cp, j) => j !== i && cp?.id === c.id)
+              );
+              const filteredCompClients = slotSearch
+                ? eligibleClients.filter(c => c.name.toLowerCase().includes(slotSearch.toLowerCase()) || (c.email ?? "").toLowerCase().includes(slotSearch.toLowerCase()))
+                : eligibleClients;
+              return (
+                <div key={i} className="relative">
+                  <label className={lCls}>Acompanhante {i + 1}</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={slotSelected ? slotSelected.name : slotSearch}
+                      placeholder="Pesquisar cliente..."
+                      onFocus={() => setOpenCompSlot(i)}
+                      onBlur={() => setTimeout(() => setOpenCompSlot(null), 150)}
+                      onChange={(e) => {
+                        if (slotSelected) setCompanions(prev => { const n = [...prev]; n[i] = null; return n; });
+                        setCompanionSearches(prev => { const n = [...prev]; n[i] = e.target.value; return n; });
+                        setOpenCompSlot(i);
+                      }}
+                      className={`${iCls} pr-7`}
+                    />
+                    {slotSelected && (
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setCompanions(prev => { const n = [...prev]; n[i] = null; return n; });
+                          setCompanionSearches(prev => { const n = [...prev]; n[i] = ""; return n; });
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-[var(--ink)] transition"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {openCompSlot === i && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-[var(--line)] rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {filteredCompClients.length === 0 ? (
+                        <p className="px-3 py-3 text-[12px] text-[var(--muted)]">Nenhum cliente encontrado.</p>
+                      ) : filteredCompClients.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onMouseDown={() => {
+                            setCompanions(prev => { const n = [...prev]; n[i] = c; return n; });
+                            setCompanionSearches(prev => { const n = [...prev]; n[i] = ""; return n; });
+                            setOpenCompSlot(null);
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-[var(--cream)] transition"
+                        >
+                          <div className="text-[13px] font-medium">{c.name}</div>
+                          {(c.email || c.phone) && (
+                            <div className="text-[11px] text-[var(--muted)]">
+                              {c.email ?? ""}{c.email && c.phone ? " · " : ""}{c.phone ?? ""}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
