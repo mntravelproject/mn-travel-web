@@ -2116,9 +2116,11 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     price_from:        trip?.price_from        ?? 0,
     duration_days:     trip?.duration_days     ?? 7,
     nights:            trip?.nights            ?? 6,
-    departure_date:    trip?.departure_date    ?? "",
-    return_date:       trip?.return_date       ?? "",
-    available_seats:   trip?.available_seats != null ? String(trip.available_seats) : "",
+    departure_date:         trip?.departure_date         ?? "",
+    return_date:            trip?.return_date            ?? "",
+    individual_supplement:  (trip as any)?.individual_supplement  ?? 0,
+    triple_supplement:      (trip as any)?.triple_supplement      ?? 0,
+    available_seats:        trip?.available_seats != null ? String(trip.available_seats) : "",
     trip_status:       trip?.trip_status       ?? "disponivel",
     category_id:       (trip?.category_id      ?? null) as string | null,
     short_description: trip?.short_description ?? "",
@@ -2259,8 +2261,10 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       price_from:        form.price_from,
       short_description: form.short_description.trim() || null,
       long_description:  form.long_description.trim()  || null,
-      departure_date:    form.departure_date || null,
-      return_date:       form.return_date    || null,
+      departure_date:         form.departure_date || null,
+      return_date:            form.return_date    || null,
+      individual_supplement:  form.individual_supplement,
+      triple_supplement:      form.triple_supplement,
       available_seats:   form.available_seats !== "" ? Number(form.available_seats) : null,
       trip_status:       form.trip_status || null,
       category_id:       form.category_id || null,
@@ -2405,6 +2409,32 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
                     onChange={(e) => setForm({ ...form, price_from: +e.target.value })}
                     className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
                   />
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Suplemento individual (€)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={form.individual_supplement}
+                    onChange={(e) => setForm({ ...form, individual_supplement: +e.target.value })}
+                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                  />
+                  <p className="text-[11px] text-[var(--muted)] mt-1">Adicionado ao preço base no quarto individual</p>
+                </div>
+                <div>
+                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Suplemento triplo (€)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={form.triple_supplement}
+                    onChange={(e) => setForm({ ...form, triple_supplement: +e.target.value })}
+                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                  />
+                  <p className="text-[11px] text-[var(--muted)] mt-1">Subtraído ao preço base no quarto triplo/quádruplo</p>
                 </div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">

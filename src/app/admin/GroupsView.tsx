@@ -14,6 +14,7 @@ type TripGroup = {
   id: string; title: string; destination: string;
   start_date: string; end_date: string;
   price_per_person: number; notes: string | null;
+  individual_supplement: number; triple_supplement: number;
   package_id: string | null; created_at: string; updated_at: string;
 };
 type Passenger = {
@@ -119,8 +120,8 @@ function Modal({ open, onClose, title, children, wide }: {
 }
 
 // ─── Trip Form ────────────────────────────────────────────────────────────────
-const EMPTY_TRIP = { title: "", destination: "", start_date: "", end_date: "", price_per_person: "", notes: "", package_id: "" };
-type PackageOption = { id: string; title: string; country: string; departure_date: string | null; return_date: string | null; price_from: number };
+const EMPTY_TRIP = { title: "", destination: "", start_date: "", end_date: "", price_per_person: "", individual_supplement: "0", triple_supplement: "0", notes: "", package_id: "" };
+type PackageOption = { id: string; title: string; country: string; departure_date: string | null; return_date: string | null; price_from: number; individual_supplement: number; triple_supplement: number };
 
 function TripForm({ initial, onSave, onCancel }: {
   initial?: typeof EMPTY_TRIP;
@@ -135,7 +136,7 @@ function TripForm({ initial, onSave, onCancel }: {
   useEffect(() => {
     createClient()
       .from("travel_packages")
-      .select("id, title, country, departure_date, return_date, price_from")
+      .select("id, title, country, departure_date, return_date, price_from, individual_supplement, triple_supplement")
       .order("departure_date", { ascending: true })
       .then(({ data }) => { if (data) setPackages(data as PackageOption[]); });
   }, []);
@@ -148,7 +149,9 @@ function TripForm({ initial, onSave, onCancel }: {
       ...f, package_id: id, title: pkg.title, destination: pkg.country,
       start_date: pkg.departure_date ?? f.start_date,
       end_date:   pkg.return_date    ?? f.end_date,
-      price_per_person: String(pkg.price_from),
+      price_per_person:      String(pkg.price_from),
+      individual_supplement: String(pkg.individual_supplement ?? 0),
+      triple_supplement:     String(pkg.triple_supplement     ?? 0),
     }));
   }
 
@@ -203,6 +206,20 @@ function TripForm({ initial, onSave, onCancel }: {
         <label className={lCls}>Preço por pessoa (€) *</label>
         <input type="number" min="0" step="0.01" value={form.price_per_person}
           onChange={f("price_per_person")} placeholder="1500.00" className={iCls} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={lCls}>Suplemento individual (€)</label>
+          <input type="number" min="0" step="0.01" value={form.individual_supplement}
+            onChange={f("individual_supplement")} placeholder="0.00" className={iCls} />
+          <p className="text-[10.5px] text-[var(--muted)] mt-1">+ ao preço no quarto individual</p>
+        </div>
+        <div>
+          <label className={lCls}>Suplemento triplo (€)</label>
+          <input type="number" min="0" step="0.01" value={form.triple_supplement}
+            onChange={f("triple_supplement")} placeholder="0.00" className={iCls} />
+          <p className="text-[10.5px] text-[var(--muted)] mt-1">− ao preço no quarto triplo/quádruplo</p>
+        </div>
       </div>
       <div>
         <label className={lCls}>Notas</label>
@@ -789,7 +806,9 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     const { data: created, error } = await supabase.from("trip_groups").insert({
       title: data.title, destination: data.destination,
       start_date: data.start_date, end_date: data.end_date,
-      price_per_person: parseFloat(data.price_per_person),
+      price_per_person:      parseFloat(data.price_per_person),
+      individual_supplement: parseFloat(data.individual_supplement) || 0,
+      triple_supplement:     parseFloat(data.triple_supplement)     || 0,
       notes: data.notes || null, package_id: data.package_id || null,
     }).select("*").single();
     if (error) throw new Error(error.message);
@@ -804,7 +823,9 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     const updates = {
       title: data.title, destination: data.destination,
       start_date: data.start_date, end_date: data.end_date,
-      price_per_person: parseFloat(data.price_per_person),
+      price_per_person:      parseFloat(data.price_per_person),
+      individual_supplement: parseFloat(data.individual_supplement) || 0,
+      triple_supplement:     parseFloat(data.triple_supplement)     || 0,
       notes: data.notes || null, package_id: data.package_id || null,
     };
     const { error } = await supabase.from("trip_groups").update(updates).eq("id", editTrip.id);
@@ -818,6 +839,12 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     const supabase = createClient();
     await supabase.from("trip_groups").delete().eq("id", t.id);
     setTrips((prev) => prev.filter((x) => x.id !== t.id));
+  }
+
+  function effectivePrice(roomType: string | undefined) {
+    if (roomType === "individual") return trip.price_per_person + (trip.individual_supplement ?? 0);
+    if (roomType === "triplo" || roomType === "quadruplo") return Math.max(0, trip.price_per_person - (trip.triple_supplement ?? 0));
+    return trip.price_per_person;
   }
 
   function dateRange(s: string, e: string) {
@@ -929,8 +956,10 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
             initial={{
               title: editTrip.title, destination: editTrip.destination,
               start_date: editTrip.start_date, end_date: editTrip.end_date,
-              price_per_person: String(editTrip.price_per_person), notes: editTrip.notes ?? "",
-              package_id: editTrip.package_id ?? "",
+              price_per_person:      String(editTrip.price_per_person),
+              individual_supplement: String(editTrip.individual_supplement ?? 0),
+              triple_supplement:     String(editTrip.triple_supplement     ?? 0),
+              notes: editTrip.notes ?? "", package_id: editTrip.package_id ?? "",
             }}
             onSave={updateTrip} onCancel={() => setEditTrip(null)}
           />
@@ -1105,8 +1134,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     const headers = ["#","Nome","Alojamento","CC nº","Val. CC","CC Expirado?","NIF","Data Nasc.","Nacionalidade","Telemóvel","Email","Total pago","Em falta","Estado","Notas"];
     const rows = filtered.map((p, i) => {
       const paid   = getPaid(p.id);
-      const out    = Math.max(0, trip.price_per_person - paid);
-      const status = payStatus(paid, trip.price_per_person);
+      const due    = effectivePrice(p.room_type);
+      const out    = Math.max(0, due - paid);
+      const status = payStatus(paid, due);
       const warn     = ccExpired(p.id_card_expiry, trip.end_date) ? "⚠ EXPIRADO" : "";
       const roomLabel = ROOM_TYPES[p.room_type]?.label ?? p.room_type;
       const role      = p.is_main_occupant ? "titular" : "acompanhante";
@@ -1127,7 +1157,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     a.click(); URL.revokeObjectURL(url);
   }
 
-  const totalExpected    = passengers.length * trip.price_per_person;
+  const totalExpected    = passengers.reduce((s, p) => s + effectivePrice(p.room_type), 0);
   const totalPaidAll     = passengers.reduce((s, p) => s + getPaid(p.id), 0);
   const totalOutstanding = Math.max(0, totalExpected - totalPaidAll);
   const pct              = totalExpected > 0 ? Math.min(100, (totalPaidAll / totalExpected) * 100) : 0;
@@ -1276,7 +1306,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
               )}
               {!loading && filteredGroups.map(({ main: p, companions }, groupIdx) => {
                 const paid     = getPaid(p.id);
-                const totalDue = trip.price_per_person;
+                const totalDue = effectivePrice(p.room_type);
                 const out      = Math.max(0, totalDue - paid);
                 const status   = payStatus(paid, totalDue);
                 const warn     = ccExpired(p.id_card_expiry, trip.end_date);
@@ -1343,8 +1373,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
                     {/* Companion rows (accordion children) */}
                     {hasComp && isOpen && companions.map((c) => {
                       const cPaid   = getPaid(c.id);
-                      const cOut    = Math.max(0, trip.price_per_person - cPaid);
-                      const cStatus = payStatus(cPaid, trip.price_per_person);
+                      const cDue    = effectivePrice(c.room_type);
+                      const cOut    = Math.max(0, cDue - cPaid);
+                      const cStatus = payStatus(cPaid, cDue);
                       const cWarn   = ccExpired(c.id_card_expiry, trip.end_date);
                       return (
                         <tr key={c.id} className="bg-[var(--cream)]/40 group border-t-0">
@@ -1449,7 +1480,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
           <PaymentModal
             passenger={payPax}
             payments={payments.get(payPax.id) ?? []}
-            pricePerPerson={trip.price_per_person}
+            pricePerPerson={effectivePrice(payPax.room_type)}
             onAdd={(data) => addPayment(payPax.id, data)}
             onDelete={(payId) => deletePayment(payPax.id, payId)}
             onClose={() => setPayPax(null)}
