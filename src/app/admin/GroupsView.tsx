@@ -138,7 +138,7 @@ function TripForm({ initial, onSave, onCancel }: {
       .from("travel_packages")
       .select("id, title, country, departure_date, return_date, price_from, individual_supplement, triple_supplement")
       .order("departure_date", { ascending: true })
-      .then(({ data }) => { if (data) setPackages(data as PackageOption[]); });
+      .then(({ data }) => { if (data) setPackages(data as unknown as PackageOption[]); });
   }, []);
 
   function selectPackage(id: string) {
