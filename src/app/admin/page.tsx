@@ -80,12 +80,13 @@ export default function AdminPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [search,         setSearch]         = useState("");
   const [userName,       setUserName]       = useState("");
+  const [userRole,       setUserRole]       = useState<"admin" | "staff" | null>(null);
   const [bookingsBadge,  setBookingsBadge]  = useState(0);
   const [quotesBadge,    setQuotesBadge]    = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       const name =
         user.user_metadata?.full_name ??
@@ -93,6 +94,8 @@ export default function AdminPage() {
         user.email?.split("@")[0] ??
         "Admin";
       setUserName(name);
+      const { data: profile } = await supabase.from("user_profiles").select("role").eq("id", user.id).single();
+      setUserRole((profile?.role as "admin" | "staff") ?? "staff");
     });
     // Badge: reservas por tratar
     supabase
@@ -211,7 +214,7 @@ export default function AdminPage() {
               <div className="mt-1 font-display text-[20px]">Painel MN</div>
             </div>
             <nav className="space-y-1">
-              {NAV.map(({ id, label, icon: Icon }) => {
+              {NAV.filter(({ id }) => id !== "users" || userRole === "admin").map(({ id, label, icon: Icon }) => {
                 const isActive = view === id;
                 const badge = id === "bookings" && bookingsBadge > 0 ? bookingsBadge
                            : id === "quotes"   && quotesBadge   > 0 ? quotesBadge
@@ -274,7 +277,12 @@ export default function AdminPage() {
             {view === "quotes"   && <QuotesView onBadgeChange={setQuotesBadge} />}
             {view === "clients"  && <ClientsView />}
             {view === "groups"   && <GroupsView />}
-            {view === "users"    && <UsersView />}
+            {view === "users"    && userRole === "admin" && <UsersView />}
+            {view === "users"    && userRole === "staff" && (
+              <div className="bg-white rounded-2xl border border-[var(--line)] p-16 text-center">
+                <p className="text-[15px] text-[var(--muted)]">Não tens permissão para aceder a esta secção.</p>
+              </div>
+            )}
             {!["dashboard", "trips", "edit", "bookings", "quotes", "clients", "groups", "users"].includes(view) && (
               <div className="bg-white rounded-2xl border border-[var(--line)] p-16 text-center">
                 <div className="font-display text-[28px]">{view}</div>

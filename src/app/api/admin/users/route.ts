@@ -2,16 +2,18 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-async function requireAuth() {
+async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
+  const { data: profile } = await supabase.from("user_profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin") throw new Error("Forbidden");
   return user;
 }
 
 export async function GET() {
   try {
-    await requireAuth();
+    await requireAdmin();
     const admin = createAdminClient();
 
     const [{ data: authData }, { data: profiles }] = await Promise.all([
@@ -33,13 +35,13 @@ export async function GET() {
     return NextResponse.json(users);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
-    return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : 500 });
+    return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500 });
   }
 }
 
 export async function POST(req: Request) {
   try {
-    await requireAuth();
+    await requireAdmin();
     const { email, password, role } = await req.json() as { email: string; password: string; role: string };
 
     if (!email || !password) {
@@ -68,6 +70,6 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
-    return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : 500 });
+    return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500 });
   }
 }
