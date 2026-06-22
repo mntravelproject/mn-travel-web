@@ -368,7 +368,8 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
           .order("created_at", { ascending: false })
           .limit(10),
         // Trip expenses this month + last month
-        supabase.from("trip_expenses")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).from("trip_expenses")
           .select("amount, expense_date")
           .gte("expense_date", lastMonthStart.slice(0, 10)),
       ]);

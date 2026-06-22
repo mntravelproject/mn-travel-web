@@ -520,10 +520,11 @@ function ExpensesModal({ tripId, onTotalChange, onClose }: {
   notifyRef.current = onTotalChange;
 
   useEffect(() => {
-    createClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (createClient() as any)
       .from("trip_expenses").select("*").eq("trip_id", tripId)
       .order("expense_date", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data }: { data: Expense[] | null }) => {
         const list = (data ?? []) as Expense[];
         setExpenses(list);
         notifyRef.current(list.reduce((s, e) => s + e.amount, 0));
@@ -537,7 +538,8 @@ function ExpensesModal({ tripId, onTotalChange, onClose }: {
     const amount = parseFloat(form.amount);
     if (!form.description || !amount || amount <= 0) { setErr("Descrição e valor são obrigatórios."); return; }
     setSaving(true); setErr("");
-    const { data: created, error } = await createClient().from("trip_expenses").insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: created, error } = await (createClient() as any).from("trip_expenses").insert({
       trip_id: tripId, description: form.description, amount,
       expense_date: form.expense_date, category: form.category, notes: form.notes || null,
     }).select("*").single();
@@ -551,7 +553,8 @@ function ExpensesModal({ tripId, onTotalChange, onClose }: {
 
   async function deleteExpense(id: string) {
     if (!confirm("Apagar este encargo?")) return;
-    await createClient().from("trip_expenses").delete().eq("id", id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (createClient() as any).from("trip_expenses").delete().eq("id", id);
     const next = expenses.filter((e) => e.id !== id);
     setExpenses(next);
     notifyRef.current(next.reduce((s, e) => s + e.amount, 0));
@@ -691,7 +694,8 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
 
     setSummaries(sums);
 
-    const { data: expData } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: expData } = await (supabase as any)
       .from("trip_expenses").select("trip_id, amount").in("trip_id", ids);
     const eSums: Record<string, number> = {};
     for (const t of list) eSums[t.id] = 0;
@@ -891,7 +895,8 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
       setPayments(map);
     }
 
-    const { data: expData } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: expData } = await (supabase as any)
       .from("trip_expenses").select("amount").eq("trip_id", trip.id);
     setTotalExpenses((expData ?? []).reduce((s, e) => s + (e as { amount: number }).amount, 0));
     setLoading(false);
