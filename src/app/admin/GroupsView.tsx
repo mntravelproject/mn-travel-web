@@ -272,7 +272,7 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
   const filtered = clients.filter((c) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q);
+    return c.name.toLowerCase().includes(q) || (c.email ?? "").toLowerCase().includes(q);
   }).slice(0, 8);
 
   const setD = (k: keyof PaxFormDocs) =>
@@ -341,7 +341,7 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
                           className={`w-full text-left px-4 py-3 flex items-center justify-between border-b border-[var(--line)] last:border-0 transition ${taken ? "opacity-40 cursor-not-allowed" : "hover:bg-[var(--cream-2)]"}`}>
                           <div>
                             <p className="text-[13px] font-medium">{c.name}</p>
-                            <p className="text-[11px] text-[var(--muted)]">{c.email}{c.phone ? ` · ${c.phone}` : ""}</p>
+                            <p className="text-[11px] text-[var(--muted)]">{c.email ?? "—"}{c.phone ? ` · ${c.phone}` : ""}</p>
                           </div>
                           {taken && <span className="text-[10px] text-[var(--muted)] shrink-0 ml-3 flex items-center gap-1"><Check className="w-3 h-3" />Já adicionado</span>}
                         </button>
