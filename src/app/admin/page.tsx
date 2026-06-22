@@ -2280,8 +2280,8 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
 
       if (trip?.id) {
         // ── Update existing trip ──────────────────────────────
-        const { error: dbError } = await supabase
-          .from("travel_packages")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: dbError } = await (supabase.from("travel_packages") as any)
           .update(fields)
           .eq("id", trip.id);
         if (dbError) throw dbError;
@@ -2296,8 +2296,8 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
         }
       } else {
         // ── Insert new trip ───────────────────────────────────
-        const { data, error: dbError } = await supabase
-          .from("travel_packages")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error: dbError } = await (supabase.from("travel_packages") as any)
           .insert({ slug: generateSlug(form.title), ...fields })
           .select("id")
           .single();
