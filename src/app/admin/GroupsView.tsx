@@ -898,7 +898,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: expData } = await (supabase as any)
       .from("trip_expenses").select("amount").eq("trip_id", trip.id);
-    setTotalExpenses((expData ?? []).reduce((s, e) => s + (e as { amount: number }).amount, 0));
+    setTotalExpenses((expData ?? []).reduce((s: number, e: { amount: number }) => s + e.amount, 0));
     setLoading(false);
   }, [trip.id]);
 
