@@ -754,10 +754,17 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
   async function load() {
     setLoading(true);
     const supabase = createClient();
-    const { data: tripsData } = await supabase
-      .from("trip_groups").select("*").order("start_date", { ascending: false });
+    const { data: tripsData } = await (supabase as any)
+      .from("trip_groups")
+      .select("*, pkg:travel_packages(individual_supplement, triple_supplement)")
+      .order("start_date", { ascending: false });
 
-    const list = (tripsData ?? []) as TripGroup[];
+    // Merge package supplements into trip when trip supplements are still 0 (created before migration)
+    const list = ((tripsData ?? []) as any[]).map((t) => ({
+      ...t,
+      individual_supplement: t.individual_supplement || t.pkg?.individual_supplement || 0,
+      triple_supplement:     t.triple_supplement     || t.pkg?.triple_supplement     || 0,
+    })) as TripGroup[];
     setTrips(list);
 
     if (list.length === 0) { setLoading(false); return; }
