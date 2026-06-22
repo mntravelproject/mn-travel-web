@@ -2413,32 +2413,6 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Suplemento individual (€)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={form.individual_supplement}
-                    onChange={(e) => setForm({ ...form, individual_supplement: +e.target.value })}
-                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
-                  />
-                  <p className="text-[11px] text-[var(--muted)] mt-1">Adicionado ao preço base no quarto individual</p>
-                </div>
-                <div>
-                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Suplemento triplo (€)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={form.triple_supplement}
-                    onChange={(e) => setForm({ ...form, triple_supplement: +e.target.value })}
-                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
-                  />
-                  <p className="text-[11px] text-[var(--muted)] mt-1">Subtraído ao preço base no quarto triplo/quádruplo</p>
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
                   <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Duração (dias)</label>
                   <input
                     type="number"
@@ -2706,6 +2680,37 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
               {categories.length === 0 && (
                 <p className="text-[12px] text-[var(--muted)] tracking-tight">A carregar categorias…</p>
               )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
+            <h3 className="font-display text-[20px] tracking-tight mb-1">Suplementos</h3>
+            <p className="text-[13px] text-[var(--muted)] mb-5 tracking-tight">Ajustes ao preço base por tipo de quarto.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Suplemento individual (€)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={form.individual_supplement}
+                  onChange={(e) => setForm({ ...form, individual_supplement: +e.target.value })}
+                  className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                />
+                <p className="text-[11px] text-[var(--muted)] mt-1">+ ao preço no quarto individual</p>
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Suplemento triplo (€)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={form.triple_supplement}
+                  onChange={(e) => setForm({ ...form, triple_supplement: +e.target.value })}
+                  className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                />
+                <p className="text-[11px] text-[var(--muted)] mt-1">− ao preço no quarto triplo/quádruplo</p>
+              </div>
             </div>
           </div>
 
