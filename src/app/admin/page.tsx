@@ -36,19 +36,21 @@ type BookingRow = {
   package: { title: string; country: string; price_from: number } | null;
 };
 type DashboardData = {
-  revenueThisMonth:  number;
-  revenueLastMonth:  number;
-  activeBookings:    number;
-  bookingsThisMonth: number;
-  bookingsLastMonth: number;
-  contactsThisMonth: number;
-  contactsLastMonth: number;
-  conversionRate:    number;
-  conversionLast:    number;
-  pendingCount:      number;
-  recentBookings:    BookingRow[];
-  topCountries:      { name: string; count: number; pct: number }[];
-  monthlyChart:      { month: string; revenue: number; pct: number }[];
+  revenueThisMonth:   number;
+  revenueLastMonth:   number;
+  activeBookings:     number;
+  bookingsThisMonth:  number;
+  bookingsLastMonth:  number;
+  contactsThisMonth:  number;
+  contactsLastMonth:  number;
+  conversionRate:     number;
+  conversionLast:     number;
+  pendingCount:       number;
+  expensesThisMonth:  number;
+  expensesLastMonth:  number;
+  recentBookings:     BookingRow[];
+  topCountries:       { name: string; count: number; pct: number }[];
+  monthlyChart:       { month: string; revenue: number; pct: number }[];
 };
 
 function relDate(iso: string): string {
@@ -342,6 +344,7 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
         { count: contactsThisMonth },
         { count: contactsLastMonth },
         { data: recentRaw },
+        { data: expensesRaw },
       ] = await Promise.all([
         // All booking requests: status + created_at + country for stats, chart, top countries
         supabase.from("booking_requests")
@@ -364,6 +367,10 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
           .select("id, name, email, phone, package_id, created_at, status, pax_count, package:travel_packages(title, country, price_from)")
           .order("created_at", { ascending: false })
           .limit(10),
+        // Trip expenses this month + last month
+        supabase.from("trip_expenses")
+          .select("amount, expense_date")
+          .gte("expense_date", lastMonthStart.slice(0, 10)),
       ]);
 
       const allBookings = (allBookingsRaw ?? []) as {
@@ -430,12 +437,21 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
         pct:     Math.max(4, Math.round((monthlyRevenue[k] / maxR) * 100)),
       }));
 
+      const allExpenses = (expensesRaw ?? []) as { amount: number; expense_date: string }[];
+      const expensesThisMonth = allExpenses
+        .filter((e) => e.expense_date >= thisMonthStart.slice(0, 10))
+        .reduce((s, e) => s + e.amount, 0);
+      const expensesLastMonth = allExpenses
+        .filter((e) => e.expense_date >= lastMonthStart.slice(0, 10) && e.expense_date < thisMonthStart.slice(0, 10))
+        .reduce((s, e) => s + e.amount, 0);
+
       setData({
         revenueThisMonth, revenueLastMonth,
         activeBookings, bookingsThisMonth, bookingsLastMonth, pendingCount,
         contactsThisMonth: contactsThisMonth ?? 0,
         contactsLastMonth: contactsLastMonth ?? 0,
         conversionRate, conversionLast,
+        expensesThisMonth, expensesLastMonth,
         recentBookings: (recentRaw ?? []) as BookingRow[],
         topCountries:   topCountries.length ? topCountries : [],
         monthlyChart,
@@ -468,7 +484,7 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
   const sign   = (n: number) => n >= 0 ? `+${n}` : String(n);
 
   const revChangePct = pct(d.revenueThisMonth, d.revenueLastMonth);
-  const cntChangePct = pct(d.contactsThisMonth, d.contactsLastMonth);
+  const expChangePct = pct(d.expensesThisMonth, d.expensesLastMonth);
   const bkDelta      = d.bookingsThisMonth - d.bookingsLastMonth;
   const convDelta    = (d.conversionRate - d.conversionLast).toFixed(1);
 
@@ -480,16 +496,16 @@ function Dashboard({ onNavigate, userName }: { onNavigate: (v: string) => void; 
       up: d.revenueThisMonth >= d.revenueLastMonth,
     },
     {
+      l: "Despesas este mês",
+      v: fmtEur(d.expensesThisMonth),
+      d: expChangePct ? `${Number(expChangePct) >= 0 ? "+" : ""}${expChangePct}%` : "—",
+      up: d.expensesThisMonth <= d.expensesLastMonth,
+    },
+    {
       l: "Reservas ativas",
       v: String(d.activeBookings),
       d: `${sign(bkDelta)} este mês`,
       up: bkDelta >= 0,
-    },
-    {
-      l: "Novas consultas",
-      v: String(d.contactsThisMonth),
-      d: cntChangePct ? `${Number(cntChangePct) >= 0 ? "+" : ""}${cntChangePct}%` : "—",
-      up: d.contactsThisMonth >= d.contactsLastMonth,
     },
     {
       l: "Conversão",

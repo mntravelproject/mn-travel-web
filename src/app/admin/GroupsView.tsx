@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   Plus, ArrowLeft, Download, Search, Edit3, Trash2,
   X, AlertTriangle, ChevronRight,
-  Banknote, Smartphone, CreditCard, Check,
+  Banknote, Smartphone, CreditCard, Check, Receipt,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -27,6 +27,10 @@ type Payment = {
   id: string; passenger_id: string; amount: number;
   payment_date: string; method: string; notes: string | null; created_at: string;
 };
+type Expense = {
+  id: string; trip_id: string; description: string; amount: number;
+  expense_date: string; category: string; notes: string | null; created_at: string;
+};
 type ClientOption = { id: string; name: string; email: string; phone: string | null };
 type PaxFormDocs = {
   id_card_number: string; id_card_expiry: string; nif: string;
@@ -36,6 +40,10 @@ type PaxFormDocs = {
 // ─── Constants ────────────────────────────────────────────────────────────────
 const METHODS: Record<string, string> = {
   mbway: "MB Way", transfer: "Transferência", cash: "Dinheiro", card: "Cartão", other: "Outro",
+};
+const EXPENSE_CATEGORIES: Record<string, string> = {
+  voo: "Voo", hotel: "Hotel", transporte: "Transporte",
+  alimentacao: "Alimentação", seguro: "Seguro", guia: "Guia", outro: "Outro",
 };
 const EMPTY_DOCS: PaxFormDocs = {
   id_card_number: "", id_card_expiry: "", nif: "", date_of_birth: "", nationality: "Portuguesa", notes: "",
@@ -495,13 +503,154 @@ function PaymentModal({ passenger, payments, pricePerPerson, onAdd, onDelete, on
   );
 }
 
+// ─── Expenses Modal ───────────────────────────────────────────────────────────
+function ExpensesModal({ tripId, onTotalChange, onClose }: {
+  tripId: string;
+  onTotalChange: (total: number) => void;
+  onClose: () => void;
+}) {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [form, setForm] = useState({
+    description: "", amount: "", expense_date: new Date().toISOString().slice(0, 10),
+    category: "outro", notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [err,    setErr]    = useState("");
+  const notifyRef = useRef(onTotalChange);
+  notifyRef.current = onTotalChange;
+
+  useEffect(() => {
+    createClient()
+      .from("trip_expenses").select("*").eq("trip_id", tripId)
+      .order("expense_date", { ascending: false })
+      .then(({ data }) => {
+        const list = (data ?? []) as Expense[];
+        setExpenses(list);
+        notifyRef.current(list.reduce((s, e) => s + e.amount, 0));
+      });
+  }, [tripId]);
+
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
+
+  async function submit(ev: React.FormEvent) {
+    ev.preventDefault();
+    const amount = parseFloat(form.amount);
+    if (!form.description || !amount || amount <= 0) { setErr("Descrição e valor são obrigatórios."); return; }
+    setSaving(true); setErr("");
+    const { data: created, error } = await createClient().from("trip_expenses").insert({
+      trip_id: tripId, description: form.description, amount,
+      expense_date: form.expense_date, category: form.category, notes: form.notes || null,
+    }).select("*").single();
+    if (error) { setErr(error.message); setSaving(false); return; }
+    const next = [created as Expense, ...expenses];
+    setExpenses(next);
+    notifyRef.current(next.reduce((s, e) => s + e.amount, 0));
+    setForm((f) => ({ ...f, description: "", amount: "", notes: "" }));
+    setSaving(false);
+  }
+
+  async function deleteExpense(id: string) {
+    if (!confirm("Apagar este encargo?")) return;
+    await createClient().from("trip_expenses").delete().eq("id", id);
+    const next = expenses.filter((e) => e.id !== id);
+    setExpenses(next);
+    notifyRef.current(next.reduce((s, e) => s + e.amount, 0));
+  }
+
+  return (
+    <div className="px-7 py-6 space-y-6">
+      <div className="bg-red-50 rounded-xl border border-red-100 p-4 flex items-center justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.14em] text-red-600">Total encargos</p>
+          <p className="text-[22px] font-display tracking-tight mt-0.5 text-red-700">{fmt(total)}</p>
+        </div>
+        <Receipt className="w-6 h-6 text-red-400" />
+      </div>
+
+      {expenses.length > 0 && (
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] mb-3">Encargos registados</p>
+          <div className="space-y-2">
+            {expenses.map((e) => (
+              <div key={e.id} className="flex items-center justify-between bg-white rounded-xl border border-[var(--line)] px-4 py-3">
+                <div>
+                  <p className="text-[13px] font-medium">{e.description}</p>
+                  <p className="text-[11px] text-[var(--muted)]">
+                    {EXPENSE_CATEGORIES[e.category] ?? e.category} · {fmtDate(e.expense_date)}
+                    {e.notes ? ` · ${e.notes}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <p className="text-[14px] font-medium text-red-600">{fmt(e.amount)}</p>
+                  <button onClick={() => deleteExpense(e.id)}
+                    className="p-2 rounded-lg hover:bg-red-50 text-[var(--muted)] hover:text-red-600 transition">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={submit} className="space-y-3">
+        <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Registar encargo</p>
+        <div>
+          <label className={lCls}>Descrição *</label>
+          <input value={form.description}
+            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            placeholder="ex: Bilhetes de avião" className={iCls} />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={lCls}>Valor (€) *</label>
+            <input type="number" min="0.01" step="0.01" value={form.amount}
+              onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+              placeholder="0.00" className={iCls} />
+          </div>
+          <div>
+            <label className={lCls}>Data</label>
+            <input type="date" value={form.expense_date}
+              onChange={(e) => setForm((f) => ({ ...f, expense_date: e.target.value }))}
+              className={iCls} />
+          </div>
+          <div>
+            <label className={lCls}>Categoria</label>
+            <select value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              className={iCls}>
+              {Object.entries(EXPENSE_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={lCls}>Nota</label>
+            <input value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Opcional" className={iCls} />
+          </div>
+        </div>
+        {err && <p className="text-[13px] text-red-600">{err}</p>}
+        <div className="flex gap-3 pb-1">
+          <button type="button" onClick={onClose}
+            className="flex-1 rounded-full border border-[var(--line)] py-3 text-[14px] hover:bg-[var(--cream-2)] transition">Fechar</button>
+          <button type="submit" disabled={saving}
+            className="flex-1 rounded-full bg-red-600 text-white py-3 text-[14px] hover:bg-red-700 transition disabled:opacity-50">
+            {saving ? "A guardar…" : "Registar encargo"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ─── Trip List ────────────────────────────────────────────────────────────────
 function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
-  const [trips,     setTrips]     = useState<TripGroup[]>([]);
-  const [summaries, setSummaries] = useState<Record<string, { pax: number; paid: number }>>({});
-  const [loading,   setLoading]   = useState(true);
-  const [showNew,   setShowNew]   = useState(false);
-  const [editTrip,  setEditTrip]  = useState<TripGroup | null>(null);
+  const [trips,       setTrips]       = useState<TripGroup[]>([]);
+  const [summaries,   setSummaries]   = useState<Record<string, { pax: number; paid: number }>>({});
+  const [expenseSums, setExpenseSums] = useState<Record<string, number>>({});
+  const [loading,     setLoading]     = useState(true);
+  const [showNew,     setShowNew]     = useState(false);
+  const [editTrip,    setEditTrip]    = useState<TripGroup | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -541,6 +690,16 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
     }
 
     setSummaries(sums);
+
+    const { data: expData } = await supabase
+      .from("trip_expenses").select("trip_id, amount").in("trip_id", ids);
+    const eSums: Record<string, number> = {};
+    for (const t of list) eSums[t.id] = 0;
+    for (const e of expData ?? []) {
+      const r = e as { trip_id: string; amount: number };
+      eSums[r.trip_id] = (eSums[r.trip_id] ?? 0) + r.amount;
+    }
+    setExpenseSums(eSums);
     setLoading(false);
   }
 
@@ -644,7 +803,7 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
                     <ChevronRight className="w-4 h-4 text-[var(--muted)] ml-1" />
                   </div>
                 </div>
-                <div className="mt-5 grid grid-cols-3 gap-6">
+                <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-6">
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Passageiros</p>
                     <p className="text-[24px] font-display tracking-tight mt-0.5">{s.pax}</p>
@@ -654,8 +813,14 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
                     <p className="text-[24px] font-display tracking-tight mt-0.5 text-emerald-700">{fmt(s.paid)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.14em] text-red-500">Em falta</p>
-                    <p className="text-[24px] font-display tracking-tight mt-0.5 text-red-600">{fmt(missing)}</p>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-red-500">Encargos</p>
+                    <p className="text-[24px] font-display tracking-tight mt-0.5 text-red-600">{fmt(expenseSums[t.id] ?? 0)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Lucro estimado</p>
+                    <p className={`text-[24px] font-display tracking-tight mt-0.5 ${s.paid - (expenseSums[t.id] ?? 0) >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                      {fmt(s.paid - (expenseSums[t.id] ?? 0))}
+                    </p>
                   </div>
                 </div>
                 {expected > 0 && (
@@ -694,13 +859,15 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
 
 // ─── Trip Detail ──────────────────────────────────────────────────────────────
 function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void }) {
-  const [passengers,   setPassengers]   = useState<Passenger[]>([]);
-  const [payments,     setPayments]     = useState<Map<string, Payment[]>>(new Map());
-  const [loading,      setLoading]      = useState(true);
-  const [search,       setSearch]       = useState("");
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editPax,      setEditPax]      = useState<Passenger | null>(null);
-  const [payPax,       setPayPax]       = useState<Passenger | null>(null);
+  const [passengers,    setPassengers]    = useState<Passenger[]>([]);
+  const [payments,      setPayments]      = useState<Map<string, Payment[]>>(new Map());
+  const [loading,       setLoading]       = useState(true);
+  const [search,        setSearch]        = useState("");
+  const [showAddModal,  setShowAddModal]  = useState(false);
+  const [editPax,       setEditPax]       = useState<Passenger | null>(null);
+  const [payPax,        setPayPax]        = useState<Passenger | null>(null);
+  const [showExpenses,  setShowExpenses]  = useState(false);
+  const [totalExpenses, setTotalExpenses] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -723,6 +890,10 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
       for (const pay of (payData ?? []) as Payment[]) map.get(pay.passenger_id)?.push(pay);
       setPayments(map);
     }
+
+    const { data: expData } = await supabase
+      .from("trip_expenses").select("amount").eq("trip_id", trip.id);
+    setTotalExpenses((expData ?? []).reduce((s, e) => s + (e as { amount: number }).amount, 0));
     setLoading(false);
   }, [trip.id]);
 
@@ -858,6 +1029,10 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <button onClick={() => setShowExpenses(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] transition">
+              <Receipt className="w-4 h-4" /> Encargos
+            </button>
             <button onClick={exportCSV}
               className="inline-flex items-center gap-2 rounded-full bg-white border border-[var(--line)] px-4 py-2 text-[13px] hover:bg-[var(--cream-2)] transition">
               <Download className="w-4 h-4" /> Exportar CSV
@@ -872,7 +1047,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
       {/* Summary bar */}
       <div className="bg-white rounded-2xl border border-[var(--line)] p-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
           <div>
             <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Passageiros</p>
             <p className="text-[28px] font-display tracking-tight mt-1">{passengers.length}</p>
@@ -886,8 +1061,14 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
             <p className="text-[28px] font-display tracking-tight mt-1 text-emerald-700">{fmt(totalPaidAll)}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-[0.14em] text-red-500">Em falta</p>
-            <p className="text-[28px] font-display tracking-tight mt-1 text-red-600">{fmt(totalOutstanding)}</p>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-red-500">Encargos</p>
+            <p className="text-[28px] font-display tracking-tight mt-1 text-red-600">{fmt(totalExpenses)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Lucro estimado</p>
+            <p className={`text-[28px] font-display tracking-tight mt-1 ${totalPaidAll - totalExpenses >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+              {fmt(totalPaidAll - totalExpenses)}
+            </p>
           </div>
         </div>
         <div className="mt-5">
@@ -1016,6 +1197,17 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
         editPax={editPax}
         takenClientIds={takenClientIds}
       />
+
+      {/* Expenses modal */}
+      <Modal open={showExpenses} onClose={() => setShowExpenses(false)} title="Encargos da viagem" wide>
+        {showExpenses && (
+          <ExpensesModal
+            tripId={trip.id}
+            onTotalChange={setTotalExpenses}
+            onClose={() => setShowExpenses(false)}
+          />
+        )}
+      </Modal>
 
       {/* Payment modal */}
       <Modal
