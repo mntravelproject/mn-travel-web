@@ -64,9 +64,10 @@ const EMPTY_DOCS: PaxFormDocs = {
 function fmt(n: number) {
   return n.toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
 }
-function fmtDate(iso: string | null) {
-  if (!iso) return "—";
-  return new Date(iso + "T00:00:00").toLocaleDateString("pt-PT");
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return null;
+  const d = new Date(iso + "T00:00:00");
+  return isNaN(d.getTime()) ? null : d.toLocaleDateString("pt-PT");
 }
 function payStatus(paid: number, total: number) {
   if (paid <= 0)     return { label: "Por pagar", cls: "bg-red-100 text-red-700" };
@@ -821,7 +822,9 @@ function TripListView({ onSelect }: { onSelect: (t: TripGroup) => void }) {
 
   function dateRange(s: string, e: string) {
     const opts: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
-    return `${new Date(s + "T00:00:00").toLocaleDateString("pt-PT", opts)} – ${new Date(e + "T00:00:00").toLocaleDateString("pt-PT", opts)}`;
+    const start = fmtDate(s) ? new Date(s + "T00:00:00").toLocaleDateString("pt-PT", opts) : "—";
+    const end   = fmtDate(e) ? new Date(e + "T00:00:00").toLocaleDateString("pt-PT", opts) : null;
+    return end ? `${start} – ${end}` : start;
   }
 
   return (
@@ -1173,7 +1176,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
           <div>
             <h1 className="font-display text-[32px] tracking-tight">{trip.title}</h1>
             <p className="text-[13px] text-[var(--muted)] mt-0.5">
-              {trip.destination} · {fmtDate(trip.start_date)} – {fmtDate(trip.end_date)} · {fmt(trip.price_per_person)}/pessoa
+              {trip.destination} · {fmtDate(trip.start_date)}{fmtDate(trip.end_date) ? ` – ${fmtDate(trip.end_date)}` : ""} · {fmt(trip.price_per_person)}/pessoa
             </p>
           </div>
           <div className="flex items-center gap-3">
