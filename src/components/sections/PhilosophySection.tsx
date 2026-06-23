@@ -26,30 +26,47 @@ const images = [
 
 export function PhilosophySection() {
   return (
-    <section className="mt-32 relative bg-[var(--ink)] text-[var(--cream)] overflow-hidden">
-      <div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-28 lg:py-40 grid lg:grid-cols-12 gap-12 items-center">
-        {/* Left: text — slides in from left */}
+    <section className="mt-36 relative overflow-hidden" style={{ background: "var(--dark)" }}>
+      {/* Subtle grain overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
+        style={{
+          backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+        }}
+      />
+
+      <div className="max-w-[1380px] mx-auto px-8 lg:px-14 py-32 lg:py-44 grid lg:grid-cols-12 gap-12 items-center">
+        {/* Left: text */}
         <SlideIn direction="left" className="lg:col-span-5" delay={0.05}>
-          <div className="text-[11px] uppercase tracking-[0.22em] text-white/45 flex items-center gap-3">
-            <span className="h-px w-8 bg-white/30" /> A filosofia MN
+          {/* Gold eyebrow */}
+          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] mb-7" style={{ color: "var(--gold)" }}>
+            <span className="h-px w-8" style={{ background: "var(--gold)" }} />
+            A filosofia MN
           </div>
-          <h3 className="mt-6 font-display text-[40px] md:text-[56px] leading-[1.05] tracking-tight">
+
+          <h3 className="font-display text-[42px] md:text-[58px] leading-[1.04] tracking-tight text-white">
             Não vendemos
             <br />
             destinos. Desenhamos{" "}
-            <span className="italic font-light">tempo bem vivido.</span>
+            <span className="italic font-normal">tempo bem vivido.</span>
           </h3>
-          <p className="mt-8 text-white/65 text-[15px] leading-relaxed max-w-md">
+
+          {/* Gold divider */}
+          <div className="mt-8 mb-8 w-12 h-[2px]" style={{ background: "var(--gold2)" }} />
+
+          <p className="text-white/60 text-[16px] leading-relaxed max-w-md">
             Trabalhamos sem catálogos. Sem grupos. Sem pressa. Cada viagem nasce
             de uma conversa — e termina onde a memória começa.
           </p>
-          <div className="mt-10 grid grid-cols-3 gap-6 max-w-md">
+
+          {/* Stats — gold accent */}
+          <div className="mt-12 grid grid-cols-3 gap-6 max-w-md">
             {stats.map((s) => (
               <div key={s.l}>
-                <div className="font-display text-[36px] leading-none">
+                <div className="font-display text-[38px] leading-none" style={{ color: "var(--gold2)" }}>
                   <AnimatedCounter value={s.n} duration={1.6} />
                 </div>
-                <div className="mt-2 text-[11px] uppercase tracking-[0.15em] text-white/50">
+                <div className="mt-2 text-[11px] uppercase tracking-[0.15em] text-white/45">
                   {s.l}
                 </div>
               </div>
@@ -57,7 +74,7 @@ export function PhilosophySection() {
           </div>
         </SlideIn>
 
-        {/* Right: image grid — slides in from right */}
+        {/* Right: image grid */}
         <SlideIn direction="right" className="lg:col-span-7 grid grid-cols-2 gap-4" delay={0.15}>
           <ParallaxSection speed={0.06} className={images[0].className}>
             <img

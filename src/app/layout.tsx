@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
-import { Fraunces } from "next/font/google";
+import { Inter } from "next/font/google";
+import { Playfair_Display } from "next/font/google";
 import { PageTransition } from "@/components/animations/PageTransition";
 import "./globals.css";
 
-const geist = Geist({
+const inter = Inter({
   variable: "--font-geist",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const fraunces = Fraunces({
+const playfair = Playfair_Display({
   variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: "variable",
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
-  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +27,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt" className={`${geist.variable} ${fraunces.variable}`}>
+    <html lang="pt" className={`${inter.variable} ${playfair.variable}`}>
       <body className="min-h-screen bg-[var(--cream)] text-[var(--ink)]" suppressHydrationWarning>
         <PageTransition>{children}</PageTransition>
       </body>

@@ -82,7 +82,7 @@ export function ContactForm() {
       {/* Nome */}
       <div>
         <label className="block text-[10.5px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">
-          Nome completo <span className="text-[var(--clay)]">*</span>
+          Nome completo <span style={{ color: "var(--gold)" }}>*</span>
         </label>
         <div className="relative">
           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
@@ -98,7 +98,7 @@ export function ContactForm() {
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-[10.5px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">
-            Email <span className="text-[var(--clay)]">*</span>
+            Email <span style={{ color: "var(--gold)" }}>*</span>
           </label>
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
@@ -152,7 +152,7 @@ export function ContactForm() {
       {/* Mensagem */}
       <div>
         <label className="block text-[10.5px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">
-          Mensagem <span className="text-[var(--clay)]">*</span>
+          Mensagem <span style={{ color: "var(--gold)" }}>*</span>
         </label>
         <div className="relative">
           <MessageSquare className="absolute left-4 top-4 w-4 h-4 text-[var(--muted)] pointer-events-none" />
@@ -169,7 +169,8 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-full bg-[var(--ink)] text-[var(--cream)] py-4 text-[14px] tracking-tight hover:bg-[var(--ink-soft)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-full py-4 text-[14px] font-semibold tracking-tight transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+        style={{ background: "var(--gold)", color: "var(--dark)" }}
       >
         {submitting ? "A enviar…" : "Enviar mensagem →"}
       </button>

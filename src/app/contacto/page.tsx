@@ -51,13 +51,13 @@ export default function ContactoPage() {
                 <ul className="space-y-5">
                   {INFO.map(({ icon: Icon, label, value, href }) => (
                     <li key={label} className="flex items-start gap-4">
-                      <span className="w-10 h-10 rounded-full bg-[var(--cream-2)] border border-[var(--line)] flex items-center justify-center shrink-0 mt-0.5">
-                        <Icon className="w-4 h-4 text-[var(--ink-soft)]" strokeWidth={1.5} />
+                      <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "var(--gold-soft)" }}>
+                        <Icon className="w-4 h-4" style={{ color: "var(--gold)" }} strokeWidth={1.5} />
                       </span>
                       <div>
                         <p className="text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-0.5">{label}</p>
                         {href ? (
-                          <a href={href} className="text-[15px] text-[var(--ink)] hover:text-[var(--clay)] transition tracking-tight">
+                          <a href={href} className="text-[15px] text-[var(--ink)] transition tracking-tight hover:text-[var(--gold)]">
                             {value}
                           </a>
                         ) : (

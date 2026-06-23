@@ -92,7 +92,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
               <SlideUp className="lg:col-span-8" duration={0.65}>
                 <div className="flex items-center gap-3 mb-5 flex-wrap">
                   {trip.tag && (
-                    <Pill className="!bg-[var(--clay-soft)] !border-transparent !text-[var(--clay-dark)]">
+                    <Pill className="!bg-[var(--gold-soft)] !border-transparent !text-[var(--gold)]">
                       {trip.tag}
                     </Pill>
                   )}
@@ -155,7 +155,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     whileTap={{ scale: reduced ? 1 : 0.98 }}
                     transition={{ type: "spring", stiffness: 350, damping: 25 }}
                     className={`relative rounded-2xl overflow-hidden hidden lg:block ${
-                      activeImg === i ? "ring-2 ring-offset-2 ring-[var(--ink)]" : ""
+                      activeImg === i ? "ring-2 ring-offset-2 ring-[var(--gold)]" : ""
                     }`}
                   >
                     <img src={img.image_url} alt={img.alt_text ?? ""} className="w-full h-full object-cover" />
@@ -210,7 +210,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                       onClick={() => setTab(t.id as typeof tab)}
                       className={`px-4 py-3 text-[14px] tracking-tight transition-all border-b-2 -mb-px ${
                         tab === t.id
-                          ? "border-[var(--ink)] text-[var(--ink)] font-medium"
+                          ? "border-[var(--gold)] text-[var(--ink)] font-medium"
                           : "border-transparent text-[var(--muted)]"
                       }`}
                     >
@@ -324,7 +324,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     )}
                   </div>
                   <div className="flex items-center gap-1 text-[13px]">
-                    <Star className="w-4 h-4 fill-current" /> {trip.rating}
+                    <Star className="w-4 h-4" style={{ fill: "var(--gold)", color: "var(--gold)" }} /> {trip.rating}
                   </div>
                 </div>
 
@@ -409,7 +409,8 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     whileHover={{ scale: reduced ? 1 : 1.02 }}
                     whileTap={{ scale: reduced ? 1 : 0.97 }}
                     transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--clay)] hover:bg-[var(--clay-dark)] text-white px-7 py-4 text-[15px] font-medium tracking-tight transition-colors mt-2 disabled:opacity-60"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-full text-[var(--dark)] px-7 py-4 text-[15px] font-semibold tracking-tight transition-all hover:brightness-110 mt-2 disabled:opacity-60"
+                    style={{ background: "var(--gold)" }}
                   >
                     {submitting ? "A enviar…" : <><span>Pedir proposta personalizada</span> <ArrowRight className="w-4 h-4" /></>}
                   </motion.button>

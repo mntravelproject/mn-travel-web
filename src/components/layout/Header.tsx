@@ -9,19 +9,19 @@ import { cn } from "@/lib/utils";
 import { BookingModal } from "@/components/BookingModal";
 
 const navLinks = [
-  { href: "/",          label: "Início" },
-  { href: "/viagens",   label: "Viagens" },
-  { href: "/viagens",   label: "Destinos" },
-  { href: "/viagens",   label: "Editorial" },
-  { href: "/sobre",     label: "Sobre" },
-  { href: "/contacto",  label: "Contacto" },
+  { href: "/",         label: "Início" },
+  { href: "/viagens",  label: "Viagens" },
+  { href: "/viagens",  label: "Destinos" },
+  { href: "/viagens",  label: "Editorial" },
+  { href: "/sobre",    label: "Sobre" },
+  { href: "/contacto", label: "Contacto" },
 ];
 
 export function Header() {
-  const pathname  = usePathname();
-  const [scrolled,     setScrolled]     = useState(false);
-  const [open,         setOpen]         = useState(false);
-  const [bookingOpen,  setBookingOpen]  = useState(false);
+  const pathname = usePathname();
+  const [scrolled,    setScrolled]    = useState(false);
+  const [open,        setOpen]        = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -33,8 +33,8 @@ export function Header() {
 
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  const isHome  = pathname === "/" || (pathname.startsWith("/viagens/") && pathname !== "/viagens");
-  const onLight = !isHome || scrolled || open;
+  const isHero  = pathname === "/" || (pathname.startsWith("/viagens/") && pathname !== "/viagens");
+  const onLight = !isHero || scrolled || open;
 
   return (
     <>
@@ -45,99 +45,88 @@ export function Header() {
         className={cn(
           "fixed inset-x-0 top-0 z-50 transition-all duration-500",
           onLight
-            ? "bg-[var(--cream)]/85 backdrop-blur-md hairline"
+            ? "bg-[var(--cream)]/92 backdrop-blur-md hairline"
             : "bg-transparent"
         )}
       >
-        <div className="max-w-[1320px] mx-auto px-6 lg:px-10 h-[72px] flex items-center justify-between">
+        <div className="max-w-[1380px] mx-auto px-8 lg:px-14 h-[108px] grid grid-cols-[180px_1fr_220px] items-center">
+
           {/* Logo */}
           <Link
             href="/"
             className={cn(
-              "font-display text-[22px] tracking-tight leading-none transition-colors",
+              "font-display text-[20px] tracking-tight leading-none transition-colors",
               onLight ? "text-[var(--ink)]" : "text-white"
             )}
           >
-            MN<span className="italic font-light"> travel</span>
+            MN<span className="italic font-normal"> travel</span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-9">
-            {navLinks.map((link, i) => (
-              <Link
-                key={i}
-                href={link.href}
-                className={cn(
-                  "relative text-[13.5px] tracking-tight transition-colors group",
-                  onLight
-                    ? "text-[var(--ink-soft)] hover:text-[var(--ink)]"
-                    : "text-white/85 hover:text-white"
-                )}
-              >
-                {link.label}
-                <span className="absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300 ease-out bg-current" />
-              </Link>
-            ))}
+          {/* Desktop nav — centrado */}
+          <nav className="hidden lg:flex items-center justify-center gap-[42px]">
+            {navLinks.map((link, i) => {
+              const isActive = pathname === link.href && i === 0;
+              return (
+                <Link
+                  key={i}
+                  href={link.href}
+                  className={cn(
+                    "relative text-[15px] font-medium transition-colors pb-1",
+                    isActive ? "gold-underline" : "",
+                    onLight
+                      ? "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                      : "text-white/90 hover:text-white"
+                  )}
+                >
+                  {link.label}
+                  {!isActive && (
+                    <span className="absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300 ease-out bg-current opacity-0 hover:opacity-100" />
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-end gap-5">
             <button
               className={cn(
-                "hidden sm:inline-flex items-center gap-1.5 text-[13px] tracking-tight",
-                onLight ? "text-[var(--ink-soft)]" : "text-white/85"
+                "hidden sm:inline-flex items-center gap-1.5 text-[14px] font-medium tracking-tight transition-colors",
+                onLight ? "text-[var(--ink-soft)] hover:text-[var(--ink)]" : "text-white/85 hover:text-white"
               )}
             >
               <Globe className="w-4 h-4" /> PT
             </button>
-            <motion.div
+
+            <motion.button
               whileHover={{ scale: reduced ? 1 : 1.03 }}
               whileTap={{ scale: reduced ? 1 : 0.97 }}
               transition={{ type: "spring", stiffness: 400, damping: 22 }}
-              className="hidden sm:block"
+              onClick={() => setBookingOpen(true)}
+              className={cn(
+                "hidden sm:inline-flex items-center rounded-full px-[30px] py-[13px] text-[15px] font-medium tracking-tight transition-all duration-300",
+                onLight
+                  ? "border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--cream)]"
+                  : "border border-white/80 text-white hover:bg-white hover:text-[var(--ink)]"
+              )}
             >
-              <button
-                onClick={() => setBookingOpen(true)}
-                className={cn(
-                  "inline-flex rounded-full px-4 py-2 text-[13px] tracking-tight transition-all",
-                  onLight
-                    ? "bg-[var(--ink)] text-[var(--cream)] hover:bg-[var(--ink-soft)]"
-                    : "bg-white text-[var(--ink)] hover:bg-white/90"
-                )}
-              >
-                Reservar
-              </button>
-            </motion.div>
+              Reservar
+            </motion.button>
 
             {/* Mobile toggle */}
             <motion.button
               whileTap={{ scale: reduced ? 1 : 0.88 }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
               onClick={() => setOpen(!open)}
-              className={cn(
-                "lg:hidden p-2 -mr-2",
-                onLight ? "text-[var(--ink)]" : "text-white"
-              )}
+              className={cn("lg:hidden p-2 -mr-2", onLight ? "text-[var(--ink)]" : "text-white")}
             >
               <AnimatePresence mode="wait" initial={false}>
                 {open ? (
-                  <motion.span
-                    key="close"
-                    initial={{ rotate: -90, opacity: 0 }}
-                    animate={{ rotate: 0, opacity: 1 }}
-                    exit={{ rotate: 90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
                     <X className="w-5 h-5" />
                   </motion.span>
                 ) : (
-                  <motion.span
-                    key="menu"
-                    initial={{ rotate: 90, opacity: 0 }}
-                    animate={{ rotate: 0, opacity: 1 }}
-                    exit={{ rotate: -90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
+                  <motion.span key="m" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
                     <Menu className="w-5 h-5" />
                   </motion.span>
                 )}
@@ -152,11 +141,9 @@ export function Header() {
         {open && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-40 bg-[var(--dark)]/40 backdrop-blur-sm lg:hidden"
               onClick={() => setOpen(false)}
             />
             <motion.div
@@ -164,35 +151,22 @@ export function Header() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
               transition={{ duration: reduced ? 0.01 : 0.38, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-[300px] bg-[var(--cream)] shadow-2xl flex flex-col px-8 pt-24 pb-12 lg:hidden"
+              className="fixed top-0 right-0 bottom-0 z-50 w-[300px] bg-[var(--dark)] shadow-2xl flex flex-col px-8 pt-24 pb-12 lg:hidden"
             >
               <motion.ul
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: {},
-                  visible: {
-                    transition: { staggerChildren: reduced ? 0 : 0.07, delayChildren: 0.08 },
-                  },
-                }}
+                initial="hidden" animate="visible"
+                variants={{ hidden: {}, visible: { transition: { staggerChildren: reduced ? 0 : 0.07, delayChildren: 0.08 } } }}
                 className="space-y-1"
               >
                 {navLinks.map((link, i) => (
                   <motion.li
                     key={i}
-                    variants={{
-                      hidden: { opacity: 0, x: reduced ? 0 : 24 },
-                      visible: {
-                        opacity: 1,
-                        x: 0,
-                        transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] },
-                      },
-                    }}
+                    variants={{ hidden: { opacity: 0, x: reduced ? 0 : 24 }, visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } } }}
                   >
                     <Link
                       href={link.href}
                       onClick={() => setOpen(false)}
-                      className="block py-2.5 font-display text-[28px] tracking-tight text-[var(--ink)] hover:text-[var(--clay)] transition-colors"
+                      className="block py-2.5 font-display text-[28px] tracking-tight text-white hover:text-[var(--gold2)] transition-colors"
                     >
                       {link.label}
                     </Link>
@@ -201,16 +175,15 @@ export function Header() {
               </motion.ul>
 
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.4, ease: "easeOut" }}
                 className="mt-auto"
               >
                 <button
                   onClick={() => { setOpen(false); setBookingOpen(true); }}
-                  className="block w-full text-center bg-[var(--clay)] text-white rounded-full py-3.5 text-[14px] font-medium tracking-tight"
+                  className="block w-full text-center border border-[var(--gold2)] text-[var(--gold2)] rounded-full py-3.5 text-[15px] font-medium tracking-tight hover:bg-[var(--gold2)] hover:text-[var(--dark)] transition-all"
                 >
-                  Reservar consulta
+                  Reservar
                 </button>
               </motion.div>
             </motion.div>

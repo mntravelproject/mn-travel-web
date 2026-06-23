@@ -110,7 +110,7 @@ export function TripCard({ trip, large = false, className }: TripCardProps) {
                 <Users className="w-3.5 h-3.5" /> Privado
               </span>
             </div>
-            <div className="text-[var(--ink)] font-medium tracking-tight">
+            <div className="font-semibold tracking-tight" style={{ color: "var(--gold)" }}>
               desde {formatPrice(trip.price_from)}
             </div>
           </div>

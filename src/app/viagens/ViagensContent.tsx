@@ -104,7 +104,7 @@ export function ViagensContent({ trips, categories }: Props) {
                     }`}
                   >
                     {activeCat === c.id && (
-                      <span className="hidden lg:inline-block w-1 h-1 rounded-full bg-[var(--clay)] mr-2 align-middle" />
+                      <span className="hidden lg:inline-block w-1 h-1 rounded-full mr-2 align-middle" style={{ background: "var(--gold)" }} />
                     )}
                     {c.name}
                   </motion.button>
