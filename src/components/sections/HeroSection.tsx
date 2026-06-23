@@ -10,7 +10,7 @@ export function HeroSection() {
   return (
     <section
       className="relative overflow-hidden"
-      style={{ minHeight: 780 }}
+      style={{ minHeight: 580, maxHeight: 700 }}
     >
       {/* Background — slow Ken Burns */}
       <motion.div
@@ -46,7 +46,7 @@ export function HeroSection() {
           width: "min(760px, 88vw)",
           marginLeft: "8.2vw",
           marginTop: 120,
-          paddingBottom: 100,
+          paddingBottom: 50,
         }}
       >
         {/* Eyebrow */}
