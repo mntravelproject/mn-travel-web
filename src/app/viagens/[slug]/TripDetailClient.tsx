@@ -108,7 +108,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     <MapPin className="w-3.5 h-3.5" /> {trip.country}
                   </span>
                 </div>
-                <h1 className="font-display text-[44px] md:text-[64px] leading-[1.02] tracking-tight text-balance">
+                <h1 className="font-display text-[28px] sm:text-[38px] md:text-[52px] lg:text-[64px] leading-[1.02] tracking-tight text-balance">
                   {trip.title}
                 </h1>
               </SlideUp>
@@ -135,7 +135,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
           {/* Gallery */}
           {gallery.length > 0 && (
             <ScaleIn from={0.97} delay={0.05} className="max-w-[1320px] mx-auto px-6 lg:px-10">
-              <div className="grid grid-cols-4 gap-3 h-[460px] lg:h-[560px]">
+              <div className="grid grid-cols-4 gap-3 h-[220px] sm:h-[320px] md:h-[420px] lg:h-[560px]">
                 <div className="col-span-4 lg:col-span-2 row-span-2 rounded-3xl overflow-hidden">
                   <motion.img
                     key={activeImg}
@@ -166,7 +166,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
           )}
 
           {/* Content */}
-          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-16 grid lg:grid-cols-12 gap-12">
+          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-8 md:mt-16 grid lg:grid-cols-12 gap-8 lg:gap-12">
             {/* Left */}
             <SlideUp delay={0.05} className="lg:col-span-7 xl:col-span-8">
               <div className="pb-12 border-b border-[var(--line)]">
@@ -304,7 +304,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
 
             {/* Sidebar */}
             <SlideIn direction="right" delay={0.1} className="lg:col-span-5 xl:col-span-4">
-              <div className="lg:sticky lg:top-[88px] rounded-[28px] bg-[var(--cream-2)] p-7 border border-[var(--line)]">
+              <div className="lg:sticky lg:top-[116px] rounded-[20px] sm:rounded-[28px] bg-[var(--cream-2)] p-4 sm:p-5 md:p-7 border border-[var(--line)]">
                 <div className="flex items-end justify-between pb-6 border-b border-[var(--line-2)]">
                   <div>
                     <div className="text-[12px] uppercase tracking-[0.18em] text-[var(--muted)]">desde</div>
@@ -440,7 +440,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
           </section>
 
           {/* Quote section */}
-          <section className="mt-32 relative h-[80vh] min-h-[600px] overflow-hidden">
+          <section className="mt-16 md:mt-32 relative h-[50vh] min-h-[320px] md:h-[80vh] md:min-h-[560px] overflow-hidden">
             <motion.img
               src={trip.hero_image_url ?? ""}
               alt=""
@@ -456,7 +456,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                 <SectionLabel>
                   <span className="text-white/60">Inspiração</span>
                 </SectionLabel>
-                <h2 className="mt-6 font-display text-[48px] md:text-[80px] leading-[0.98] tracking-tight text-balance">
+                <h2 className="mt-6 font-display text-[28px] sm:text-[38px] md:text-[56px] lg:text-[80px] leading-[0.98] tracking-tight text-balance">
                   &ldquo;Não viajamos para fugir da vida.{" "}
                   <span className="italic font-light">Viajamos para que a vida não nos fuja.&rdquo;</span>
                 </h2>

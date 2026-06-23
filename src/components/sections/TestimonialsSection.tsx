@@ -34,12 +34,12 @@ export function TestimonialsSection({ testimonials }: Props) {
   if (testimonials.length === 0) return null;
 
   return (
-    <section className="max-w-[1380px] mx-auto px-8 lg:px-14 mt-36">
-      <div className="grid lg:grid-cols-12 gap-16 items-start">
+    <section className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 mt-16 md:mt-36">
+      <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-start">
         {/* Left */}
         <SlideIn direction="left" className="lg:col-span-4" delay={0.05}>
           <SectionLabel>O que dizem</SectionLabel>
-          <h2 className="mt-5 font-display text-[44px] md:text-[52px] leading-[1.02] tracking-tight text-balance">
+          <h2 className="mt-5 font-display text-[26px] sm:text-[34px] md:text-[44px] lg:text-[52px] leading-[1.02] tracking-tight text-balance">
             Viagens que{" "}
             <span className="italic font-normal">ficam</span>{" "}
             para sempre.
@@ -85,7 +85,7 @@ export function TestimonialsSection({ testimonials }: Props) {
         >
           {testimonials.slice(0, 2).map((t, i) => (
             <StaggerItem key={t.id}>
-              <div className={`p-8 rounded-2xl bg-[var(--cream-2)] h-full border border-[var(--line)] ${i === 1 ? "md:mt-12" : ""}`}>
+              <div className={`p-5 sm:p-8 rounded-2xl bg-[var(--cream-2)] h-full border border-[var(--line)] ${i === 1 ? "md:mt-12" : ""}`}>
                 {/* Gold quote mark */}
                 <div
                   className="font-display text-[52px] leading-none mb-2 select-none"

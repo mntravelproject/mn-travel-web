@@ -39,12 +39,11 @@ export function HeroSection() {
 
       {/* Content */}
       <div
-        className="relative"
+        className="relative mt-[76px] md:mt-[96px] lg:mt-[112px]"
         style={{
           zIndex: 2,
           width: "min(760px, 88vw)",
           marginLeft: "8.2vw",
-          marginTop: 112,
           paddingBottom: 20,
         }}
       >
@@ -63,7 +62,7 @@ export function HeroSection() {
         <motion.h1
           className="font-display text-white"
           style={{
-            fontSize: "clamp(52px, 6vw, 82px)",
+            fontSize: "clamp(38px, 6vw, 82px)",
             lineHeight: 0.96,
             letterSpacing: "-.045em",
             margin: "0 0 14px",

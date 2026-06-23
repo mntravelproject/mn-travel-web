@@ -21,7 +21,7 @@ function OverlayCard({ trip, priority = false }: { trip: TravelPackageCard; prio
       transition={{ type: "spring", stiffness: 280, damping: 28 }}
       className="h-full"
     >
-      <Link href={`/viagens/${trip.slug}`} className="group block h-full relative overflow-hidden rounded-[14px] bg-[var(--dark)] shadow-[0_24px_45px_rgba(43,35,25,.14)] overlay-card" style={{ minHeight: 460 }}>
+      <Link href={`/viagens/${trip.slug}`} className="group block h-full relative overflow-hidden rounded-[14px] bg-[var(--dark)] shadow-[0_24px_45px_rgba(43,35,25,.14)] overlay-card min-h-[320px] sm:min-h-[380px] lg:min-h-[460px]">
 
         {/* Image */}
         {trip.hero_image_url && (
@@ -84,12 +84,12 @@ export function FeaturedTrips({ trips }: Props) {
   const reduced = false;
 
   return (
-    <section className="max-w-[1380px] mx-auto px-8 lg:px-14 pt-36">
+    <section className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 pt-16 md:pt-36">
       {/* Header */}
-      <SlideUp className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+      <SlideUp className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-8 md:mb-16">
         <div>
           <SectionLabel>Em destaque · Primavera 2026</SectionLabel>
-          <h2 className="mt-5 font-display text-[48px] md:text-[68px] leading-[1.0] tracking-tight text-balance">
+          <h2 className="mt-5 font-display text-[28px] sm:text-[38px] md:text-[48px] lg:text-[68px] leading-[1.0] tracking-tight text-balance">
             As nossas{" "}
             <span className="italic font-normal">colecções</span>
           </h2>

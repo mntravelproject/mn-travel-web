@@ -10,15 +10,15 @@ export function DestinationsSection({ destinations }: Props) {
   if (destinations.length === 0) return null;
 
   return (
-    <section className="bg-[var(--cream)] pt-28 pb-32">
+    <section className="bg-[var(--cream)] pt-14 pb-16 md:pt-28 md:pb-32">
       <div className="max-w-[1320px] mx-auto px-6 lg:px-10">
-        <div className="flex items-end justify-between mb-14">
+        <div className="flex items-end justify-between mb-8 md:mb-14">
           <div>
             <div className="inline-flex items-center gap-3 text-[11px] uppercase tracking-[0.22em] text-[var(--muted)] mb-5">
               <span className="h-px w-8 bg-[var(--clay)]/40" />
               Destinos populares
             </div>
-            <h2 className="font-display text-[42px] md:text-[54px] leading-[1.02] tracking-tight text-balance text-[var(--ink)]">
+            <h2 className="font-display text-[26px] sm:text-[34px] md:text-[42px] lg:text-[54px] leading-[1.02] tracking-tight text-balance text-[var(--ink)]">
               Onde os nossos
               <br />
               viajantes <span className="italic font-light">regressam.</span>

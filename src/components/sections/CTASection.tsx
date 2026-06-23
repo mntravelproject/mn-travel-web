@@ -11,7 +11,7 @@ const benefits = [
 
 export function CTASection() {
   return (
-    <div className="max-w-[1380px] mx-auto px-8 lg:px-14 mt-36 mb-0 space-y-6">
+    <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 mt-16 md:mt-36 mb-0 space-y-6">
       {/* Bespoke banner */}
       <ScaleIn from={0.96} duration={0.75}>
         <div className="relative overflow-hidden rounded-[28px] min-h-[480px]">
@@ -31,14 +31,14 @@ export function CTASection() {
             }}
           />
 
-          <div className="relative px-12 py-20 lg:px-20 lg:py-28 max-w-[660px]">
+          <div className="relative px-6 py-10 sm:px-10 sm:py-16 lg:px-20 lg:py-28 max-w-[660px]">
             {/* Eyebrow */}
             <div className="flex items-center gap-3 text-[12px] uppercase tracking-[0.2em] font-semibold mb-7" style={{ color: "var(--gold2)" }}>
               <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold2)" }} />
               Curadoria exclusiva · Por encomenda
             </div>
 
-            <h2 className="font-display text-[46px] md:text-[64px] leading-[1.0] tracking-tight text-white text-balance mb-6">
+            <h2 className="font-display text-[26px] sm:text-[36px] md:text-[46px] lg:text-[64px] leading-[1.0] tracking-tight text-white text-balance mb-6">
               A próxima história{" "}
               <span className="italic font-normal">começa aqui.</span>
             </h2>
@@ -75,7 +75,7 @@ export function CTASection() {
           >
             {benefits.map(({ icon: Icon, label, sub }) => (
               <StaggerItem key={label}>
-                <div className="flex items-center gap-4 px-8 py-7">
+                <div className="flex items-center gap-3 sm:gap-4 px-4 py-5 sm:px-6 sm:py-6 md:px-8 md:py-7">
                   <span className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "var(--gold-soft)" }}>
                     <Icon className="w-4.5 h-4.5" style={{ color: "var(--gold)" }} strokeWidth={1.5} />
                   </span>

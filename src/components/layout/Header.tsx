@@ -49,7 +49,7 @@ export function Header() {
             : "bg-transparent"
         )}
       >
-        <div className="max-w-[1380px] mx-auto px-8 lg:px-14 h-[108px] grid grid-cols-[180px_1fr_220px] items-center">
+        <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 h-[68px] md:h-[88px] lg:h-[108px] flex items-center justify-between lg:grid lg:grid-cols-[180px_1fr_220px]">
 
           {/* Logo */}
           <Link
@@ -151,7 +151,7 @@ export function Header() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
               transition={{ duration: reduced ? 0.01 : 0.38, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-[300px] bg-[var(--dark)] shadow-2xl flex flex-col px-8 pt-24 pb-12 lg:hidden"
+              className="fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-[300px] bg-[var(--dark)] shadow-2xl flex flex-col px-6 pt-20 pb-10 lg:hidden"
             >
               <motion.ul
                 initial="hidden" animate="visible"

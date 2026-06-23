@@ -19,16 +19,16 @@ const columns = [
 
 export function Footer() {
   return (
-    <footer style={{ background: "var(--dark)" }} className="text-white pt-24 pb-10 mt-32">
-      <div className="max-w-[1380px] mx-auto px-8 lg:px-14">
+    <footer style={{ background: "var(--dark)" }} className="text-white pt-12 pb-8 mt-16 md:pt-24 md:pb-10 md:mt-32">
+      <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14">
 
         {/* Top grid */}
-        <div className="grid lg:grid-cols-12 gap-12 pb-20 border-b border-white/10">
+        <div className="grid lg:grid-cols-12 gap-8 pb-12 lg:gap-12 lg:pb-20 border-b border-white/10">
           {/* CTA column */}
           <SlideUp delay={0.05} className="lg:col-span-5">
             {/* Gold line */}
             <div className="w-12 h-[2px] bg-[var(--gold2)] mb-7" />
-            <h2 className="font-display text-[44px] md:text-[54px] leading-[1.02] tracking-tight text-balance">
+            <h2 className="font-display text-[30px] sm:text-[38px] md:text-[44px] lg:text-[54px] leading-[1.02] tracking-tight text-balance">
               Pronto para a próxima{" "}
               <span className="italic font-normal">história</span>?
             </h2>

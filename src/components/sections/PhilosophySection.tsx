@@ -26,7 +26,7 @@ const images = [
 
 export function PhilosophySection() {
   return (
-    <section className="mt-36 relative overflow-hidden" style={{ background: "var(--dark)" }}>
+    <section className="mt-16 md:mt-36 relative overflow-hidden" style={{ background: "var(--dark)" }}>
       {/* Subtle grain overlay */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.03]"
@@ -35,7 +35,7 @@ export function PhilosophySection() {
         }}
       />
 
-      <div className="max-w-[1380px] mx-auto px-8 lg:px-14 py-32 lg:py-44 grid lg:grid-cols-12 gap-12 items-center">
+      <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 py-14 sm:py-24 lg:py-44 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left: text */}
         <SlideIn direction="left" className="lg:col-span-5" delay={0.05}>
           {/* Gold eyebrow */}
@@ -44,7 +44,7 @@ export function PhilosophySection() {
             A filosofia MN
           </div>
 
-          <h3 className="font-display text-[42px] md:text-[58px] leading-[1.04] tracking-tight text-white">
+          <h3 className="font-display text-[26px] sm:text-[34px] md:text-[44px] lg:text-[58px] leading-[1.04] tracking-tight text-white">
             Não vendemos
             <br />
             destinos. Desenhamos{" "}
@@ -63,7 +63,7 @@ export function PhilosophySection() {
           <div className="mt-12 grid grid-cols-3 gap-6 max-w-md">
             {stats.map((s) => (
               <div key={s.l}>
-                <div className="font-display text-[38px] leading-none" style={{ color: "var(--gold2)" }}>
+                <div className="font-display text-[28px] md:text-[38px] leading-none" style={{ color: "var(--gold2)" }}>
                   <AnimatedCounter value={s.n} duration={1.6} />
                 </div>
                 <div className="mt-2 text-[11px] uppercase tracking-[0.15em] text-white/45">

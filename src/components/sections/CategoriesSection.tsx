@@ -32,10 +32,10 @@ export function CategoriesSection({ categories }: Props) {
   const reduced = false;
 
   return (
-    <section className="mt-36 max-w-[1380px] mx-auto px-8 lg:px-14">
-      <SlideUp className="mb-14">
+    <section className="mt-16 md:mt-36 max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14">
+      <SlideUp className="mb-8 md:mb-14">
         <SectionLabel>Por estilo de viagem</SectionLabel>
-        <h2 className="mt-5 font-display text-[48px] md:text-[62px] leading-[1.0] tracking-tight text-balance">
+        <h2 className="mt-5 font-display text-[28px] sm:text-[38px] md:text-[48px] lg:text-[62px] leading-[1.0] tracking-tight text-balance">
           Encontre o seu <span className="italic font-normal">ritmo.</span>
         </h2>
       </SlideUp>

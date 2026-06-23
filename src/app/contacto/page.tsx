@@ -22,9 +22,9 @@ export default function ContactoPage() {
       <Header />
       <main className="pt-[72px]">
         {/* Hero */}
-        <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-20 pb-16 border-b border-[var(--line)]">
+        <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-10 pb-10 md:pt-20 md:pb-16 border-b border-[var(--line)]">
           <SectionLabel>Contacto</SectionLabel>
-          <h1 className="mt-5 font-display text-[52px] md:text-[72px] leading-[1.02] tracking-tight max-w-2xl">
+          <h1 className="mt-5 font-display text-[32px] sm:text-[44px] md:text-[58px] lg:text-[72px] leading-[1.02] tracking-tight max-w-2xl">
             Fale connosco.<br />
             <span className="italic font-light">Estamos aqui.</span>
           </h1>
@@ -34,8 +34,8 @@ export default function ContactoPage() {
         </section>
 
         {/* Main grid */}
-        <section className="max-w-[1320px] mx-auto px-6 lg:px-10 py-20">
-          <div className="grid lg:grid-cols-12 gap-16">
+        <section className="max-w-[1320px] mx-auto px-6 lg:px-10 py-10 md:py-20">
+          <div className="grid lg:grid-cols-12 gap-8 lg:gap-16">
 
             {/* Form column */}
             <div className="lg:col-span-7">

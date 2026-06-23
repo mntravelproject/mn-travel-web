@@ -49,10 +49,10 @@ export function ViagensContent({ trips, categories }: Props) {
     <div className="pt-[72px]">
       {/* Page header */}
       <section className="border-b border-[var(--line)] bg-[var(--cream)]">
-        <div className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-16 pb-12">
+        <div className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-10 pb-8 md:pt-16 md:pb-12">
           <SlideUp duration={0.6}>
             <SectionLabel>Catálogo · {trips.length} viagens</SectionLabel>
-            <h1 className="mt-5 font-display text-[56px] md:text-[80px] leading-[0.98] tracking-tight text-balance max-w-4xl">
+            <h1 className="mt-5 font-display text-[32px] sm:text-[48px] md:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight text-balance max-w-4xl">
               Cada viagem,<br />uma <span className="italic font-light">narrativa</span>.
             </h1>
             <p className="mt-7 max-w-xl text-[15px] text-[var(--muted)] leading-relaxed">
@@ -84,10 +84,10 @@ export function ViagensContent({ trips, categories }: Props) {
       </section>
 
       {/* Sidebar + cards */}
-      <section className="max-w-[1320px] mx-auto px-6 lg:px-10 py-14 grid lg:grid-cols-[260px_1fr] gap-10">
+      <section className="max-w-[1320px] mx-auto px-6 lg:px-10 py-8 md:py-14 grid lg:grid-cols-[240px_1fr] gap-6 lg:gap-10">
         {/* Sidebar */}
         <SlideIn direction="left" delay={0.05}>
-          <aside className="lg:sticky lg:top-[88px] lg:self-start space-y-8">
+          <aside className="lg:sticky lg:top-[116px] lg:self-start space-y-8">
             <div>
               <h3 className="text-[13px] font-medium tracking-tight mb-4">Categorias</h3>
               <div className="flex flex-wrap lg:flex-col gap-2 lg:gap-0">
@@ -203,7 +203,7 @@ export function ViagensContent({ trips, categories }: Props) {
                 transition={{ duration: 0.3 }}
               >
                 <StaggerContainer
-                  className="grid sm:grid-cols-2 gap-x-6 gap-y-14"
+                  className="grid sm:grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-12"
                   staggerDelay={0.08}
                   initialDelay={0.05}
                   once={false}
