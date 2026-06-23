@@ -10,7 +10,7 @@ export function HeroSection() {
   return (
     <section
       className="relative overflow-hidden"
-      style={{ minHeight: 580, maxHeight: 700 }}
+      style={{ height: "clamp(550px, 57vh, 680px)" }}
     >
       {/* Background — slow Ken Burns */}
       <motion.div
@@ -23,7 +23,6 @@ export function HeroSection() {
           src="https://images.unsplash.com/photo-1570213489059-0aac6626cade?auto=format&fit=crop&w=2400&q=90"
           alt=""
           className="w-full h-full object-cover object-center absolute inset-0"
-          style={{ minHeight: 780 }}
         />
       </motion.div>
 
@@ -38,15 +37,15 @@ export function HeroSection() {
         }}
       />
 
-      {/* Content — positioned like HTML: margin-left 8.2vw, margin-top 120px */}
+      {/* Content */}
       <div
         className="relative"
         style={{
           zIndex: 2,
           width: "min(760px, 88vw)",
           marginLeft: "8.2vw",
-          marginTop: 120,
-          paddingBottom: 50,
+          marginTop: 112,
+          paddingBottom: 20,
         }}
       >
         {/* Eyebrow */}
@@ -54,7 +53,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: reduced ? 0 : 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0.01 : 0.6, delay: 0.2, ease }}
-          className="text-[17px] font-bold tracking-[0.12em] uppercase mb-7"
+          className="text-[15px] font-bold tracking-[0.12em] uppercase mb-3"
           style={{ color: "var(--gold2)" }}
         >
           Viagens à sua medida
@@ -64,10 +63,10 @@ export function HeroSection() {
         <motion.h1
           className="font-display text-white"
           style={{
-            fontSize: "clamp(58px, 7vw, 96px)",
+            fontSize: "clamp(52px, 6vw, 82px)",
             lineHeight: 0.96,
             letterSpacing: "-.045em",
-            margin: "0 0 34px",
+            margin: "0 0 14px",
           }}
           initial="hidden"
           animate="visible"
@@ -97,7 +96,7 @@ export function HeroSection() {
 
         {/* Gold line */}
         <motion.div
-          className="gold-line mb-8"
+          className="gold-line mb-3"
           initial={{ scaleX: 0, originX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: reduced ? 0.01 : 0.7, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
@@ -105,8 +104,8 @@ export function HeroSection() {
 
         {/* Subtitle */}
         <motion.p
-          className="text-[21px] leading-[1.55] mb-10 max-w-[530px]"
-          style={{ color: "rgba(255,255,255,.92)" }}
+          className="text-[18px] leading-[1.5] mb-5 max-w-[500px]"
+          style={{ color: "rgba(255,255,255,.88)" }}
           initial={{ opacity: 0, y: reduced ? 0 : 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0.01 : 0.65, delay: 0.65, ease }}
@@ -120,10 +119,10 @@ export function HeroSection() {
           initial={{ opacity: 0, y: reduced ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0.01 : 0.55, delay: 0.8, ease }}
-          className="inline-flex items-center gap-4 font-bold text-[18px] pb-3 border-b-2 transition-all hover:gap-6"
+          className="inline-flex items-center gap-3 font-bold text-[16px] pb-3 border-b-2 transition-all hover:gap-5"
           style={{ color: "var(--gold2)", borderColor: "var(--gold2)", textDecoration: "none" }}
         >
-          Explorar colecções <ArrowRight className="w-5 h-5" />
+          Explorar colecções <ArrowRight className="w-4 h-4" />
         </motion.a>
       </div>
     </section>
