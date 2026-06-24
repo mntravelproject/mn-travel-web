@@ -78,7 +78,6 @@ export function HeroSection() {
           {["Experiências", "que ficam", "para sempre."].map((line, i) => (
             <motion.span
               key={i}
-              className="block"
               variants={{
                 hidden: { opacity: 0, y: reduced ? 0 : 40, clipPath: "inset(0 0 100% 0)" },
                 visible: {
@@ -89,7 +88,7 @@ export function HeroSection() {
                 },
               }}
             >
-              {line}
+              {i > 0 ? " " : ""}{line}
             </motion.span>
           ))}
         </motion.h1>
