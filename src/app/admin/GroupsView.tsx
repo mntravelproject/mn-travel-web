@@ -1095,9 +1095,14 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
         setPassengers((prev) => prev.map((p) =>
           p.client_id === payload.id
             ? { ...p,
-                ...(payload.name  !== undefined && { full_name: payload.name }),
-                ...(payload.email !== undefined && { email: payload.email }),
-                ...(payload.phone !== undefined && { phone: payload.phone }),
+                ...(payload.name           !== undefined && { full_name:      payload.name }),
+                ...(payload.email          !== undefined && { email:          payload.email }),
+                ...(payload.phone          !== undefined && { phone:          payload.phone }),
+                ...(payload.id_card_number !== undefined && { id_card_number: payload.id_card_number }),
+                ...(payload.id_card_expiry !== undefined && { id_card_expiry: payload.id_card_expiry }),
+                ...(payload.nif            !== undefined && { nif:            payload.nif }),
+                ...(payload.date_of_birth  !== undefined && { date_of_birth:  payload.date_of_birth }),
+                ...(payload.nationality    !== undefined && { nationality:    payload.nationality }),
               }
             : p
         ));
@@ -1124,17 +1129,20 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     const roomId   = roomType !== "individual" ? crypto.randomUUID() : null;
     const baseSort = passengers.length;
 
-    // Sync doc fields back to clients table
+    // Sync doc fields back to clients table + broadcast
     const syncDocs = async (clientId: string, docs: PaxFormDocs) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from("clients").update({
+      const docPayload = {
         phone:          docs.phone || null,
         id_card_number: docs.id_card_number || null,
         id_card_expiry: docs.id_card_expiry || null,
         nif:            docs.nif || null,
         date_of_birth:  docs.date_of_birth || null,
         nationality:    docs.nationality || null,
-      }).eq("id", clientId);
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("clients").update(docPayload).eq("id", clientId);
+      syncCh.current?.send({ type: "broadcast", event: "client_updated",
+        payload: { id: clientId, ...docPayload } });
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1200,12 +1208,20 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
         date_of_birth:  docs.date_of_birth || null,
         nationality:    docs.nationality || null,
       }).eq("id", pax.client_id);
-      // Cascade phone to all other trip_passengers of this client
-      await sb.from("trip_passengers").update({ phone: docs.phone || null })
+      // Cascade all doc fields to other trip_passengers of this client
+      const docCascade = {
+        phone:          docs.phone || null,
+        id_card_number: docs.id_card_number || null,
+        id_card_expiry: docs.id_card_expiry || null,
+        nif:            docs.nif || null,
+        date_of_birth:  docs.date_of_birth || null,
+        nationality:    docs.nationality || "Portuguesa",
+      };
+      await sb.from("trip_passengers").update(docCascade)
         .eq("client_id", pax.client_id).neq("id", id);
-      // Broadcast so ClientsView updates instantly
+      // Broadcast all fields so ClientsView and other TripDetailViews update instantly
       syncCh.current?.send({ type: "broadcast", event: "client_updated",
-        payload: { id: pax.client_id, phone: docs.phone || null } });
+        payload: { id: pax.client_id, ...docCascade } });
     }
     setPassengers((p) => p.map((x) => x.id === id ? { ...x, ...updates } : x));
     setEditPax(null);

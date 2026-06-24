@@ -1556,16 +1556,31 @@ function ClientsView() {
         ...docFields,
       }).eq("id", editClient.id);
       if (error) { setFormError(error.message); setSaving(false); return; }
-      // Cascade contact fields to all trip_passengers linked to this client
+      // Cascade all fields to trip_passengers linked to this client
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from("trip_passengers").update({
-        full_name: form.name,
-        email:     form.email || null,
-        phone:     form.phone || null,
+        full_name:      form.name,
+        email:          form.email || null,
+        phone:          form.phone || null,
+        id_card_number: form.id_card_number || null,
+        id_card_expiry: form.id_card_expiry || null,
+        nif:            form.nif || null,
+        date_of_birth:  form.date_of_birth || null,
+        nationality:    form.nationality || null,
       }).eq("client_id", editClient.id);
       // Broadcast so any open TripDetailView updates instantly
       syncCh.current?.send({ type: "broadcast", event: "client_updated",
-        payload: { id: editClient.id, name: form.name, email: form.email || null, phone: form.phone || null } });
+        payload: {
+          id:             editClient.id,
+          name:           form.name,
+          email:          form.email || null,
+          phone:          form.phone || null,
+          id_card_number: form.id_card_number || null,
+          id_card_expiry: form.id_card_expiry || null,
+          nif:            form.nif || null,
+          date_of_birth:  form.date_of_birth || null,
+          nationality:    form.nationality || null,
+        } });
       setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null, ...docFields } : c));
     } else {
       const { data, error } = await clientsTable.insert({
