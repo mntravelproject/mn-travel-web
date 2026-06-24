@@ -39,7 +39,7 @@ export function HeroSection() {
 
       {/* Content */}
       <div
-        className="relative mt-[101px] md:mt-[121px] lg:mt-[137px]"
+        className="relative mt-[120px] md:mt-[140px] lg:mt-[160px]"
         style={{
           zIndex: 2,
           width: "min(760px, 88vw)",
