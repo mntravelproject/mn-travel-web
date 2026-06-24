@@ -132,43 +132,185 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
             </div>
           </section>
 
-          {/* Gallery */}
-          {gallery.length > 0 && (
-            <ScaleIn from={0.97} delay={0.05} className="max-w-[1320px] mx-auto px-6 lg:px-10">
-              <div className="grid grid-cols-4 gap-3 h-[220px] sm:h-[320px] md:h-[420px] lg:h-[560px]">
-                <div className="col-span-4 lg:col-span-2 row-span-2 rounded-3xl overflow-hidden">
-                  <motion.img
-                    key={activeImg}
-                    src={gallery[activeImg]?.image_url ?? trip.hero_image_url ?? ""}
-                    alt={trip.title}
-                    className="w-full h-full object-cover"
-                    initial={{ opacity: 0, scale: reduced ? 1 : 1.03 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.45, ease }}
-                  />
+          {/* Gallery + Booking Card */}
+          <section className="max-w-[1320px] mx-auto px-6 lg:px-10">
+            <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
+
+              {/* Gallery */}
+              {gallery.length > 0 && (
+                <ScaleIn from={0.97} delay={0.05} className="lg:col-span-7 xl:col-span-8">
+                  <div className="grid grid-cols-4 gap-3 h-[220px] sm:h-[320px] md:h-[420px] lg:h-[560px]">
+                    <div className="col-span-4 lg:col-span-2 row-span-2 rounded-3xl overflow-hidden">
+                      <motion.img
+                        key={activeImg}
+                        src={gallery[activeImg]?.image_url ?? trip.hero_image_url ?? ""}
+                        alt={trip.title}
+                        className="w-full h-full object-cover"
+                        initial={{ opacity: 0, scale: reduced ? 1 : 1.03 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.45, ease }}
+                      />
+                    </div>
+                    {gallery.map((img, i) => (
+                      <motion.button
+                        key={img.id}
+                        onClick={() => setActiveImg(i)}
+                        whileHover={{ scale: reduced ? 1 : 1.02 }}
+                        whileTap={{ scale: reduced ? 1 : 0.98 }}
+                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                        className={`relative rounded-2xl overflow-hidden hidden lg:block ${
+                          activeImg === i ? "ring-2 ring-offset-2 ring-[var(--gold)]" : ""
+                        }`}
+                      >
+                        <img src={img.image_url} alt={img.alt_text ?? ""} className="w-full h-full object-cover" />
+                      </motion.button>
+                    ))}
+                  </div>
+                </ScaleIn>
+              )}
+
+              {/* Booking Card */}
+              <SlideIn direction="right" delay={0.1} className="mt-6 lg:mt-0 lg:col-span-5 xl:col-span-4">
+                <div className="lg:sticky lg:top-[116px] rounded-[20px] sm:rounded-[28px] bg-[var(--cream-2)] p-4 sm:p-5 md:p-7 border border-[var(--line)]">
+                  <div className="flex items-end justify-between pb-6 border-b border-[var(--line-2)]">
+                    <div>
+                      <div className="text-[12px] uppercase tracking-[0.18em] text-[var(--muted)]">desde</div>
+                      <div className="mt-1 font-display text-[40px] leading-none">{formatPrice(trip.price_from)}</div>
+                      <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">por pessoa · ocupação dupla</div>
+                      {remainingSeats !== null && (
+                        <div className={`mt-1.5 text-[12px] font-medium tracking-tight ${
+                          remainingSeats === 0 ? "text-red-600" :
+                          remainingSeats <= 5  ? "text-amber-700" : "text-emerald-700"
+                        }`}>
+                          {remainingSeats === 0
+                            ? "Não disponível"
+                            : remainingSeats <= 5
+                              ? `Últimos lugares · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`
+                              : `${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""} disponíve${remainingSeats !== 1 ? "is" : "l"}`}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-[13px]">
+                      <Star className="w-4 h-4" style={{ fill: "var(--gold)", color: "var(--gold)" }} /> {trip.rating}
+                    </div>
+                  </div>
+
+                  {submitted ? (
+                    <div className="mt-6 py-8 text-center">
+                      <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
+                        <Check className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <p className="font-display text-[20px] tracking-tight">Reserva recebida!</p>
+                      <p className="mt-2 text-[13px] text-[var(--muted)] leading-relaxed">
+                        Entraremos em contacto em breve para confirmar a sua reserva.
+                      </p>
+                    </div>
+                  ) : (
+                  <form onSubmit={handleBooking} className="space-y-3 mt-6">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
+                        <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Check-in</span>
+                        <input ref={checkInRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
+                      </label>
+                      <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
+                        <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
+                        <div className="flex items-center justify-between mt-1 text-[13px]">
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: reduced ? 1 : 1.15 }}
+                            whileTap={{ scale: reduced ? 1 : 0.85 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                            onClick={() => setPax(Math.max(1, pax - 1))}
+                            className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </motion.button>
+                          {pax} adultos
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: reduced ? 1 : 1.15 }}
+                            whileTap={{ scale: reduced ? 1 : 0.85 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                            onClick={() => setPax(pax + 1)}
+                            className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </motion.button>
+                        </div>
+                      </label>
+                    </div>
+
+                    <input
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="Nome completo"
+                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <input
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        placeholder="Email"
+                        className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
+                      />
+                      <input
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        placeholder="Telefone"
+                        className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
+                      />
+                    </div>
+                    <textarea
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      rows={3}
+                      placeholder="Conte-nos como sonha esta viagem (opcional)"
+                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] resize-none transition-colors"
+                    />
+
+                    {formError && <p className="text-[12px] text-red-600">{formError}</p>}
+
+                    <motion.button
+                      type="submit"
+                      disabled={submitting}
+                      whileHover={{ scale: reduced ? 1 : 1.02 }}
+                      whileTap={{ scale: reduced ? 1 : 0.97 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 22 }}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-full text-[var(--dark)] px-7 py-4 text-[15px] font-semibold tracking-tight transition-all hover:brightness-110 mt-2 disabled:opacity-60"
+                      style={{ background: "var(--gold)" }}
+                    >
+                      {submitting ? "A processar…" : <><span>Efetuar reserva</span> <ArrowRight className="w-4 h-4" /></>}
+                    </motion.button>
+                    {trip.pdf_url && (
+                      <a
+                        href={trip.pdf_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-[var(--line-2)] hover:border-[var(--ink)] px-7 py-3.5 text-[14px] tracking-tight transition-colors"
+                      >
+                        <FileText className="w-4 h-4" /> Descarregar ficha da viagem
+                      </a>
+                    )}
+                    <button type="button" className="w-full text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
+                      Falar com curador agora →
+                    </button>
+                  </form>
+                  )}
+
+                  <div className="mt-6 pt-6 border-t border-[var(--line-2)] text-[12px] text-[var(--muted)] leading-relaxed">
+                    <strong className="text-[var(--ink)] font-medium block mb-1">Reserva sem risco</strong>
+                    A sua reserva será confirmada em 48h. Pagamento apenas após confirmação do
+                    programa final.
+                  </div>
                 </div>
-                {gallery.map((img, i) => (
-                  <motion.button
-                    key={img.id}
-                    onClick={() => setActiveImg(i)}
-                    whileHover={{ scale: reduced ? 1 : 1.02 }}
-                    whileTap={{ scale: reduced ? 1 : 0.98 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                    className={`relative rounded-2xl overflow-hidden hidden lg:block ${
-                      activeImg === i ? "ring-2 ring-offset-2 ring-[var(--gold)]" : ""
-                    }`}
-                  >
-                    <img src={img.image_url} alt={img.alt_text ?? ""} className="w-full h-full object-cover" />
-                  </motion.button>
-                ))}
-              </div>
-            </ScaleIn>
-          )}
+              </SlideIn>
+
+            </div>
+          </section>
 
           {/* Content */}
-          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-8 md:mt-16 grid lg:grid-cols-12 gap-8 lg:gap-12">
-            {/* Left */}
-            <SlideUp delay={0.05} className="lg:col-span-7 xl:col-span-8">
+          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-10 md:mt-16">
+            <SlideUp delay={0.05}>
               <div className="pb-12 border-b border-[var(--line)]">
                 <SectionLabel>A viagem</SectionLabel>
                 <p className="mt-6 font-display text-[28px] md:text-[34px] leading-[1.25] tracking-tight text-balance">
@@ -301,142 +443,6 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                 )}
               </div>
             </SlideUp>
-
-            {/* Sidebar */}
-            <SlideIn direction="right" delay={0.1} className="lg:col-span-5 xl:col-span-4">
-              <div className="lg:sticky lg:top-[116px] rounded-[20px] sm:rounded-[28px] bg-[var(--cream-2)] p-4 sm:p-5 md:p-7 border border-[var(--line)]">
-                <div className="flex items-end justify-between pb-6 border-b border-[var(--line-2)]">
-                  <div>
-                    <div className="text-[12px] uppercase tracking-[0.18em] text-[var(--muted)]">desde</div>
-                    <div className="mt-1 font-display text-[40px] leading-none">{formatPrice(trip.price_from)}</div>
-                    <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">por pessoa · ocupação dupla</div>
-                    {remainingSeats !== null && (
-                      <div className={`mt-1.5 text-[12px] font-medium tracking-tight ${
-                        remainingSeats === 0 ? "text-red-600" :
-                        remainingSeats <= 5  ? "text-amber-700" : "text-emerald-700"
-                      }`}>
-                        {remainingSeats === 0
-                          ? "Não disponível"
-                          : remainingSeats <= 5
-                            ? `Últimos lugares · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`
-                            : `${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""} disponíve${remainingSeats !== 1 ? "is" : "l"}`}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 text-[13px]">
-                    <Star className="w-4 h-4" style={{ fill: "var(--gold)", color: "var(--gold)" }} /> {trip.rating}
-                  </div>
-                </div>
-
-                {submitted ? (
-                  <div className="mt-6 py-8 text-center">
-                    <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
-                      <Check className="w-6 h-6 text-emerald-600" />
-                    </div>
-                    <p className="font-display text-[20px] tracking-tight">Reserva recebida!</p>
-                    <p className="mt-2 text-[13px] text-[var(--muted)] leading-relaxed">
-                      Entraremos em contacto em breve para confirmar a sua reserva.
-                    </p>
-                  </div>
-                ) : (
-                <form onSubmit={handleBooking} className="space-y-3 mt-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Check-in</span>
-                      <input ref={checkInRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
-                    </label>
-                    <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
-                      <div className="flex items-center justify-between mt-1 text-[13px]">
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: reduced ? 1 : 1.15 }}
-                          whileTap={{ scale: reduced ? 1 : 0.85 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          onClick={() => setPax(Math.max(1, pax - 1))}
-                          className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </motion.button>
-                        {pax} adultos
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: reduced ? 1 : 1.15 }}
-                          whileTap={{ scale: reduced ? 1 : 0.85 }}
-                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          onClick={() => setPax(pax + 1)}
-                          className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </motion.button>
-                      </div>
-                    </label>
-                  </div>
-
-                  <input
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Nome completo"
-                    className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
-                  />
-                  <div className="grid grid-cols-2 gap-3">
-                    <input
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      placeholder="Email"
-                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
-                    />
-                    <input
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      placeholder="Telefone"
-                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
-                    />
-                  </div>
-                  <textarea
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    rows={3}
-                    placeholder="Conte-nos como sonha esta viagem (opcional)"
-                    className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] resize-none transition-colors"
-                  />
-
-                  {formError && <p className="text-[12px] text-red-600">{formError}</p>}
-
-                  <motion.button
-                    type="submit"
-                    disabled={submitting}
-                    whileHover={{ scale: reduced ? 1 : 1.02 }}
-                    whileTap={{ scale: reduced ? 1 : 0.97 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 22 }}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-full text-[var(--dark)] px-7 py-4 text-[15px] font-semibold tracking-tight transition-all hover:brightness-110 mt-2 disabled:opacity-60"
-                    style={{ background: "var(--gold)" }}
-                  >
-                    {submitting ? "A processar…" : <><span>Efetuar reserva</span> <ArrowRight className="w-4 h-4" /></>}
-                  </motion.button>
-                  {trip.pdf_url && (
-                    <a
-                      href={trip.pdf_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-full border border-[var(--line-2)] hover:border-[var(--ink)] px-7 py-3.5 text-[14px] tracking-tight transition-colors"
-                    >
-                      <FileText className="w-4 h-4" /> Descarregar ficha da viagem
-                    </a>
-                  )}
-                  <button type="button" className="w-full text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
-                    Falar com curador agora →
-                  </button>
-                </form>
-                )}
-
-                <div className="mt-6 pt-6 border-t border-[var(--line-2)] text-[12px] text-[var(--muted)] leading-relaxed">
-                  <strong className="text-[var(--ink)] font-medium block mb-1">Reserva sem risco</strong>
-                  A sua reserva será confirmada em 48h. Pagamento apenas após confirmação do
-                  programa final.
-                </div>
-              </div>
-            </SlideIn>
           </section>
 
           {/* Quote section */}
