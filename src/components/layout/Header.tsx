@@ -28,7 +28,6 @@ const navLinks = [
       },
     ],
   },
-  { href: "/viagens",  label: "Editorial" },
   { href: "/sobre",    label: "Sobre" },
   { href: "/contacto", label: "Contacto" },
 ];
@@ -61,7 +60,7 @@ export function Header() {
   const onLight = !isHero || scrolled || open;
 
   const openDest  = () => { if (destTimer.current) clearTimeout(destTimer.current); setDestOpen(true); };
-  const closeDest = () => { destTimer.current = setTimeout(() => setDestOpen(false), 150); };
+  const closeDest = () => { destTimer.current = setTimeout(() => setDestOpen(false), 300); };
 
   return (
     <>
@@ -125,7 +124,7 @@ export function Header() {
                           transition={{ duration: 0.16, ease: "easeOut" }}
                           onMouseEnter={openDest}
                           onMouseLeave={closeDest}
-                          className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50 w-[300px]"
+                          className="absolute top-full left-1/2 -translate-x-1/2 pt-1 z-50 w-[300px]"
                         >
                           <div className={cn(
                             "rounded-xl shadow-xl border overflow-hidden p-1.5",
