@@ -56,7 +56,7 @@ export function Header() {
             <img
               src={onLight ? "/logo_preto.png" : "/logo_branco.png"}
               alt="MN Travel"
-              className="h-16 lg:h-20 w-auto transition-opacity duration-300"
+              className="h-20 lg:h-28 w-auto transition-opacity duration-300"
             />
           </Link>
 
@@ -154,7 +154,7 @@ export function Header() {
               <img
                 src="/logo_branco.png"
                 alt="MN Travel"
-                className="h-14 w-auto mb-6 self-start"
+                className="h-20 w-auto mb-6 self-start"
               />
               <motion.ul
                 initial="hidden" animate="visible"
