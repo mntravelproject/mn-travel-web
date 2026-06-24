@@ -131,12 +131,13 @@ function TripForm({ initial, onSave, onCancel }: {
   onSave: (d: typeof EMPTY_TRIP) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [form,         setForm]         = useState(initial ?? EMPTY_TRIP);
-  const [packages,     setPackages]     = useState<PackageOption[]>([]);
-  const [packageDates, setPackageDates] = useState<PackageDateOption[]>([]);
-  const [selectedDateId, setSelectedDateId] = useState<string>("");
-  const [saving,       setSaving]       = useState(false);
-  const [err,          setErr]          = useState("");
+  const [form,            setForm]            = useState(initial ?? EMPTY_TRIP);
+  const [packages,        setPackages]        = useState<PackageOption[]>([]);
+  const [packageDates,    setPackageDates]    = useState<PackageDateOption[]>([]);
+  const [takenDates,      setTakenDates]      = useState<Set<string>>(new Set());
+  const [selectedDateId,  setSelectedDateId]  = useState<string>("");
+  const [saving,          setSaving]          = useState(false);
+  const [err,             setErr]             = useState("");
 
   const selectedPkg = packages.find((p) => p.id === form.package_id) ?? null;
   const isGrupo = selectedPkg?.trip_type === "grupo";
@@ -153,6 +154,7 @@ function TripForm({ initial, onSave, onCancel }: {
     if (!id) {
       setForm((f) => ({ ...f, package_id: "", start_date: "", end_date: "" }));
       setPackageDates([]);
+      setTakenDates(new Set());
       setSelectedDateId("");
       return;
     }
@@ -160,15 +162,24 @@ function TripForm({ initial, onSave, onCancel }: {
     if (!pkg) return;
 
     if (pkg.trip_type === "grupo") {
-      // Buscar datas da package_dates
-      const { data: dates } = await createClient()
-        .from("package_dates")
-        .select("id, departure_date, return_date, available_seats, notes, sort_order")
-        .eq("package_id", id)
-        .order("sort_order", { ascending: true })
-        .order("departure_date", { ascending: true }) as { data: PackageDateOption[] | null };
-      const dateList = dates ?? [];
+      // Buscar datas e viagens existentes em paralelo
+      const supabase = createClient();
+      const [{ data: dates }, { data: existingGroups }] = await Promise.all([
+        supabase
+          .from("package_dates")
+          .select("id, departure_date, return_date, available_seats, notes, sort_order")
+          .eq("package_id", id)
+          .order("sort_order", { ascending: true })
+          .order("departure_date", { ascending: true }),
+        supabase
+          .from("trip_groups")
+          .select("start_date")
+          .eq("package_id", id),
+      ]);
+      const dateList = (dates ?? []) as PackageDateOption[];
+      const taken = new Set<string>((existingGroups ?? []).map((g: { start_date: string }) => g.start_date));
       setPackageDates(dateList);
+      setTakenDates(taken);
       setSelectedDateId("");
       setForm((f) => ({
         ...f, package_id: id, title: pkg.title, destination: pkg.country,
@@ -179,6 +190,7 @@ function TripForm({ initial, onSave, onCancel }: {
       }));
     } else {
       setPackageDates([]);
+      setTakenDates(new Set());
       setSelectedDateId("");
       setForm((f) => ({
         ...f, package_id: id, title: pkg.title, destination: pkg.country,
@@ -233,16 +245,21 @@ function TripForm({ initial, onSave, onCancel }: {
           {packageDates.length === 0 ? (
             <p className="text-[12px] text-[var(--muted)] mt-1">Sem datas registadas para esta viagem.</p>
           ) : (
-            <select value={selectedDateId} onChange={(e) => selectDate(e.target.value)} className={iCls}>
+            <select
+              value={selectedDateId}
+              onChange={(e) => selectDate(e.target.value)}
+              className={iCls}
+            >
               <option value="">— Seleccionar data —</option>
               {packageDates.map((d) => {
+                const isTaken = takenDates.has(d.departure_date);
                 const dep = new Date(d.departure_date + "T00:00:00").toLocaleDateString("pt-PT");
                 const ret = d.return_date ? new Date(d.return_date + "T00:00:00").toLocaleDateString("pt-PT") : null;
                 const seats = d.available_seats != null ? ` · ${d.available_seats} lugares` : "";
                 const note = d.notes ? ` · ${d.notes}` : "";
                 return (
-                  <option key={d.id} value={d.id}>
-                    {dep}{ret ? ` → ${ret}` : ""}{seats}{note}
+                  <option key={d.id} value={d.id} disabled={isTaken}>
+                    {isTaken ? "⛔ " : ""}{dep}{ret ? ` → ${ret}` : ""}{seats}{note}{isTaken ? " (viagem já criada)" : ""}
                   </option>
                 );
               })}
