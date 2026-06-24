@@ -43,7 +43,7 @@ export function HeroSection() {
         style={{
           zIndex: 2,
           width: "min(760px, 88vw)",
-          marginLeft: "8.2vw",
+          marginLeft: "13vw",
           paddingBottom: 20,
         }}
       >
