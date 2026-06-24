@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { User, Mail, Phone, MessageSquare, Check, ChevronDown } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 
 const CONTACT_TYPES = [
   { value: "orcamento",   label: "Pedido de Orçamento Personalizado" },
@@ -35,20 +34,21 @@ export function ContactForm() {
     setSubmitting(true);
     setError("");
 
-    const { error: dbError } = await createClient()
-      .from("contact_requests")
-      .insert({
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name:    form.name,
         email:   form.email,
         phone:   form.phone   || null,
         type:    form.type    || "informacao",
         subject: form.subject || null,
         message: form.message,
-        status:  "novo",
-      });
-
+      }),
+    });
+    const json = await res.json();
     setSubmitting(false);
-    if (dbError) { setError("Erro ao enviar. Por favor tente novamente."); }
+    if (!res.ok) { setError(json.error || "Erro ao enviar. Por favor tente novamente."); }
     else         { setSuccess(true); }
   }
 

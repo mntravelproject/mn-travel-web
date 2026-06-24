@@ -77,21 +77,22 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
     setSubmitting(true);
     setError("");
 
-    const { error: dbError } = await createClient()
-      .from("booking_requests")
-      .insert({
+    const res = await fetch("/api/booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name:          form.name,
         email:         form.email,
-        phone:         form.phone  || null,
+        phone:         form.phone   || null,
         package_id:    form.trip_id || null,
         pax_count:     form.pax,
-        check_in_date: form.date   || null,
+        check_in_date: form.date    || null,
         message:       form.message || null,
-        status:        "pending",
-      });
-
+      }),
+    });
+    const json = await res.json();
     setSubmitting(false);
-    if (dbError) { setError("Erro ao enviar. Por favor tente novamente."); }
+    if (!res.ok) { setError(json.error || "Erro ao enviar. Por favor tente novamente."); }
     else         { setSuccess(true); }
   }
 

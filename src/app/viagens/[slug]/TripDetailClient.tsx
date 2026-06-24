@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Header } from "@/components/layout/Header";
@@ -58,9 +57,10 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
     const checkIn = groupDates.length > 0
       ? groupDates.find((d) => d.id === selectedDate)?.departure_date ?? null
       : checkInRef.current?.value || null;
-    const { error } = await createClient()
-      .from("booking_requests")
-      .insert({
+    const res = await fetch("/api/booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         package_id:      trip.id,
         package_date_id: selectedDate ?? null,
         name:            form.name,
@@ -69,11 +69,12 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
         pax_count:       pax,
         check_in_date:   checkIn,
         message:         form.message || null,
-        status:          "pending",
-      });
+      }),
+    });
+    const json = await res.json();
     setSubmitting(false);
-    if (error) { setFormError("Erro ao enviar. Tente novamente."); }
-    else        { setSubmitted(true); }
+    if (!res.ok) { setFormError(json.error || "Erro ao enviar. Tente novamente."); }
+    else         { setSubmitted(true); }
   }
 
   const gallery = trip.images ?? [];

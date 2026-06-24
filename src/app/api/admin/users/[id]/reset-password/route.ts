@@ -11,6 +11,13 @@ async function requireAdmin() {
   return user;
 }
 
+function authError(msg: string) {
+  return NextResponse.json(
+    { error: msg },
+    { status: msg === "Unauthorized" ? 401 : 403 }
+  );
+}
+
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAdmin();
@@ -18,22 +25,22 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const { id } = await params;
     const admin = createAdminClient();
 
-    // Fetch the user's email from Auth
     const { data, error: fetchErr } = await admin.auth.admin.getUserById(id);
     if (fetchErr || !data.user.email) {
       return NextResponse.json({ error: "Utilizador não encontrado." }, { status: 404 });
     }
 
-    // Generate a password recovery link (Supabase sends the email automatically)
     const { error } = await admin.auth.admin.generateLink({
       type: "recovery",
       email: data.user.email,
     });
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) return NextResponse.json({ error: "Erro ao gerar link de recuperação." }, { status: 400 });
     return NextResponse.json({ ok: true });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Error";
-    return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500 });
+    const msg = e instanceof Error ? e.message : "";
+    if (msg === "Unauthorized" || msg === "Forbidden") return authError(msg);
+    console.error("[admin/users/reset-password POST]", e);
+    return NextResponse.json({ error: "Erro interno." }, { status: 500 });
   }
 }

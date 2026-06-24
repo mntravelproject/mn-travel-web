@@ -2,27 +2,30 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff, Lock } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [showPw,   setShowPw]   = useState(false);
+  const [error,    setError]    = useState("");
+  const [loading,  setLoading]  = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const res  = await fetch("/api/auth/login", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ email, password }),
+    });
+    const json = await res.json();
 
-    if (error) {
-      setError("Credenciais inválidas. Verifique o email e a password.");
+    if (!res.ok) {
+      setError(json.error ?? "Erro ao entrar. Tente novamente.");
       setLoading(false);
     } else {
       router.push("/admin");
