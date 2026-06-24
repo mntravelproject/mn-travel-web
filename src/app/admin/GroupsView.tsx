@@ -264,6 +264,8 @@ function renderDocFields(
         <div><label className={lCls}>Data de nascimento</label>
           <input type="date" value={d.date_of_birth} onChange={setD("date_of_birth")} className={iCls} /></div>
       </div>
+      <div><label className={lCls}>Telefone</label>
+        <input type="tel" value={d.phone} onChange={setD("phone")} placeholder="+351 9xx xxx xxx" className={iCls} /></div>
       <div><label className={lCls}>Nacionalidade</label>
         <input value={d.nationality} onChange={setD("nationality")} placeholder="Portuguesa" className={iCls} /></div>
       <div><label className={lCls}>Notas</label>
@@ -387,16 +389,6 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-1">Cliente</p>
               <p className="text-[14px] font-medium">{editPax.full_name}</p>
               {editPax.email && <p className="text-[11px] text-[var(--muted)]">{editPax.email}</p>}
-            </div>
-            <div>
-              <label className={lCls}>Telemóvel</label>
-              <input
-                type="tel"
-                value={editDocs.phone}
-                onChange={e => setEditDocs(d => ({ ...d, phone: e.target.value }))}
-                placeholder="+351 9xx xxx xxx"
-                className={iCls}
-              />
             </div>
             {renderDocFields(editDocs, k => e => setEditDocs(d => ({ ...d, [k]: e.target.value })))}
           </>
@@ -1109,6 +1101,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     const syncDocs = async (clientId: string, docs: PaxFormDocs) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from("clients").update({
+        phone:          docs.phone || null,
         id_card_number: docs.id_card_number || null,
         id_card_expiry: docs.id_card_expiry || null,
         nif:            docs.nif || null,
@@ -1123,7 +1116,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     await syncDocs(main.client.id, main.docs);
     const { data: mainCreated, error: mainErr } = await paxTable.insert({
       trip_id: trip.id, client_id: main.client.id,
-      full_name: main.client.name, phone: main.client.phone, email: main.client.email,
+      full_name: main.client.name, phone: main.docs.phone || main.client.phone, email: main.client.email,
       id_card_number: main.docs.id_card_number || null, id_card_expiry: main.docs.id_card_expiry || null,
       nif: main.docs.nif || null, date_of_birth: main.docs.date_of_birth || null,
       nationality: main.docs.nationality || "Portuguesa", notes: main.docs.notes || null,
@@ -1140,7 +1133,7 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
       await syncDocs(comp.client.id, comp.docs);
       const { data: compCreated, error: compErr } = await paxTable.insert({
         trip_id: trip.id, client_id: comp.client.id,
-        full_name: comp.client.name, phone: comp.client.phone, email: comp.client.email,
+        full_name: comp.client.name, phone: comp.docs.phone || comp.client.phone, email: comp.client.email,
         id_card_number: comp.docs.id_card_number || null, id_card_expiry: comp.docs.id_card_expiry || null,
         nif: comp.docs.nif || null, date_of_birth: comp.docs.date_of_birth || null,
         nationality: comp.docs.nationality || "Portuguesa", notes: comp.docs.notes || null,

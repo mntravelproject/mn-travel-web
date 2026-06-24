@@ -1782,6 +1782,16 @@ function ClientsView() {
               ))}
             </div>
             <div>
+              <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Telefone</label>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                placeholder="+351 9xx xxx xxx"
+                className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
+              />
+            </div>
+            <div>
               <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Nacionalidade</label>
               <input
                 type="text"
@@ -1793,23 +1803,16 @@ function ClientsView() {
             </div>
           </div>
 
-          {/* Telefone e País */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Telefone", key: "phone",   type: "tel",  placeholder: "+351 9xx xxx xxx" },
-              { label: "País",     key: "country", type: "text", placeholder: "Portugal" },
-            ].map(({ label, key, type, placeholder }) => (
-              <div key={key}>
-                <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">{label}</label>
-                <input
-                  type={type}
-                  value={form[key as keyof typeof form]}
-                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
-                />
-              </div>
-            ))}
+          {/* País */}
+          <div>
+            <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">País</label>
+            <input
+              type="text"
+              value={form.country}
+              onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
+              placeholder="Portugal"
+              className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
+            />
           </div>
 
           {formError && <p className="text-[13px] text-red-600">{formError}</p>}
