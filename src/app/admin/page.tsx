@@ -1467,6 +1467,8 @@ function ClientsView() {
   const [saving,     setSaving]     = useState(false);
   const [formError,  setFormError]  = useState("");
   const [expanded,   setExpanded]   = useState<Set<string>>(new Set());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const syncCh = useRef<any>(null);
 
   function toggleExpand(id: string) {
     setExpanded(prev => {
@@ -1493,8 +1495,14 @@ function ClientsView() {
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "clients" }, (payload) => {
         setClients((prev) => prev.filter((c) => c.id !== (payload.old as { id: string }).id));
       })
+      // Broadcast from TripDetailView passenger edits
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on("broadcast", { event: "client_updated" }, ({ payload }: any) => {
+        setClients((prev) => prev.map((c) => c.id === payload.id ? { ...c, ...payload } : c));
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    syncCh.current = channel;
+    return () => { supabase.removeChannel(channel); syncCh.current = null; };
   }, []);
 
   useEffect(() => { setPage(1); }, [search, sort]);
@@ -1555,6 +1563,9 @@ function ClientsView() {
         email:     form.email || null,
         phone:     form.phone || null,
       }).eq("client_id", editClient.id);
+      // Broadcast so any open TripDetailView updates instantly
+      syncCh.current?.send({ type: "broadcast", event: "client_updated",
+        payload: { id: editClient.id, name: form.name, email: form.email || null, phone: form.phone || null } });
       setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null, ...docFields } : c));
     } else {
       const { data, error } = await clientsTable.insert({
@@ -1576,6 +1587,7 @@ function ClientsView() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("trip_passengers").delete().eq("client_id", id);
     await supabase.from("clients").delete().eq("id", id);
+    syncCh.current?.send({ type: "broadcast", event: "client_deleted", payload: { id } });
     setClients((prev) => prev.filter((c) => c.id !== id));
   }
 

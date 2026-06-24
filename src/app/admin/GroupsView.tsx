@@ -1016,6 +1016,8 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
   const [showExpenses,   setShowExpenses]   = useState(false);
   const [totalExpenses,  setTotalExpenses]  = useState(0);
   const [expandedRooms,  setExpandedRooms]  = useState<Set<string>>(new Set());
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const syncCh = useRef<any>(null);
 
   function toggleRoom(key: string) {
     setExpandedRooms(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
@@ -1084,24 +1086,29 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     return () => { supabase.removeChannel(channel); };
   }, [trip.id, load]);
 
-  // Sync client edits (from ClientsView) directly into the passenger list
+  // Broadcast sync: recebe edições de ClientsView e envia edições de updatePassenger
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase.channel(`trip-clients-sync-${trip.id}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "clients" }, (payload) => {
-        const updated = payload.new as { id: string; name: string; email: string | null; phone: string | null };
+    const channel = supabase.channel("admin-clients-realtime")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on("broadcast", { event: "client_updated" }, ({ payload }: any) => {
         setPassengers((prev) => prev.map((p) =>
-          p.client_id === updated.id
-            ? { ...p, full_name: updated.name, email: updated.email, phone: updated.phone }
+          p.client_id === payload.id
+            ? { ...p,
+                ...(payload.name  !== undefined && { full_name: payload.name }),
+                ...(payload.email !== undefined && { email: payload.email }),
+                ...(payload.phone !== undefined && { phone: payload.phone }),
+              }
             : p
         ));
       })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "clients" }, (payload) => {
-        const deleted = payload.old as { id: string };
-        setPassengers((prev) => prev.filter((p) => p.client_id !== deleted.id));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on("broadcast", { event: "client_deleted" }, ({ payload }: any) => {
+        setPassengers((prev) => prev.filter((p) => p.client_id !== payload.id));
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    syncCh.current = channel;
+    return () => { supabase.removeChannel(channel); syncCh.current = null; };
   }, [trip.id]);
 
   const getPaid      = (id: string) => (payments.get(id) ?? []).reduce((s, p) => s + p.amount, 0);
@@ -1196,6 +1203,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
       // Cascade phone to all other trip_passengers of this client
       await sb.from("trip_passengers").update({ phone: docs.phone || null })
         .eq("client_id", pax.client_id).neq("id", id);
+      // Broadcast so ClientsView updates instantly
+      syncCh.current?.send({ type: "broadcast", event: "client_updated",
+        payload: { id: pax.client_id, phone: docs.phone || null } });
     }
     setPassengers((p) => p.map((x) => x.id === id ? { ...x, ...updates } : x));
     setEditPax(null);
