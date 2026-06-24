@@ -118,7 +118,8 @@ export default function AdminPage() {
       .from("travel_packages")
       .select("*, category:categories(id, name, slug)")
       .order("created_at", { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error("admin trips error:", error);
         if (data) setTrips(data as TravelPackageCard[]);
       });
   }, [refreshKey]);
