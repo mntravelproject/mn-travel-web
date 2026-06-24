@@ -39,12 +39,11 @@ export function HeroSection() {
 
       {/* Content */}
       <div
-        className="relative mt-[120px] md:mt-[140px] lg:mt-[160px] text-center"
+        className="relative mt-[120px] md:mt-[140px] lg:mt-[160px]"
         style={{
           zIndex: 2,
-          width: "min(1100px, 94vw)",
-          marginLeft: "auto",
-          marginRight: "auto",
+          width: "min(760px, 88vw)",
+          marginLeft: "8.2vw",
           paddingBottom: 20,
         }}
       >
@@ -96,7 +95,7 @@ export function HeroSection() {
 
         {/* Gold line */}
         <motion.div
-          className="gold-line mb-3 mx-auto"
+          className="gold-line mb-3"
           initial={{ scaleX: 0, originX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: reduced ? 0.01 : 0.7, delay: 0.75, ease: [0.22, 1, 0.36, 1] }}
@@ -104,7 +103,7 @@ export function HeroSection() {
 
         {/* Subtitle */}
         <motion.p
-          className="text-[18px] leading-[1.5] mb-5 max-w-[500px] mx-auto"
+          className="text-[18px] leading-[1.5] mb-5 max-w-[500px]"
           style={{ color: "rgba(255,255,255,.88)" }}
           initial={{ opacity: 0, y: reduced ? 0 : 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -127,7 +126,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: reduced ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0.01 : 0.55, delay: 0.8, ease }}
-          className="inline-flex items-center gap-3 font-bold text-[16px] pb-3 border-b-2 transition-all hover:gap-5 cursor-pointer mx-auto"
+          className="inline-flex items-center gap-3 font-bold text-[16px] pb-3 border-b-2 transition-all hover:gap-5 cursor-pointer"
           style={{ color: "var(--gold2)", borderColor: "var(--gold2)", textDecoration: "none" }}
         >
           Explorar colecções <ArrowRight className="w-4 h-4" />
