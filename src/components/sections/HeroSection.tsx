@@ -60,7 +60,7 @@ export function HeroSection() {
 
         {/* Title */}
         <motion.h1
-          className="font-display text-white"
+          className="font-display text-white whitespace-nowrap"
           style={{
             fontSize: "clamp(38px, 6vw, 82px)",
             lineHeight: 0.96,
