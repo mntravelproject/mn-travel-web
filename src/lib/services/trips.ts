@@ -34,12 +34,19 @@ export async function getAllTrips(filters?: {
   maxPrice?: number;
   search?: string;
   sortBy?: "featured" | "price-asc" | "price-desc" | "duration";
+  tipo?: "individual" | "grupo";
 }): Promise<TravelPackageCard[]> {
   const supabase = createPublicClient();
   let query = supabase
     .from("travel_packages")
     .select(PACKAGE_CARD_SELECT)
     .eq("is_published", true);
+
+  if (filters?.tipo === "individual") {
+    query = (query as any).or("trip_type.eq.individual,trip_type.eq.ambos,trip_type.is.null");
+  } else if (filters?.tipo === "grupo") {
+    query = (query as any).or("trip_type.eq.grupo,trip_type.eq.ambos");
+  }
 
   if (filters?.maxPrice) {
     query = query.lte("price_from", filters.maxPrice);

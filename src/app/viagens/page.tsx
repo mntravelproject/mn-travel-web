@@ -15,18 +15,10 @@ export default async function ViagensPage({
   const params = await searchParams;
   const tipo = (params.tipo === "individual" || params.tipo === "grupo") ? params.tipo : null;
 
-  const [allTrips, categories] = await Promise.all([
-    getAllTrips().catch(() => []),
+  const [trips, categories] = await Promise.all([
+    getAllTrips({ tipo: tipo ?? undefined }).catch(() => []),
     getAllCategories().catch(() => []),
   ]);
-
-  const trips = tipo
-    ? allTrips.filter((t) => {
-        const tt = (t as any).trip_type;
-        if (!tt || tt === "ambos") return true;
-        return tt === tipo;
-      })
-    : allTrips;
 
   return (
     <>
