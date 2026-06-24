@@ -24,7 +24,7 @@ export default async function ViagensPage({
     <>
       <Header />
       <main>
-        <Suspense fallback={
+        <Suspense key={tipo ?? "all"} fallback={
           <div className="pt-[72px]">
             <div className="pt-16 pb-12 border-b border-[var(--line)] max-w-[1320px] mx-auto px-6 lg:px-10 animate-pulse">
               <div className="h-4 w-32 bg-[var(--line)] rounded mb-5" />
@@ -41,7 +41,7 @@ export default async function ViagensPage({
             </div>
           </div>
         }>
-          <ViagensContent trips={trips} categories={categories} tipo={tipo} />
+          <ViagensContent key={tipo ?? "all"} trips={trips} categories={categories} tipo={tipo} />
         </Suspense>
       </main>
       <Footer />
