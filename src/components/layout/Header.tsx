@@ -117,12 +117,13 @@ export function Header() {
 
                     {/* Dropdown — sempre montado, CSS controla visibilidade */}
                     <div
-                      className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50 w-[300px] transition-all duration-150"
+                      className="absolute top-full left-1/2 pt-2 z-50 w-[300px]"
                       style={{
                         opacity: destOpen ? 1 : 0,
                         transform: destOpen
-                          ? "translateX(-50%) translateY(0) scale(1)"
+                          ? "translateX(-50%) translateY(0px) scale(1)"
                           : "translateX(-50%) translateY(-6px) scale(0.97)",
+                        transition: "opacity 150ms ease, transform 150ms ease",
                         pointerEvents: destOpen ? "auto" : "none",
                       }}
                     >
