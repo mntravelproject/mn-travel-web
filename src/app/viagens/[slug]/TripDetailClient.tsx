@@ -309,7 +309,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
           </section>
 
           {/* Content */}
-          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-10 md:mt-16">
+          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-6 md:mt-10">
             <SlideUp delay={0.05}>
               <div className="pb-12 border-b border-[var(--line)]">
                 <SectionLabel>A viagem</SectionLabel>
