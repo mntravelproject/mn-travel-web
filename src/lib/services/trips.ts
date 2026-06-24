@@ -1,4 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { TravelPackageCard, TravelPackageWithRelations, PackageDate } from "@/types/database";
 
 const PACKAGE_CARD_SELECT = `
@@ -113,7 +114,7 @@ export async function getDateSeats(
 ): Promise<Record<string, number | null>> {
   if (dates.length === 0) return {};
 
-  const supabase = createPublicClient();
+  const supabase = createAdminClient();
 
   const departureDates = dates.map((d) => d.departure_date);
   const datesByDeparture: Record<string, string> = {};
