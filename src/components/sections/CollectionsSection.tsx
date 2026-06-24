@@ -106,7 +106,7 @@ export function CollectionsSection({ trips, categories }: Props) {
   const filteredTrips =
     activeCat === "all"
       ? trips.slice(0, 4)
-      : trips.filter((t) => t.category?.slug === activeCat).slice(0, 4);
+      : trips.filter((t) => t.categories?.some((c) => c.slug === activeCat)).slice(0, 4);
 
   return (
     <section
