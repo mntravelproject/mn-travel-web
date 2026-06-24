@@ -4,8 +4,13 @@ import type { TravelPackageCard, TravelPackageWithRelations } from "@/types/data
 const PACKAGE_CARD_SELECT = `
   *,
   category:categories(id, name, slug),
+  pkg_categories:travel_package_categories(category:categories(id, name, slug)),
   destination:destinations(id, name, slug)
 ` as const;
+
+function flattenCategories(raw: any[]): Pick<import("@/types/database").Category, "id" | "name" | "slug">[] {
+  return (raw ?? []).map((pc: any) => pc.category).filter(Boolean);
+}
 
 const PACKAGE_FULL_SELECT = `
   *,
@@ -26,7 +31,7 @@ export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> 
     .limit(limit);
 
   if (error) throw new Error(`getFeaturedTrips: ${error.message}`);
-  return (data ?? []) as TravelPackageCard[];
+  return (data ?? []).map((t: any) => ({ ...t, categories: flattenCategories(t.pkg_categories) })) as TravelPackageCard[];
 }
 
 export async function getAllTrips(filters?: {
@@ -75,10 +80,15 @@ export async function getAllTrips(filters?: {
   const { data, error } = await query;
   if (error) throw new Error(`getAllTrips: ${error.message}`);
 
-  let result = (data ?? []) as TravelPackageCard[];
+  let result = (data ?? []).map((t: any) => ({
+    ...t,
+    categories: flattenCategories(t.pkg_categories),
+  })) as TravelPackageCard[];
 
   if (filters?.categorySlug && filters.categorySlug !== "all") {
-    result = result.filter((t) => t.category?.slug === filters.categorySlug);
+    result = result.filter((t) =>
+      t.categories.some((c) => c.slug === filters.categorySlug)
+    );
   }
 
   return result;

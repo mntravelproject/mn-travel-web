@@ -23,12 +23,19 @@ const TIPO_LABELS: Record<string, { title: string; subtitle: string }> = {
 
 export function ViagensContent({ trips, categories, tipo }: Props) {
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get("q") || "");
-  const [activeCat, setActiveCat] = useState(searchParams.get("cat") || "all");
-
-  const [price, setPrice] = useState(15000);
-  const [sort, setSort] = useState("featured");
+  const [query,      setQuery]      = useState(searchParams.get("q") || "");
+  const [activeCat,  setActiveCat]  = useState(searchParams.get("cat") || "all");
+  const [price,      setPrice]      = useState(15000);
+  const [sort,       setSort]       = useState("featured");
+  const [durations,  setDurations]  = useState<string[]>([]);
   const reduced = useReducedMotion();
+
+  const DURATION_RANGES: Record<string, [number, number]> = {
+    "1–5 dias":   [1,  5],
+    "6–9 dias":   [6,  9],
+    "10–14 dias": [10, 14],
+    "+15 dias":   [15, 999],
+  };
 
   const maxPrice = useMemo(
     () => Math.max(15000, ...trips.map((t) => t.price_from)),
@@ -36,19 +43,24 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
   );
 
   const filtered = useMemo(() => {
-    let result = trips.filter(
-      (t) =>
-        (activeCat === "all" || t.category?.slug === activeCat) &&
-        (query === "" ||
-          t.title.toLowerCase().includes(query.toLowerCase()) ||
-          t.country.toLowerCase().includes(query.toLowerCase())) &&
-        t.price_from <= price
-    );
+    let result = trips.filter((t) => {
+      if (activeCat !== "all" && !t.categories?.some((c) => c.slug === activeCat)) return false;
+      if (query && !t.title.toLowerCase().includes(query.toLowerCase()) && !t.country.toLowerCase().includes(query.toLowerCase())) return false;
+      if (t.price_from > price) return false;
+      if (durations.length > 0) {
+        const inRange = durations.some((d) => {
+          const [min, max] = DURATION_RANGES[d] ?? [0, 999];
+          return t.duration_days >= min && t.duration_days <= max;
+        });
+        if (!inRange) return false;
+      }
+      return true;
+    });
     if (sort === "price-asc")  result = [...result].sort((a, b) => a.price_from - b.price_from);
     if (sort === "price-desc") result = [...result].sort((a, b) => b.price_from - a.price_from);
     if (sort === "duration")   result = [...result].sort((a, b) => a.duration_days - b.duration_days);
     return result;
-  }, [query, activeCat, price, sort, trips]);
+  }, [query, activeCat, price, sort, trips, durations]);
 
   const allCategories = [{ id: "all", name: "Todas" }, ...categories.map((c) => ({ id: c.slug, name: c.name }))];
 
@@ -158,7 +170,12 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               <div className="space-y-2">
                 {["1–5 dias", "6–9 dias", "10–14 dias", "+15 dias"].map((d) => (
                   <label key={d} className="flex items-center gap-2 text-[13.5px] text-[var(--muted)] cursor-pointer hover:text-[var(--ink)]">
-                    <input type="checkbox" className="accent-[var(--ink)] rounded-sm" /> {d}
+                    <input
+                      type="checkbox"
+                      checked={durations.includes(d)}
+                      onChange={() => setDurations((prev) => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d])}
+                      className="accent-[var(--ink)] rounded-sm"
+                    /> {d}
                   </label>
                 ))}
               </div>
