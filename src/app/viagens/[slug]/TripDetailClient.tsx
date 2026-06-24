@@ -132,44 +132,184 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
             </div>
           </section>
 
-          {/* Gallery + Booking Card */}
+          {/* Main grid: left = gallery + description/tabs, right = booking card */}
           <section className="max-w-[1320px] mx-auto px-6 lg:px-10">
             <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
 
-              {/* Gallery */}
-              {gallery.length > 0 && (
-                <ScaleIn from={0.97} delay={0.05} className="lg:col-span-7 xl:col-span-8">
-                  <div className="grid grid-cols-4 gap-3 h-[220px] sm:h-[320px] md:h-[420px] lg:h-[560px]">
-                    <div className="col-span-4 lg:col-span-2 row-span-2 rounded-3xl overflow-hidden">
-                      <motion.img
-                        key={activeImg}
-                        src={gallery[activeImg]?.image_url ?? trip.hero_image_url ?? ""}
-                        alt={trip.title}
-                        className="w-full h-full object-cover"
-                        initial={{ opacity: 0, scale: reduced ? 1 : 1.03 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.45, ease }}
-                      />
-                    </div>
-                    {gallery.map((img, i) => (
-                      <motion.button
-                        key={img.id}
-                        onClick={() => setActiveImg(i)}
-                        whileHover={{ scale: reduced ? 1 : 1.02 }}
-                        whileTap={{ scale: reduced ? 1 : 0.98 }}
-                        transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                        className={`relative rounded-2xl overflow-hidden hidden lg:block ${
-                          activeImg === i ? "ring-2 ring-offset-2 ring-[var(--gold)]" : ""
-                        }`}
-                      >
-                        <img src={img.image_url} alt={img.alt_text ?? ""} className="w-full h-full object-cover" />
-                      </motion.button>
-                    ))}
-                  </div>
-                </ScaleIn>
-              )}
+              {/* Left column: gallery + description + tabs */}
+              <div className="lg:col-span-7 xl:col-span-8">
 
-              {/* Booking Card */}
+                {/* Gallery */}
+                {gallery.length > 0 && (
+                  <ScaleIn from={0.97} delay={0.05}>
+                    <div className="grid grid-cols-4 gap-3 h-[220px] sm:h-[320px] md:h-[420px] lg:h-[560px]">
+                      <div className="col-span-4 lg:col-span-2 row-span-2 rounded-3xl overflow-hidden">
+                        <motion.img
+                          key={activeImg}
+                          src={gallery[activeImg]?.image_url ?? trip.hero_image_url ?? ""}
+                          alt={trip.title}
+                          className="w-full h-full object-cover"
+                          initial={{ opacity: 0, scale: reduced ? 1 : 1.03 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.45, ease }}
+                        />
+                      </div>
+                      {gallery.map((img, i) => (
+                        <motion.button
+                          key={img.id}
+                          onClick={() => setActiveImg(i)}
+                          whileHover={{ scale: reduced ? 1 : 1.02 }}
+                          whileTap={{ scale: reduced ? 1 : 0.98 }}
+                          transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                          className={`relative rounded-2xl overflow-hidden hidden lg:block ${
+                            activeImg === i ? "ring-2 ring-offset-2 ring-[var(--gold)]" : ""
+                          }`}
+                        >
+                          <img src={img.image_url} alt={img.alt_text ?? ""} className="w-full h-full object-cover" />
+                        </motion.button>
+                      ))}
+                    </div>
+                  </ScaleIn>
+                )}
+
+                {/* Description + Stats + Tabs */}
+                <SlideUp delay={0.05} className="mt-8 md:mt-10">
+                  <div className="pb-12 border-b border-[var(--line)]">
+                    <SectionLabel>A viagem</SectionLabel>
+                    <p className="mt-6 font-display text-[28px] md:text-[34px] leading-[1.25] tracking-tight text-balance">
+                      {trip.short_description}
+                    </p>
+                    {trip.long_description && (
+                      <p className="mt-8 text-[15.5px] text-[var(--ink-soft)] leading-[1.75] max-w-2xl">
+                        {trip.long_description}
+                      </p>
+                    )}
+
+                    <StaggerContainer className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4" staggerDelay={0.07} initialDelay={0.1}>
+                      {[
+                        { l: "Privacidade", v: "100%" },
+                        { l: "Guias locais", v: trip.duration_days > 7 ? "5" : "3" },
+                        { l: "Refeições incl.", v: "12" },
+                        { l: "Transfers", v: "Privados" },
+                      ].map((x) => (
+                        <StaggerItem key={x.l}>
+                          <div className="p-5 rounded-2xl bg-[var(--cream-2)]">
+                            <div className="font-display text-[28px] leading-none">{x.v}</div>
+                            <div className="mt-2 text-[12px] uppercase tracking-[0.15em] text-[var(--muted)]">{x.l}</div>
+                          </div>
+                        </StaggerItem>
+                      ))}
+                    </StaggerContainer>
+                  </div>
+
+                  <div className="pt-10">
+                    {/* Tabs */}
+                    <div className="flex items-center gap-2 mb-8 border-b border-[var(--line)]">
+                      {[
+                        { id: "itinerary", l: "Itinerário" },
+                        { id: "includes",  l: "Inclui" },
+                        { id: "dates",     l: "Datas & preços" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setTab(t.id as typeof tab)}
+                          className={`px-4 py-3 text-[14px] tracking-tight transition-all border-b-2 -mb-px ${
+                            tab === t.id
+                              ? "border-[var(--gold)] text-[var(--ink)] font-medium"
+                              : "border-transparent text-[var(--muted)]"
+                          }`}
+                        >
+                          {t.l}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Itinerary tab */}
+                    {tab === "itinerary" && (
+                      <div className="relative">
+                        <div className="absolute left-[19px] top-2 bottom-2 w-px bg-[var(--line-2)]" />
+                        {itinerary.length > 0 ? (
+                          <StaggerContainer staggerDelay={0.06}>
+                            {itinerary.map((it, i) => (
+                              <StaggerItem key={it.id}>
+                                <div className="relative pl-12 pb-10 last:pb-0">
+                                  <div className="absolute left-0 top-1 w-10 h-10 rounded-full bg-[var(--cream)] border border-[var(--line-2)] flex items-center justify-center font-display text-[14px]">
+                                    {i + 1}
+                                  </div>
+                                  <div className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">{it.day_label}</div>
+                                  <h4 className="mt-1.5 font-display text-[22px] leading-tight tracking-tight">{it.title}</h4>
+                                  <p className="mt-2 text-[14.5px] text-[var(--muted)] leading-relaxed max-w-2xl">{it.description}</p>
+                                </div>
+                              </StaggerItem>
+                            ))}
+                          </StaggerContainer>
+                        ) : (
+                          <p className="text-[var(--muted)] text-[14px]">Itinerário detalhado disponível na proposta.</p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Includes tab */}
+                    {tab === "includes" && (
+                      <StaggerContainer className="grid sm:grid-cols-2 gap-4" staggerDelay={0.05}>
+                        {[
+                          "Voos internacionais em classe executiva",
+                          "Alojamento em hotéis 5★ ou boutique",
+                          "Refeições conforme programa",
+                          "Transferes privados em todos os destinos",
+                          "Guias locais especializados (PT/EN)",
+                          "Experiências exclusivas curadas pela MN",
+                          "Seguro de viagem premium",
+                          "Concierge 24/7 durante toda a viagem",
+                        ].map((x) => (
+                          <StaggerItem key={x}>
+                            <div className="flex items-start gap-3 p-5 rounded-2xl bg-[var(--cream-2)]">
+                              <div className="w-5 h-5 rounded-full bg-[var(--ink)] text-[var(--cream)] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <Check className="w-3 h-3" />
+                              </div>
+                              <span className="text-[14.5px] text-[var(--ink-soft)]">{x}</span>
+                            </div>
+                          </StaggerItem>
+                        ))}
+                      </StaggerContainer>
+                    )}
+
+                    {/* Dates tab */}
+                    {tab === "dates" && (
+                      trip.departure_date ? (
+                        <StaggerContainer className="space-y-3" staggerDelay={0.07}>
+                          <StaggerItem>
+                            <div className="flex items-center justify-between p-6 rounded-2xl border border-[var(--line)] hover:border-[var(--ink)] transition-colors">
+                              <div>
+                                <div className="font-display text-[20px] tracking-tight">
+                                  {formatTripDate(trip.departure_date)}
+                                  {trip.return_date && ` — ${formatTripDate(trip.return_date)}`}
+                                </div>
+                                <div className="text-[12px] text-[var(--muted)] mt-1 tracking-tight">
+                                  {availability.label}
+                                  {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 &&
+                                    ` · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-[20px] font-medium tracking-tight">{formatPrice(trip.price_from)}</div>
+                                <div className="text-[12px] text-[var(--muted)] tracking-tight">por pessoa</div>
+                              </div>
+                            </div>
+                          </StaggerItem>
+                        </StaggerContainer>
+                      ) : (
+                        <p className="text-[var(--muted)] text-[14px] tracking-tight">
+                          Datas disponíveis a pedido. Contacte o seu curador.
+                        </p>
+                      )
+                    )}
+                  </div>
+                </SlideUp>
+
+              </div>
+
+              {/* Right column: Booking Card (sticky) */}
               <SlideIn direction="right" delay={0.1} className="mt-6 lg:mt-0 lg:col-span-5 xl:col-span-4">
                 <div className="lg:sticky lg:top-[116px] rounded-[20px] sm:rounded-[28px] bg-[var(--cream-2)] p-4 sm:p-5 md:p-7 border border-[var(--line)]">
                   <div className="flex items-end justify-between pb-6 border-b border-[var(--line-2)]">
@@ -306,143 +446,6 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
               </SlideIn>
 
             </div>
-          </section>
-
-          {/* Content */}
-          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 mt-6 md:mt-10">
-            <SlideUp delay={0.05}>
-              <div className="pb-12 border-b border-[var(--line)]">
-                <SectionLabel>A viagem</SectionLabel>
-                <p className="mt-6 font-display text-[28px] md:text-[34px] leading-[1.25] tracking-tight text-balance">
-                  {trip.short_description}
-                </p>
-                {trip.long_description && (
-                  <p className="mt-8 text-[15.5px] text-[var(--ink-soft)] leading-[1.75] max-w-2xl">
-                    {trip.long_description}
-                  </p>
-                )}
-
-                <StaggerContainer className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4" staggerDelay={0.07} initialDelay={0.1}>
-                  {[
-                    { l: "Privacidade", v: "100%" },
-                    { l: "Guias locais", v: trip.duration_days > 7 ? "5" : "3" },
-                    { l: "Refeições incl.", v: "12" },
-                    { l: "Transfers", v: "Privados" },
-                  ].map((x) => (
-                    <StaggerItem key={x.l}>
-                      <div className="p-5 rounded-2xl bg-[var(--cream-2)]">
-                        <div className="font-display text-[28px] leading-none">{x.v}</div>
-                        <div className="mt-2 text-[12px] uppercase tracking-[0.15em] text-[var(--muted)]">{x.l}</div>
-                      </div>
-                    </StaggerItem>
-                  ))}
-                </StaggerContainer>
-              </div>
-
-              <div className="pt-10">
-                {/* Tabs */}
-                <div className="flex items-center gap-2 mb-8 border-b border-[var(--line)]">
-                  {[
-                    { id: "itinerary", l: "Itinerário" },
-                    { id: "includes",  l: "Inclui" },
-                    { id: "dates",     l: "Datas & preços" },
-                  ].map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => setTab(t.id as typeof tab)}
-                      className={`px-4 py-3 text-[14px] tracking-tight transition-all border-b-2 -mb-px ${
-                        tab === t.id
-                          ? "border-[var(--gold)] text-[var(--ink)] font-medium"
-                          : "border-transparent text-[var(--muted)]"
-                      }`}
-                    >
-                      {t.l}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Itinerary tab */}
-                {tab === "itinerary" && (
-                  <div className="relative">
-                    <div className="absolute left-[19px] top-2 bottom-2 w-px bg-[var(--line-2)]" />
-                    {itinerary.length > 0 ? (
-                      <StaggerContainer staggerDelay={0.06}>
-                        {itinerary.map((it, i) => (
-                          <StaggerItem key={it.id}>
-                            <div className="relative pl-12 pb-10 last:pb-0">
-                              <div className="absolute left-0 top-1 w-10 h-10 rounded-full bg-[var(--cream)] border border-[var(--line-2)] flex items-center justify-center font-display text-[14px]">
-                                {i + 1}
-                              </div>
-                              <div className="text-[11px] uppercase tracking-[0.2em] text-[var(--muted)]">{it.day_label}</div>
-                              <h4 className="mt-1.5 font-display text-[22px] leading-tight tracking-tight">{it.title}</h4>
-                              <p className="mt-2 text-[14.5px] text-[var(--muted)] leading-relaxed max-w-2xl">{it.description}</p>
-                            </div>
-                          </StaggerItem>
-                        ))}
-                      </StaggerContainer>
-                    ) : (
-                      <p className="text-[var(--muted)] text-[14px]">Itinerário detalhado disponível na proposta.</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Includes tab */}
-                {tab === "includes" && (
-                  <StaggerContainer className="grid sm:grid-cols-2 gap-4" staggerDelay={0.05}>
-                    {[
-                      "Voos internacionais em classe executiva",
-                      "Alojamento em hotéis 5★ ou boutique",
-                      "Refeições conforme programa",
-                      "Transferes privados em todos os destinos",
-                      "Guias locais especializados (PT/EN)",
-                      "Experiências exclusivas curadas pela MN",
-                      "Seguro de viagem premium",
-                      "Concierge 24/7 durante toda a viagem",
-                    ].map((x) => (
-                      <StaggerItem key={x}>
-                        <div className="flex items-start gap-3 p-5 rounded-2xl bg-[var(--cream-2)]">
-                          <div className="w-5 h-5 rounded-full bg-[var(--ink)] text-[var(--cream)] flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Check className="w-3 h-3" />
-                          </div>
-                          <span className="text-[14.5px] text-[var(--ink-soft)]">{x}</span>
-                        </div>
-                      </StaggerItem>
-                    ))}
-                  </StaggerContainer>
-                )}
-
-                {/* Dates tab */}
-                {tab === "dates" && (
-                  trip.departure_date ? (
-                    <StaggerContainer className="space-y-3" staggerDelay={0.07}>
-                      <StaggerItem>
-                        <div className="flex items-center justify-between p-6 rounded-2xl border border-[var(--line)] hover:border-[var(--ink)] transition-colors">
-                          <div>
-                            <div className="font-display text-[20px] tracking-tight">
-                              {formatTripDate(trip.departure_date)}
-                              {trip.return_date && ` — ${formatTripDate(trip.return_date)}`}
-                            </div>
-                            <div className="text-[12px] text-[var(--muted)] mt-1 tracking-tight">
-                              {availability.label}
-                              {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 &&
-                                ` · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-[20px] font-medium tracking-tight">{formatPrice(trip.price_from)}</div>
-                            <div className="text-[12px] text-[var(--muted)] tracking-tight">por pessoa</div>
-                          </div>
-                        </div>
-                      </StaggerItem>
-                    </StaggerContainer>
-                  ) : (
-                    <p className="text-[var(--muted)] text-[14px] tracking-tight">
-                      Datas disponíveis a pedido. Contacte o seu curador.
-                    </p>
-                  )
-                )}
-              </div>
-            </SlideUp>
           </section>
 
           {/* Quote section */}
