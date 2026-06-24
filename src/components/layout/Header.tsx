@@ -54,7 +54,7 @@ export function Header() {
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
             <img
-              src={onLight ? "/logo_branco.png" : "/logo_preto.png"}
+              src={onLight ? "/logo_preto.png" : "/logo_branco.png"}
               alt="MN Travel"
               className="h-16 lg:h-20 w-auto transition-opacity duration-300"
             />
