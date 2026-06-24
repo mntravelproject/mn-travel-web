@@ -12,7 +12,8 @@ const PACKAGE_FULL_SELECT = `
   category:categories!travel_packages_category_id_fkey(id, name, slug),
   destination:destinations(id, name, slug),
   images:package_images(id, image_url, alt_text, sort_order),
-  itinerary:package_itinerary(id, day_label, title, description, sort_order)
+  itinerary:package_itinerary(id, day_label, title, description, sort_order),
+  dates:package_dates(id, departure_date, return_date, available_seats, notes, sort_order)
 ` as const;
 
 export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> {
@@ -101,6 +102,7 @@ export async function getTripBySlug(slug: string): Promise<TravelPackageWithRela
   const trip = data as TravelPackageWithRelations;
   trip.images = (trip.images ?? []).sort((a, b) => a.sort_order - b.sort_order);
   trip.itinerary = (trip.itinerary ?? []).sort((a, b) => a.sort_order - b.sort_order);
+  trip.dates = (trip.dates ?? []).sort((a, b) => a.sort_order - b.sort_order || a.departure_date.localeCompare(b.departure_date));
 
   return JSON.parse(JSON.stringify(trip)) as TravelPackageWithRelations;
 }

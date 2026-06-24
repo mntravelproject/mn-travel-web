@@ -177,6 +177,46 @@ export interface Database {
           }
         ];
       };
+      package_dates: {
+        Row: {
+          id: string;
+          package_id: string;
+          departure_date: string;
+          return_date: string | null;
+          available_seats: number | null;
+          notes: string | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          package_id: string;
+          departure_date: string;
+          return_date?: string | null;
+          available_seats?: number | null;
+          notes?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          package_id?: string;
+          departure_date?: string;
+          return_date?: string | null;
+          available_seats?: number | null;
+          notes?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_dates_package_id_fkey";
+            columns: ["package_id"];
+            isOneToOne: false;
+            referencedRelation: "travel_packages";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       package_images: {
         Row: {
           id: string;
@@ -462,11 +502,14 @@ export type Testimonial = Database["public"]["Tables"]["testimonials"]["Row"];
 export type BookingRequest = Database["public"]["Tables"]["booking_requests"]["Row"];
 
 // Extended types with joined relations
+export type PackageDate = Database["public"]["Tables"]["package_dates"]["Row"];
+
 export type TravelPackageWithRelations = TravelPackage & {
   category: Pick<Category, "id" | "name" | "slug"> | null;
   destination: Pick<Destination, "id" | "name" | "slug"> | null;
   images: PackageImage[];
   itinerary: PackageItinerary[];
+  dates: PackageDate[];
 };
 
 export type TravelPackageCard = TravelPackage & {

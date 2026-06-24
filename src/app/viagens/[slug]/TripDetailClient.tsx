@@ -35,21 +35,28 @@ function seatBadge(remaining: number | null, dbStatus: string | null) {
 }
 
 export function TripDetailClient({ trip, remainingSeats }: Props) {
-  const [activeImg,   setActiveImg]   = useState(0);
-  const [tab,         setTab]         = useState<"itinerary" | "includes" | "dates">("itinerary");
-  const [pax,         setPax]         = useState(2);
-  const [form,        setForm]        = useState({ name: "", email: "", phone: "", message: "" });
-  const [submitting,  setSubmitting]  = useState(false);
-  const [submitted,   setSubmitted]   = useState(false);
-  const [formError,   setFormError]   = useState("");
+  const [activeImg,     setActiveImg]     = useState(0);
+  const [tab,           setTab]           = useState<"itinerary" | "includes" | "dates">("itinerary");
+  const [pax,           setPax]           = useState(2);
+  const [form,          setForm]          = useState({ name: "", email: "", phone: "", message: "" });
+  const [submitting,    setSubmitting]    = useState(false);
+  const [submitted,     setSubmitted]     = useState(false);
+  const [formError,     setFormError]     = useState("");
+  const [selectedDate,  setSelectedDate]  = useState<string | null>(null);
   const checkInRef = useRef<HTMLInputElement>(null);
+
+  const groupDates = trip.trip_type === "grupo" ? (trip.dates ?? []) : [];
   const reduced = useReducedMotion();
 
   async function handleBooking(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.email) { setFormError("Nome e email são obrigatórios."); return; }
+    if (groupDates.length > 0 && !selectedDate) { setFormError("Selecione uma data de partida."); return; }
     setSubmitting(true);
     setFormError("");
+    const checkIn = groupDates.length > 0
+      ? groupDates.find((d) => d.id === selectedDate)?.departure_date ?? null
+      : checkInRef.current?.value || null;
     const { error } = await createClient()
       .from("booking_requests")
       .insert({
@@ -58,7 +65,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
         email:         form.email,
         phone:         form.phone  || null,
         pax_count:     pax,
-        check_in_date: checkInRef.current?.value || null,
+        check_in_date: checkIn,
         message:       form.message || null,
         status:        "pending",
       });
@@ -347,38 +354,81 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     </div>
                   ) : (
                   <form onSubmit={handleBooking} className="space-y-3 mt-6">
-                    <div className="grid grid-cols-2 gap-3">
+                    {groupDates.length > 0 ? (
+                      <div>
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] mb-2">Data de partida</div>
+                        <div className="space-y-2">
+                          {groupDates.map((d) => {
+                            const isSelected = selectedDate === d.id;
+                            return (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => setSelectedDate(d.id)}
+                                className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
+                                  isSelected
+                                    ? "border-[var(--ink)] bg-white"
+                                    : "border-[var(--line)] bg-white hover:border-[var(--ink-soft)]"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <span className="text-[13.5px] font-medium">{formatTripDate(d.departure_date)}</span>
+                                    {d.return_date && (
+                                      <span className="text-[12px] text-[var(--muted)] ml-2">→ {formatTripDate(d.return_date)}</span>
+                                    )}
+                                    {d.notes && (
+                                      <div className="text-[11px] text-[var(--muted)] mt-0.5">{d.notes}</div>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {d.available_seats != null && (
+                                      <span className={`text-[11px] font-medium ${d.available_seats <= 5 ? "text-amber-600" : "text-emerald-600"}`}>
+                                        {d.available_seats} lugar{d.available_seats !== 1 ? "es" : ""}
+                                      </span>
+                                    )}
+                                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? "border-[var(--ink)] bg-[var(--ink)]" : "border-[var(--line-2)]"}`}>
+                                      {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
                       <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                         <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Check-in</span>
                         <input ref={checkInRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
                       </label>
-                      <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
-                        <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
-                        <div className="flex items-center justify-between mt-1 text-[13px]">
-                          <motion.button
-                            type="button"
-                            whileHover={{ scale: reduced ? 1 : 1.15 }}
-                            whileTap={{ scale: reduced ? 1 : 0.85 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                            onClick={() => setPax(Math.max(1, pax - 1))}
-                            className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </motion.button>
-                          {pax} adultos
-                          <motion.button
-                            type="button"
-                            whileHover={{ scale: reduced ? 1 : 1.15 }}
-                            whileTap={{ scale: reduced ? 1 : 0.85 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                            onClick={() => setPax(pax + 1)}
-                            className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </motion.button>
-                        </div>
-                      </label>
-                    </div>
+                    )}
+                    <label className={`block rounded-xl bg-white border border-[var(--line)] px-4 py-3 ${groupDates.length === 0 ? "" : ""}`}>
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
+                      <div className="flex items-center justify-between mt-1 text-[13px]">
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: reduced ? 1 : 1.15 }}
+                          whileTap={{ scale: reduced ? 1 : 0.85 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                          onClick={() => setPax(Math.max(1, pax - 1))}
+                          className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </motion.button>
+                        {pax} adultos
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: reduced ? 1 : 1.15 }}
+                          whileTap={{ scale: reduced ? 1 : 0.85 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                          onClick={() => setPax(pax + 1)}
+                          className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </motion.button>
+                      </div>
+                    </label>
 
                     <input
                       value={form.name}

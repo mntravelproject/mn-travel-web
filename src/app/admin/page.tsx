@@ -2278,6 +2278,29 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
         }
       });
   }, [trip?.id]);
+
+  type DateRow = { id?: string; departure_date: string; return_date: string; available_seats: string; notes: string };
+  const [dates, setDates] = useState<DateRow[]>([]);
+
+  useEffect(() => {
+    if (!trip?.id) return;
+    (createClient() as any)
+      .from("package_dates")
+      .select("id, departure_date, return_date, available_seats, notes, sort_order")
+      .eq("package_id", trip.id)
+      .order("sort_order")
+      .then(({ data }: { data: any[] | null }) => {
+        if (data && data.length > 0) {
+          setDates(data.map((r) => ({
+            id: r.id,
+            departure_date: r.departure_date ?? "",
+            return_date: r.return_date ?? "",
+            available_seats: r.available_seats != null ? String(r.available_seats) : "",
+            notes: r.notes ?? "",
+          })));
+        }
+      });
+  }, [trip?.id]);
   const [uploading,    setUploading]    = useState(false);
   const [dragOver,     setDragOver]     = useState(false);
   const [uploadError,  setUploadError]  = useState("");
@@ -2410,6 +2433,24 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             gallery.map((url, i) => ({ package_id: packageId, image_url: url, sort_order: i }))
           );
         }
+
+        // Sync package_dates (only for grupo)
+        if (form.trip_type === "grupo") {
+          await (supabase as any).from("package_dates").delete().eq("package_id", packageId);
+          const validDates = dates.filter((d) => d.departure_date);
+          if (validDates.length > 0) {
+            await (supabase as any).from("package_dates").insert(
+              validDates.map((d, i) => ({
+                package_id: packageId,
+                departure_date: d.departure_date,
+                return_date: d.return_date || null,
+                available_seats: d.available_seats !== "" ? Number(d.available_seats) : null,
+                notes: d.notes || null,
+                sort_order: i,
+              }))
+            );
+          }
+        }
       } else {
         // ── Insert new trip ───────────────────────────────────
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2439,6 +2480,23 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             }))
           );
           if (itError) throw itError;
+        }
+
+        // Save package_dates (only for grupo)
+        if (form.trip_type === "grupo") {
+          const validDates = dates.filter((d) => d.departure_date);
+          if (validDates.length > 0) {
+            await (supabase as any).from("package_dates").insert(
+              validDates.map((d, i) => ({
+                package_id: packageId,
+                departure_date: d.departure_date,
+                return_date: d.return_date || null,
+                available_seats: d.available_seats !== "" ? Number(d.available_seats) : null,
+                notes: d.notes || null,
+                sort_order: i,
+              }))
+            );
+          }
         }
       }
 
@@ -2549,26 +2607,99 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
                   />
                 </div>
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data de partida</label>
-                  <input
-                    type="date"
-                    value={form.departure_date}
-                    onChange={(e) => setForm({ ...form, departure_date: e.target.value })}
-                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
-                  />
+              {form.trip_type !== "grupo" && (
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data de partida</label>
+                    <input
+                      type="date"
+                      value={form.departure_date}
+                      onChange={(e) => setForm({ ...form, departure_date: e.target.value })}
+                      className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data de regresso</label>
+                    <input
+                      type="date"
+                      value={form.return_date}
+                      onChange={(e) => setForm({ ...form, return_date: e.target.value })}
+                      className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
+                    />
+                  </div>
                 </div>
+              )}
+
+              {form.trip_type === "grupo" && (
                 <div>
-                  <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data de regresso</label>
-                  <input
-                    type="date"
-                    value={form.return_date}
-                    onChange={(e) => setForm({ ...form, return_date: e.target.value })}
-                    className="w-full rounded-xl bg-white border border-[var(--line-2)] px-4 py-3 text-[14px] focus:outline-none focus:border-[var(--ink)]"
-                  />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[11px] uppercase tracking-[0.16em] text-[var(--muted)]">Datas disponíveis</label>
+                    <button
+                      type="button"
+                      onClick={() => setDates((d) => [...d, { departure_date: "", return_date: "", available_seats: "", notes: "" }])}
+                      className="text-[12px] text-[var(--gold)] hover:underline font-medium"
+                    >
+                      + Adicionar data
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {dates.length === 0 && (
+                      <p className="text-[13px] text-[var(--muted)] py-2">Nenhuma data adicionada.</p>
+                    )}
+                    {dates.map((d, i) => (
+                      <div key={i} className="grid grid-cols-[1fr_1fr_90px_1fr_32px] gap-2 items-center">
+                        <div>
+                          {i === 0 && <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted)] mb-1">Partida</div>}
+                          <input
+                            type="date"
+                            value={d.departure_date}
+                            onChange={(e) => setDates((prev) => prev.map((r, j) => j === i ? { ...r, departure_date: e.target.value } : r))}
+                            className="w-full rounded-lg bg-white border border-[var(--line-2)] px-3 py-2 text-[13px] focus:outline-none focus:border-[var(--ink)]"
+                          />
+                        </div>
+                        <div>
+                          {i === 0 && <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted)] mb-1">Regresso</div>}
+                          <input
+                            type="date"
+                            value={d.return_date}
+                            onChange={(e) => setDates((prev) => prev.map((r, j) => j === i ? { ...r, return_date: e.target.value } : r))}
+                            className="w-full rounded-lg bg-white border border-[var(--line-2)] px-3 py-2 text-[13px] focus:outline-none focus:border-[var(--ink)]"
+                          />
+                        </div>
+                        <div>
+                          {i === 0 && <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted)] mb-1">Lugares</div>}
+                          <input
+                            type="number"
+                            min="0"
+                            value={d.available_seats}
+                            onChange={(e) => setDates((prev) => prev.map((r, j) => j === i ? { ...r, available_seats: e.target.value } : r))}
+                            placeholder="—"
+                            className="w-full rounded-lg bg-white border border-[var(--line-2)] px-3 py-2 text-[13px] focus:outline-none focus:border-[var(--ink)]"
+                          />
+                        </div>
+                        <div>
+                          {i === 0 && <div className="text-[10px] uppercase tracking-[0.12em] text-[var(--muted)] mb-1">Nota</div>}
+                          <input
+                            type="text"
+                            value={d.notes}
+                            onChange={(e) => setDates((prev) => prev.map((r, j) => j === i ? { ...r, notes: e.target.value } : r))}
+                            placeholder="Ex: inclui voo"
+                            className="w-full rounded-lg bg-white border border-[var(--line-2)] px-3 py-2 text-[13px] focus:outline-none focus:border-[var(--ink)]"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDates((prev) => prev.filter((_, j) => j !== i))}
+                          className="text-[var(--muted)] hover:text-red-500 transition-colors text-[18px] leading-none mt-auto mb-[2px]"
+                          title="Remover"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
               <div>
                 <label className="block text-[11px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Descrição curta</label>
                 <textarea
