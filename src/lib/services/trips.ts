@@ -1,25 +1,26 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import type { TravelPackageCard, TravelPackageWithRelations } from "@/types/database";
 
+// Use FK hint to disambiguate: travel_packages→categories has two paths now
+// (direct via category_id FK, and indirect via travel_package_categories junction).
+// PostgREST requires an explicit FK name when two relationships exist.
 const PACKAGE_CARD_SELECT = `
   *,
-  category:categories(id, name, slug),
+  category:categories!travel_packages_category_id_fkey(id, name, slug),
+  pkg_categories:travel_package_categories(category:categories(id, name, slug)),
   destination:destinations(id, name, slug)
 ` as const;
 
 const PACKAGE_FULL_SELECT = `
   *,
-  category:categories(id, name, slug),
+  category:categories!travel_packages_category_id_fkey(id, name, slug),
   destination:destinations(id, name, slug),
   images:package_images(id, image_url, alt_text, sort_order),
   itinerary:package_itinerary(id, day_label, title, description, sort_order)
 ` as const;
 
-function addCategories(raw: any[]): TravelPackageCard[] {
-  return raw.map((t) => ({
-    ...t,
-    categories: t.category ? [t.category] : [],
-  }));
+function flattenPkgCategories(raw: any[]): Pick<import("@/types/database").Category, "id" | "name" | "slug">[] {
+  return (raw ?? []).map((pc: any) => pc.category).filter(Boolean);
 }
 
 export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> {
@@ -33,7 +34,10 @@ export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> 
     .limit(limit);
 
   if (error) throw new Error(`getFeaturedTrips: ${error.message}`);
-  return addCategories(data ?? []);
+  return (data ?? []).map((t: any) => ({
+    ...t,
+    categories: flattenPkgCategories(t.pkg_categories),
+  })) as TravelPackageCard[];
 }
 
 export async function getAllTrips(filters?: {
@@ -82,7 +86,10 @@ export async function getAllTrips(filters?: {
   const { data, error } = await query;
   if (error) throw new Error(`getAllTrips: ${error.message}`);
 
-  let result = addCategories(data ?? []);
+  let result = (data ?? []).map((t: any) => ({
+    ...t,
+    categories: flattenPkgCategories(t.pkg_categories),
+  })) as TravelPackageCard[];
 
   if (filters?.categorySlug && filters.categorySlug !== "all") {
     result = result.filter((t) =>
