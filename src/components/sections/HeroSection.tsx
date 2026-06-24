@@ -42,7 +42,7 @@ export function HeroSection() {
         className="relative mt-[120px] md:mt-[140px] lg:mt-[160px] text-center"
         style={{
           zIndex: 2,
-          width: "min(760px, 88vw)",
+          width: "min(1100px, 94vw)",
           marginLeft: "auto",
           marginRight: "auto",
           paddingBottom: 20,
