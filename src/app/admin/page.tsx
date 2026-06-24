@@ -1571,8 +1571,11 @@ function ClientsView() {
   }
 
   async function deleteClient(id: string) {
-    if (!confirm("Apagar este cliente?")) return;
-    await createClient().from("clients").delete().eq("id", id);
+    if (!confirm("Apagar este cliente? Será removido de todas as viagens onde esteja inscrito.")) return;
+    const supabase = createClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("trip_passengers").delete().eq("client_id", id);
+    await supabase.from("clients").delete().eq("id", id);
     setClients((prev) => prev.filter((c) => c.id !== id));
   }
 
