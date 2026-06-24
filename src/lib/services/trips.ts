@@ -1,5 +1,5 @@
 import { createPublicClient } from "@/lib/supabase/public";
-import type { TravelPackageCard, TravelPackageWithRelations } from "@/types/database";
+import type { TravelPackageCard, TravelPackageWithRelations, PackageDate } from "@/types/database";
 
 const PACKAGE_CARD_SELECT = `
   *,
@@ -105,6 +105,62 @@ export async function getTripBySlug(slug: string): Promise<TravelPackageWithRela
   trip.dates = (trip.dates ?? []).sort((a, b) => a.sort_order - b.sort_order || a.departure_date.localeCompare(b.departure_date));
 
   return JSON.parse(JSON.stringify(trip)) as TravelPackageWithRelations;
+}
+
+export async function getDateSeats(
+  packageId: string,
+  dates: PackageDate[]
+): Promise<Record<string, number | null>> {
+  if (dates.length === 0) return {};
+
+  const supabase = createPublicClient();
+  const dateIds = dates.map((d) => d.id);
+
+  // 1. Reservas confirmadas/pendentes por package_date_id
+  const { data: bookings } = await (supabase as any)
+    .from("booking_requests")
+    .select("package_date_id, pax_count, status")
+    .in("package_date_id", dateIds);
+
+  // 2. Passageiros em trip_groups com o mesmo package_id e start_date
+  const departureDates = dates.map((d) => d.departure_date);
+  const { data: groups } = await (supabase as any)
+    .from("trip_groups")
+    .select("id, start_date")
+    .eq("package_id", packageId)
+    .in("start_date", departureDates);
+
+  const datesByDeparture: Record<string, string> = {};
+  for (const d of dates) datesByDeparture[d.departure_date] = d.id;
+
+  const passengerCounts: Record<string, number> = {};
+  if (groups && groups.length > 0) {
+    const groupIds = (groups as any[]).map((g: any) => g.id);
+    const { data: passengers } = await (supabase as any)
+      .from("trip_passengers")
+      .select("trip_id")
+      .in("trip_id", groupIds);
+
+    for (const p of (passengers ?? []) as any[]) {
+      const group = (groups as any[]).find((g: any) => g.id === p.trip_id);
+      if (group) {
+        const dateId = datesByDeparture[group.start_date];
+        if (dateId) passengerCounts[dateId] = (passengerCounts[dateId] ?? 0) + 1;
+      }
+    }
+  }
+
+  // 3. Calcular lugares restantes por data
+  const result: Record<string, number | null> = {};
+  for (const date of dates) {
+    if (date.available_seats == null) { result[date.id] = null; continue; }
+    const booked = ((bookings ?? []) as any[])
+      .filter((b: any) => b.package_date_id === date.id && b.status !== "cancelled")
+      .reduce((sum: number, b: any) => sum + (b.pax_count ?? 0), 0);
+    const passengers = passengerCounts[date.id] ?? 0;
+    result[date.id] = Math.max(0, date.available_seats - booked - passengers);
+  }
+  return result;
 }
 
 export async function getTripSlugs(): Promise<string[]> {

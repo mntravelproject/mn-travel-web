@@ -438,6 +438,7 @@ export interface Database {
         Row: {
           id: string;
           package_id: string | null;
+          package_date_id: string | null;
           name: string;
           email: string;
           phone: string | null;
@@ -451,6 +452,7 @@ export interface Database {
         Insert: {
           id?: string;
           package_id?: string | null;
+          package_date_id?: string | null;
           name: string;
           email: string;
           phone?: string | null;
@@ -464,6 +466,7 @@ export interface Database {
         Update: {
           id?: string;
           package_id?: string | null;
+          package_date_id?: string | null;
           name?: string;
           email?: string;
           phone?: string | null;

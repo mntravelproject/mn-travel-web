@@ -16,6 +16,7 @@ import type { TravelPackageWithRelations } from "@/types/database";
 interface Props {
   trip: TravelPackageWithRelations;
   remainingSeats: number | null;
+  dateSeats: Record<string, number | null>;
 }
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -34,7 +35,7 @@ function seatBadge(remaining: number | null, dbStatus: string | null) {
   return STATUS.disponivel;
 }
 
-export function TripDetailClient({ trip, remainingSeats }: Props) {
+export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
   const [activeImg,     setActiveImg]     = useState(0);
   const [tab,           setTab]           = useState<"itinerary" | "includes" | "dates">("itinerary");
   const [pax,           setPax]           = useState(2);
@@ -60,14 +61,15 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
     const { error } = await createClient()
       .from("booking_requests")
       .insert({
-        package_id:    trip.id,
-        name:          form.name,
-        email:         form.email,
-        phone:         form.phone  || null,
-        pax_count:     pax,
-        check_in_date: checkIn,
-        message:       form.message || null,
-        status:        "pending",
+        package_id:      trip.id,
+        package_date_id: selectedDate ?? null,
+        name:            form.name,
+        email:           form.email,
+        phone:           form.phone  || null,
+        pax_count:       pax,
+        check_in_date:   checkIn,
+        message:         form.message || null,
+        status:          "pending",
       });
     setSubmitting(false);
     if (error) { setFormError("Erro ao enviar. Tente novamente."); }
@@ -360,15 +362,20 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                         <div className="space-y-2">
                           {groupDates.map((d) => {
                             const isSelected = selectedDate === d.id;
+                            const rem = dateSeats[d.id] ?? d.available_seats;
+                            const isSoldOut = rem === 0;
                             return (
                               <button
                                 key={d.id}
                                 type="button"
-                                onClick={() => setSelectedDate(d.id)}
+                                disabled={isSoldOut}
+                                onClick={() => !isSoldOut && setSelectedDate(d.id)}
                                 className={`w-full text-left rounded-xl border px-4 py-3 transition-colors ${
-                                  isSelected
-                                    ? "border-[var(--ink)] bg-white"
-                                    : "border-[var(--line)] bg-white hover:border-[var(--ink-soft)]"
+                                  isSoldOut
+                                    ? "border-[var(--line)] bg-[var(--cream-2)] opacity-50 cursor-not-allowed"
+                                    : isSelected
+                                      ? "border-[var(--ink)] bg-white"
+                                      : "border-[var(--line)] bg-white hover:border-[var(--ink-soft)]"
                                 }`}
                               >
                                 <div className="flex items-center justify-between">
@@ -382,11 +389,16 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                                     )}
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    {d.available_seats != null && (
-                                      <span className={`text-[11px] font-medium ${d.available_seats <= 5 ? "text-amber-600" : "text-emerald-600"}`}>
-                                        {d.available_seats} lugar{d.available_seats !== 1 ? "es" : ""}
-                                      </span>
-                                    )}
+                                    {(() => {
+                                      const rem = dateSeats[d.id] ?? d.available_seats;
+                                      if (rem == null) return null;
+                                      if (rem === 0) return <span className="text-[11px] font-medium text-red-500">Esgotado</span>;
+                                      return (
+                                        <span className={`text-[11px] font-medium ${rem <= 3 ? "text-amber-600" : "text-emerald-600"}`}>
+                                          {rem} lugar{rem !== 1 ? "es" : ""}
+                                        </span>
+                                      );
+                                    })()}
                                     <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${isSelected ? "border-[var(--ink)] bg-[var(--ink)]" : "border-[var(--line-2)]"}`}>
                                       {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                                     </div>

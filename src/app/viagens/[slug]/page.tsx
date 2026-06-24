@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getTripBySlug } from "@/lib/services/trips";
+import { getTripBySlug, getDateSeats } from "@/lib/services/trips";
 import { createPublicClient } from "@/lib/supabase/public";
 import { TripDetailClient } from "./TripDetailClient";
 
@@ -40,5 +40,9 @@ export default async function TripDetailPage({ params }: Props) {
     remainingSeats = typeof data === "number" ? data : null;
   }
 
-  return <TripDetailClient trip={trip} remainingSeats={remainingSeats} />;
+  const dateSeats = trip.trip_type === "grupo" && (trip.dates ?? []).length > 0
+    ? await getDateSeats(trip.id, trip.dates ?? []).catch(() => ({}))
+    : {};
+
+  return <TripDetailClient trip={trip} remainingSeats={remainingSeats} dateSeats={dateSeats} />;
 }
