@@ -35,16 +35,8 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
     [trips]
   );
 
-  const { tipoTrips, filtered } = useMemo(() => {
-    const byTipo = tipo
-      ? trips.filter((t) => {
-          const tt = (t as any).trip_type;
-          if (!tt || tt === "ambos") return true;
-          return tt === tipo;
-        })
-      : trips;
-
-    let result = byTipo.filter(
+  const filtered = useMemo(() => {
+    let result = trips.filter(
       (t) =>
         (activeCat === "all" || t.category?.slug === activeCat) &&
         (query === "" ||
@@ -55,8 +47,8 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
     if (sort === "price-asc")  result = [...result].sort((a, b) => a.price_from - b.price_from);
     if (sort === "price-desc") result = [...result].sort((a, b) => b.price_from - a.price_from);
     if (sort === "duration")   result = [...result].sort((a, b) => a.duration_days - b.duration_days);
-    return { tipoTrips: byTipo, filtered: result };
-  }, [query, activeCat, price, sort, trips, tipo]);
+    return result;
+  }, [query, activeCat, price, sort, trips]);
 
   const allCategories = [{ id: "all", name: "Todas" }, ...categories.map((c) => ({ id: c.slug, name: c.name }))];
 
@@ -66,7 +58,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
       <section className="border-b border-[var(--line)] bg-[var(--cream)]">
         <div className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-10 pb-8 md:pt-16 md:pb-12">
           <SlideUp duration={0.6}>
-            <SectionLabel>Catálogo · {tipoTrips.length} viagens</SectionLabel>
+            <SectionLabel>Catálogo · {trips.length} viagens</SectionLabel>
             {tipo ? (
               <>
                 <h1 className="mt-5 font-display text-[32px] sm:text-[48px] md:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight text-balance max-w-4xl">
