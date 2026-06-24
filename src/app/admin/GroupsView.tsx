@@ -1084,6 +1084,26 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     return () => { supabase.removeChannel(channel); };
   }, [trip.id, load]);
 
+  // Sync client edits (from ClientsView) directly into the passenger list
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase.channel(`trip-clients-sync-${trip.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "clients" }, (payload) => {
+        const updated = payload.new as { id: string; name: string; email: string | null; phone: string | null };
+        setPassengers((prev) => prev.map((p) =>
+          p.client_id === updated.id
+            ? { ...p, full_name: updated.name, email: updated.email, phone: updated.phone }
+            : p
+        ));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "clients" }, (payload) => {
+        const deleted = payload.old as { id: string };
+        setPassengers((prev) => prev.filter((p) => p.client_id !== deleted.id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [trip.id]);
+
   const getPaid      = (id: string) => (payments.get(id) ?? []).reduce((s, p) => s + p.amount, 0);
   const roomSizeFor  = (pax: Passenger) =>
     pax.room_id ? passengers.filter((p) => p.room_id === pax.room_id).length : 1;
