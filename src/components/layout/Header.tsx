@@ -115,51 +115,49 @@ export function Header() {
                       <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", destOpen && "rotate-180")} />
                     </button>
 
-                    <AnimatePresence>
-                      {destOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -8, scale: 0.97 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: -8, scale: 0.97 }}
-                          transition={{ duration: 0.16, ease: "easeOut" }}
-                          onMouseEnter={openDest}
-                          onMouseLeave={closeDest}
-                          className="absolute top-full left-1/2 -translate-x-1/2 pt-1 z-50 w-[300px]"
-                        >
-                          <div className={cn(
-                            "rounded-xl shadow-xl border overflow-hidden p-1.5",
-                            onLight
-                              ? "bg-white border-[var(--line)]"
-                              : "bg-[var(--dark)] border-white/10"
-                          )}>
-                            {link.children.map((child) => (
-                              <Link
-                                key={child.href}
-                                href={child.href}
-                                className={cn(
-                                  "flex items-start gap-4 rounded-lg px-4 py-3.5 transition-colors",
-                                  onLight
-                                    ? "text-[var(--ink-soft)] hover:bg-[var(--cream-2)] hover:text-[var(--ink)]"
-                                    : "text-white/70 hover:bg-white/8 hover:text-white"
-                                )}
-                              >
-                                <span className={cn("mt-0.5", onLight ? "text-[var(--gold)]" : "text-[var(--gold2)]")}>
-                                  {child.icon}
-                                </span>
-                                <div>
-                                  <div className={cn("text-[14px] font-semibold mb-0.5", onLight ? "text-[var(--ink)]" : "text-white")}>
-                                    {child.label}
-                                  </div>
-                                  <div className="text-[13px] leading-snug opacity-70">
-                                    {child.description}
-                                  </div>
-                                </div>
-                              </Link>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    {/* Dropdown — sempre montado, CSS controla visibilidade */}
+                    <div
+                      className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50 w-[300px] transition-all duration-150"
+                      style={{
+                        opacity: destOpen ? 1 : 0,
+                        transform: destOpen
+                          ? "translateX(-50%) translateY(0) scale(1)"
+                          : "translateX(-50%) translateY(-6px) scale(0.97)",
+                        pointerEvents: destOpen ? "auto" : "none",
+                      }}
+                    >
+                      <div className={cn(
+                        "rounded-xl shadow-xl border overflow-hidden p-1.5",
+                        onLight
+                          ? "bg-white border-[var(--line)]"
+                          : "bg-[var(--dark)] border-white/10"
+                      )}>
+                        {link.children.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={cn(
+                              "flex items-start gap-4 rounded-lg px-4 py-3.5 transition-colors",
+                              onLight
+                                ? "text-[var(--ink-soft)] hover:bg-[var(--cream-2)] hover:text-[var(--ink)]"
+                                : "text-white/70 hover:bg-white/8 hover:text-white"
+                            )}
+                          >
+                            <span className={cn("mt-0.5", onLight ? "text-[var(--gold)]" : "text-[var(--gold2)]")}>
+                              {child.icon}
+                            </span>
+                            <div>
+                              <div className={cn("text-[14px] font-semibold mb-0.5", onLight ? "text-[var(--ink)]" : "text-white")}>
+                                {child.label}
+                              </div>
+                              <div className="text-[13px] leading-snug opacity-70">
+                                {child.description}
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 );
               }
