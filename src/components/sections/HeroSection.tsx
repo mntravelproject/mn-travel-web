@@ -10,7 +10,7 @@ export function HeroSection() {
   return (
     <section
       className="relative overflow-hidden"
-      style={{ height: "clamp(550px, 57vh, 680px)" }}
+      style={{ height: "clamp(650px, 57vh, 780px)" }}
     >
       {/* Background — slow Ken Burns */}
       <motion.div
@@ -20,7 +20,7 @@ export function HeroSection() {
         transition={{ duration: reduced ? 0.01 : 2.2, ease: "easeOut" }}
       >
         <img
-          src="https://images.unsplash.com/photo-1570213489059-0aac6626cade?auto=format&fit=crop&w=2400&q=90"
+          src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2400&q=90"
           alt=""
           className="w-full h-full object-cover object-center absolute inset-0"
         />
@@ -39,7 +39,7 @@ export function HeroSection() {
 
       {/* Content */}
       <div
-        className="relative mt-[76px] md:mt-[96px] lg:mt-[112px]"
+        className="relative mt-[101px] md:mt-[121px] lg:mt-[137px]"
         style={{
           zIndex: 2,
           width: "min(760px, 88vw)",
@@ -115,10 +115,18 @@ export function HeroSection() {
         {/* Text-link */}
         <motion.a
           href="#colecoes"
+          onClick={(e) => {
+            e.preventDefault();
+            const el = document.getElementById("colecoes");
+            if (!el) return;
+            const headerHeight = document.querySelector("header")?.offsetHeight ?? 108;
+            const top = el.getBoundingClientRect().top + window.scrollY - headerHeight;
+            window.scrollTo({ top, behavior: "smooth" });
+          }}
           initial={{ opacity: 0, y: reduced ? 0 : 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: reduced ? 0.01 : 0.55, delay: 0.8, ease }}
-          className="inline-flex items-center gap-3 font-bold text-[16px] pb-3 border-b-2 transition-all hover:gap-5"
+          className="inline-flex items-center gap-3 font-bold text-[16px] pb-3 border-b-2 transition-all hover:gap-5 cursor-pointer"
           style={{ color: "var(--gold2)", borderColor: "var(--gold2)", textDecoration: "none" }}
         >
           Explorar colecções <ArrowRight className="w-4 h-4" />

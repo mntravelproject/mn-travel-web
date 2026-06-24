@@ -52,14 +52,22 @@ export function Header() {
         <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 h-[68px] md:h-[88px] lg:h-[108px] flex items-center justify-between lg:grid lg:grid-cols-[180px_1fr_220px]">
 
           {/* Logo */}
-          <Link
-            href="/"
-            className={cn(
-              "font-display text-[20px] tracking-tight leading-none transition-colors",
-              onLight ? "text-[var(--ink)]" : "text-white"
-            )}
-          >
-            MN<span className="italic font-normal"> travel</span>
+          <Link href="/" className="flex items-center shrink-0">
+            <div className={cn(
+              "flex items-center transition-all duration-300",
+              onLight
+                ? ""
+                : "rounded-xl bg-white/20 backdrop-blur-sm px-2 py-1"
+            )}>
+              <img
+                src="/logo.png"
+                alt="MN Travel"
+                className={cn(
+                  "h-16 lg:h-20 w-auto",
+                  onLight && "[mix-blend-mode:multiply]"
+                )}
+              />
+            </div>
           </Link>
 
           {/* Desktop nav — centrado */}
@@ -151,8 +159,15 @@ export function Header() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: "100%" }}
               transition={{ duration: reduced ? 0.01 : 0.38, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-[300px] bg-[var(--dark)] shadow-2xl flex flex-col px-6 pt-20 pb-10 lg:hidden"
+              className="fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-[300px] bg-[var(--dark)] shadow-2xl flex flex-col px-6 pt-6 pb-10 lg:hidden"
             >
+              <div className="bg-white/15 rounded-xl px-2 py-1 mb-6 self-start">
+                <img
+                  src="/logo.png"
+                  alt="MN Travel"
+                  className="h-14 w-auto"
+                />
+              </div>
               <motion.ul
                 initial="hidden" animate="visible"
                 variants={{ hidden: {}, visible: { transition: { staggerChildren: reduced ? 0 : 0.07, delayChildren: 0.08 } } }}

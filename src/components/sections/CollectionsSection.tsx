@@ -13,6 +13,19 @@ interface Props {
 
 const CAT_SYMBOLS = ["✧", "✈", "♣", "✦", "☵", "★"];
 
+const CAT_SYMBOL_MAP: Record<string, string> = {
+  mediterranean: "☵",
+  cultural:      "♣",
+  adventure:     "✦",
+  beach:         "☵",
+  safari:        "★",
+  wellness:      "✧",
+  cruzeiros:     "☵",
+  circuitos:     "✈",
+  praias:        "☵",
+  eventos:       "★",
+};
+
 const BENEFITS = [
   { icon: "✈", label: "Acompanhamento personalizado" },
   { icon: "✦", label: "Hotéis e parceiros de excelência" },
@@ -175,7 +188,7 @@ export function CollectionsSection({ trips, categories }: Props) {
                   <span
                     style={{ color: "var(--gold)", fontSize: 32, lineHeight: 1, fontWeight: 300 }}
                   >
-                    {CAT_SYMBOLS[i % CAT_SYMBOLS.length]}
+                    {CAT_SYMBOL_MAP[cat.slug] ?? CAT_SYMBOLS[i % CAT_SYMBOLS.length]}
                   </span>
                   <span
                     style={{

@@ -42,6 +42,7 @@ type ClientOption = {
 type PaxFormDocs = {
   id_card_number: string; id_card_expiry: string; nif: string;
   date_of_birth: string; nationality: string; notes: string;
+  phone: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -59,7 +60,7 @@ const EXPENSE_CATEGORIES: Record<string, string> = {
   alimentacao: "Alimentação", seguro: "Seguro", guia: "Guia", outro: "Outro",
 };
 const EMPTY_DOCS: PaxFormDocs = {
-  id_card_number: "", id_card_expiry: "", nif: "", date_of_birth: "", nationality: "Portuguesa", notes: "",
+  id_card_number: "", id_card_expiry: "", nif: "", date_of_birth: "", nationality: "Portuguesa", notes: "", phone: "",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -307,6 +308,7 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
         date_of_birth:  editPax.date_of_birth ?? "",
         nationality:    editPax.nationality ?? "Portuguesa",
         notes:          editPax.notes ?? "",
+        phone:          editPax.phone ?? "",
       });
     } else {
       setRoomType("individual");
@@ -331,6 +333,7 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
           date_of_birth:  c.date_of_birth ?? "",
           nationality:    c.nationality ?? "Portuguesa",
           notes:          c.notes ?? "",
+          phone:          c.phone ?? "",
         },
       };
       return next;
@@ -384,6 +387,16 @@ function PassengerModal({ open, onClose, onAdd, onEdit, editPax, takenClientIds 
               <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-1">Cliente</p>
               <p className="text-[14px] font-medium">{editPax.full_name}</p>
               {editPax.email && <p className="text-[11px] text-[var(--muted)]">{editPax.email}</p>}
+            </div>
+            <div>
+              <label className={lCls}>Telemóvel</label>
+              <input
+                type="tel"
+                value={editDocs.phone}
+                onChange={e => setEditDocs(d => ({ ...d, phone: e.target.value }))}
+                placeholder="+351 9xx xxx xxx"
+                className={iCls}
+              />
             </div>
             {renderDocFields(editDocs, k => e => setEditDocs(d => ({ ...d, [k]: e.target.value })))}
           </>
@@ -1060,6 +1073,25 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase.channel(`trip-pax-${trip.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "trip_passengers", filter: `trip_id=eq.${trip.id}` },
+        (payload) => {
+          setPassengers((prev) => prev.map((p) =>
+            p.id === (payload.new as Passenger).id ? { ...p, ...(payload.new as unknown as Passenger) } : p
+          ));
+        })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "trip_passengers", filter: `trip_id=eq.${trip.id}` },
+        () => { load(); })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "trip_passengers", filter: `trip_id=eq.${trip.id}` },
+        (payload) => {
+          setPassengers((prev) => prev.filter((p) => p.id !== (payload.old as { id: string }).id));
+        })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [trip.id, load]);
+
   const getPaid      = (id: string) => (payments.get(id) ?? []).reduce((s, p) => s + p.amount, 0);
   const roomSizeFor  = (pax: Passenger) =>
     pax.room_id ? passengers.filter((p) => p.room_id === pax.room_id).length : 1;
@@ -1127,13 +1159,27 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
 
   async function updatePassenger(id: string, docs: PaxFormDocs) {
     const supabase = createClient();
+    const pax = passengers.find((p) => p.id === id);
     const updates = {
+      phone:          docs.phone || null,
       id_card_number: docs.id_card_number || null, id_card_expiry: docs.id_card_expiry || null,
       nif: docs.nif || null, date_of_birth: docs.date_of_birth || null,
       nationality: docs.nationality || "Portuguesa", notes: docs.notes || null,
     };
     const { error } = await supabase.from("trip_passengers").update(updates).eq("id", id);
     if (error) throw new Error(error.message);
+    // Sync contact + doc fields back to clients master record
+    if (pax?.client_id) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("clients").update({
+        phone:          docs.phone || null,
+        id_card_number: docs.id_card_number || null,
+        id_card_expiry: docs.id_card_expiry || null,
+        nif:            docs.nif || null,
+        date_of_birth:  docs.date_of_birth || null,
+        nationality:    docs.nationality || null,
+      }).eq("id", pax.client_id);
+    }
     setPassengers((p) => p.map((x) => x.id === id ? { ...x, ...updates } : x));
     setEditPax(null);
   }

@@ -1480,6 +1480,23 @@ function ClientsView() {
     loadClients();
   }, []);
 
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase.channel("admin-clients-realtime")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "clients" }, (payload) => {
+        setClients((prev) => prev.map((c) => c.id === payload.new.id ? { ...c, ...(payload.new as Client) } : c));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "clients" }, (payload) => {
+        const nc = payload.new as Client;
+        setClients((prev) => [...prev, nc].sort((a, b) => a.name.localeCompare(b.name)));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "clients" }, (payload) => {
+        setClients((prev) => prev.filter((c) => c.id !== (payload.old as { id: string }).id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   useEffect(() => { setPage(1); }, [search, sort]);
 
   function loadClients() {
