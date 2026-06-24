@@ -2237,7 +2237,6 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     available_seats:        trip?.available_seats != null ? String(trip.available_seats) : "",
     trip_status:       trip?.trip_status       ?? "disponivel",
     category_id:       (trip?.category_id      ?? null) as string | null,
-    category_ids:      ((trip as any)?.categories?.map((c: any) => c.id) ?? (trip?.category_id ? [trip.category_id] : [])) as string[],
     short_description: trip?.short_description ?? "",
     long_description:  trip?.long_description  ?? "",
     is_published:      trip?.is_published      ?? false,
@@ -2383,7 +2382,7 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       triple_supplement:      form.triple_supplement,
       available_seats:   form.available_seats !== "" ? Number(form.available_seats) : null,
       trip_status:       form.trip_status || null,
-      category_id:       form.category_ids[0] ?? null,
+      category_id:       form.category_id || null,
       pdf_url:           pdfUrl || null,
       is_published:      form.is_published,
       is_featured:       form.is_featured,
@@ -2441,14 +2440,6 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
           );
           if (itError) throw itError;
         }
-      }
-
-      // Sync junction table categories
-      await (supabase as any).from("travel_package_categories").delete().eq("trip_id", packageId);
-      if (form.category_ids.length > 0) {
-        await (supabase as any).from("travel_package_categories").insert(
-          form.category_ids.map((cid) => ({ trip_id: packageId, category_id: cid }))
-        );
       }
 
       setSaved(true);
@@ -2814,28 +2805,19 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             <h3 className="font-display text-[20px] tracking-tight mb-1">Categoria</h3>
             <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Tipo de viagem.</p>
             <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => {
-                const selected = form.category_ids.includes(cat.id);
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setForm((f) => ({
-                      ...f,
-                      category_ids: selected
-                        ? f.category_ids.filter((id) => id !== cat.id)
-                        : [...f.category_ids, cat.id],
-                      category_id: selected && f.category_ids[0] === cat.id ? (f.category_ids[1] ?? null) : f.category_id,
-                    }))}
-                    className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
-                      selected
-                        ? "bg-[var(--ink)] text-[var(--cream)] border-[var(--ink)]"
-                        : "border-[var(--line-2)] hover:border-[var(--ink)]"
-                    }`}
-                  >
-                    {cat.name}
-                  </button>
-                );
-              })}
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setForm((f) => ({ ...f, category_id: f.category_id === cat.id ? null : cat.id }))}
+                  className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
+                    form.category_id === cat.id
+                      ? "bg-[var(--ink)] text-[var(--cream)] border-[var(--ink)]"
+                      : "border-[var(--line-2)] hover:border-[var(--ink)]"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
               {categories.length === 0 && (
                 <p className="text-[12px] text-[var(--muted)] tracking-tight">A carregar categorias…</p>
               )}

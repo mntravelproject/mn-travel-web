@@ -1,27 +1,19 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import type { TravelPackageCard, TravelPackageWithRelations } from "@/types/database";
 
-// Use FK hint to disambiguate: travel_packages→categories has two paths now
-// (direct via category_id FK, and indirect via travel_package_categories junction).
-// PostgREST requires an explicit FK name when two relationships exist.
 const PACKAGE_CARD_SELECT = `
   *,
-  category:categories!travel_packages_category_id_fkey(id, name, slug),
-  pkg_categories:travel_package_categories(category:categories(id, name, slug)),
+  category:categories(id, name, slug),
   destination:destinations(id, name, slug)
 ` as const;
 
 const PACKAGE_FULL_SELECT = `
   *,
-  category:categories!travel_packages_category_id_fkey(id, name, slug),
+  category:categories(id, name, slug),
   destination:destinations(id, name, slug),
   images:package_images(id, image_url, alt_text, sort_order),
   itinerary:package_itinerary(id, day_label, title, description, sort_order)
 ` as const;
-
-function flattenPkgCategories(raw: any[]): Pick<import("@/types/database").Category, "id" | "name" | "slug">[] {
-  return (raw ?? []).map((pc: any) => pc.category).filter(Boolean);
-}
 
 export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> {
   const supabase = createPublicClient();
@@ -34,10 +26,7 @@ export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> 
     .limit(limit);
 
   if (error) throw new Error(`getFeaturedTrips: ${error.message}`);
-  return (data ?? []).map((t: any) => ({
-    ...t,
-    categories: flattenPkgCategories(t.pkg_categories),
-  })) as TravelPackageCard[];
+  return (data ?? []) as TravelPackageCard[];
 }
 
 export async function getAllTrips(filters?: {
@@ -86,15 +75,10 @@ export async function getAllTrips(filters?: {
   const { data, error } = await query;
   if (error) throw new Error(`getAllTrips: ${error.message}`);
 
-  let result = (data ?? []).map((t: any) => ({
-    ...t,
-    categories: flattenPkgCategories(t.pkg_categories),
-  })) as TravelPackageCard[];
+  let result = (data ?? []) as TravelPackageCard[];
 
   if (filters?.categorySlug && filters.categorySlug !== "all") {
-    result = result.filter((t) =>
-      t.categories.some((c) => c.slug === filters.categorySlug)
-    );
+    result = result.filter((t) => t.category?.slug === filters.categorySlug);
   }
 
   return result;
@@ -110,7 +94,7 @@ export async function getTripBySlug(slug: string): Promise<TravelPackageWithRela
     .single();
 
   if (error) {
-    if (error.code === "PGRST116") return null;
+    if (error.code === "PGRST116") return null; // not found
     throw new Error(`getTripBySlug: ${error.message}`);
   }
 

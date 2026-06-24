@@ -289,15 +289,6 @@ export interface Database {
           }
         ];
       };
-      travel_package_categories: {
-        Row:    { trip_id: string; category_id: string };
-        Insert: { trip_id: string; category_id: string };
-        Update: { trip_id?: string; category_id?: string };
-        Relationships: [
-          { foreignKeyName: "travel_package_categories_trip_id_fkey";     columns: ["trip_id"];     isOneToOne: false; referencedRelation: "travel_packages"; referencedColumns: ["id"] },
-          { foreignKeyName: "travel_package_categories_category_id_fkey"; columns: ["category_id"]; isOneToOne: false; referencedRelation: "categories";      referencedColumns: ["id"] },
-        ];
-      };
       trip_groups: {
         Row: { id: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes: string | null; package_id: string | null; created_at: string; updated_at: string };
         Insert: { id?: string; title: string; destination: string; start_date: string; end_date: string; price_per_person: number; notes?: string | null; package_id?: string | null };
@@ -480,5 +471,4 @@ export type TravelPackageWithRelations = TravelPackage & {
 
 export type TravelPackageCard = TravelPackage & {
   category: Pick<Category, "id" | "name" | "slug"> | null;
-  categories: Pick<Category, "id" | "name" | "slug">[];
 };
