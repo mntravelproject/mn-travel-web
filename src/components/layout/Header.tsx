@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Globe, Menu, X } from "lucide-react";
+import { Globe, Menu, X, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { cn } from "@/lib/utils";
 import { BookingModal } from "@/components/BookingModal";
 
 const navLinks = [
   { href: "/",         label: "Início" },
-  { href: "/viagens",  label: "Viagens" },
-  { href: "/viagens",  label: "Destinos" },
+  { href: "/viagens",  label: "Destinos", children: [
+    { href: "/viagens?tipo=individual", label: "Individual" },
+    { href: "/viagens?tipo=grupo",      label: "Grupo" },
+  ]},
   { href: "/viagens",  label: "Editorial" },
   { href: "/sobre",    label: "Sobre" },
   { href: "/contacto", label: "Contacto" },
@@ -22,6 +24,8 @@ export function Header() {
   const [scrolled,    setScrolled]    = useState(false);
   const [open,        setOpen]        = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [destOpen,    setDestOpen]    = useState(false);
+  const [destMobile,  setDestMobile]  = useState(false);
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -69,6 +73,47 @@ export function Header() {
           <nav className="hidden lg:flex items-center justify-center gap-[42px]">
             {navLinks.map((link, i) => {
               const isActive = pathname === link.href && i === 0;
+              if (link.children) {
+                return (
+                  <div
+                    key={i}
+                    className="relative"
+                    onMouseEnter={() => setDestOpen(true)}
+                    onMouseLeave={() => setDestOpen(false)}
+                  >
+                    <button className={cn(
+                      "flex items-center gap-1 text-[15px] font-medium transition-colors pb-1",
+                      onLight ? "text-[var(--ink-soft)] hover:text-[var(--ink)]" : "text-white/90 hover:text-white"
+                    )}>
+                      {link.label}
+                      <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", destOpen && "rotate-180")} />
+                    </button>
+                    <AnimatePresence>
+                      {destOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.18 }}
+                          className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50"
+                        >
+                          <div className="bg-white rounded-xl shadow-xl border border-[var(--line)] overflow-hidden min-w-[140px]">
+                            {link.children.map((child) => (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                className="block px-6 py-3 text-[14px] font-medium text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--cream-2)] transition-colors"
+                              >
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              }
               return (
                 <Link
                   key={i}
@@ -82,9 +127,6 @@ export function Header() {
                   )}
                 >
                   {link.label}
-                  {!isActive && (
-                    <span className="absolute -bottom-0.5 left-0 h-px w-0 group-hover:w-full transition-all duration-300 ease-out bg-current opacity-0 hover:opacity-100" />
-                  )}
                 </Link>
               );
             })}
@@ -171,13 +213,47 @@ export function Header() {
                     key={i}
                     variants={{ hidden: { opacity: 0, x: reduced ? 0 : 24 }, visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } } }}
                   >
-                    <Link
-                      href={link.href}
-                      onClick={() => setOpen(false)}
-                      className="block py-2.5 font-display text-[28px] tracking-tight text-white hover:text-[var(--gold2)] transition-colors"
-                    >
-                      {link.label}
-                    </Link>
+                    {link.children ? (
+                      <div>
+                        <button
+                          onClick={() => setDestMobile(v => !v)}
+                          className="flex items-center gap-2 py-2.5 font-display text-[28px] tracking-tight text-white hover:text-[var(--gold2)] transition-colors w-full"
+                        >
+                          {link.label}
+                          <ChevronDown className={cn("w-5 h-5 mt-1 transition-transform duration-200", destMobile && "rotate-180")} />
+                        </button>
+                        <AnimatePresence>
+                          {destMobile && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.22 }}
+                              className="overflow-hidden pl-4"
+                            >
+                              {link.children.map((child) => (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  onClick={() => setOpen(false)}
+                                  className="block py-2 font-display text-[22px] tracking-tight text-white/70 hover:text-[var(--gold2)] transition-colors"
+                                >
+                                  {child.label}
+                                </Link>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        onClick={() => setOpen(false)}
+                        className="block py-2.5 font-display text-[28px] tracking-tight text-white hover:text-[var(--gold2)] transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </motion.li>
                 ))}
               </motion.ul>
