@@ -53,21 +53,11 @@ export function Header() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
-            <div className={cn(
-              "flex items-center transition-all duration-300",
-              onLight
-                ? ""
-                : "rounded-xl bg-white/20 backdrop-blur-sm px-2 py-1"
-            )}>
-              <img
-                src="/logo.png"
-                alt="MN Travel"
-                className={cn(
-                  "h-16 lg:h-20 w-auto",
-                  onLight && "[mix-blend-mode:multiply]"
-                )}
-              />
-            </div>
+            <img
+              src={onLight ? "/logo_branco.png" : "/logo_preto.png"}
+              alt="MN Travel"
+              className="h-16 lg:h-20 w-auto transition-opacity duration-300"
+            />
           </Link>
 
           {/* Desktop nav — centrado */}
@@ -161,13 +151,11 @@ export function Header() {
               transition={{ duration: reduced ? 0.01 : 0.38, ease: [0.16, 1, 0.3, 1] }}
               className="fixed top-0 right-0 bottom-0 z-50 w-[85vw] max-w-[300px] bg-[var(--dark)] shadow-2xl flex flex-col px-6 pt-6 pb-10 lg:hidden"
             >
-              <div className="bg-white/15 rounded-xl px-2 py-1 mb-6 self-start">
-                <img
-                  src="/logo.png"
-                  alt="MN Travel"
-                  className="h-14 w-auto"
-                />
-              </div>
+              <img
+                src="/logo_branco.png"
+                alt="MN Travel"
+                className="h-14 w-auto mb-6 self-start"
+              />
               <motion.ul
                 initial="hidden" animate="visible"
                 variants={{ hidden: {}, visible: { transition: { staggerChildren: reduced ? 0 : 0.07, delayChildren: 0.08 } } }}
