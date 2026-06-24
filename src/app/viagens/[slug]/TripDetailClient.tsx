@@ -333,9 +333,9 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
                       <Check className="w-6 h-6 text-emerald-600" />
                     </div>
-                    <p className="font-display text-[20px] tracking-tight">Pedido enviado!</p>
+                    <p className="font-display text-[20px] tracking-tight">Reserva recebida!</p>
                     <p className="mt-2 text-[13px] text-[var(--muted)] leading-relaxed">
-                      Entraremos em contacto em breve para agendar a sua viagem.
+                      Entraremos em contacto em breve para confirmar a sua reserva.
                     </p>
                   </div>
                 ) : (
@@ -412,7 +412,7 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                     className="w-full inline-flex items-center justify-center gap-2 rounded-full text-[var(--dark)] px-7 py-4 text-[15px] font-semibold tracking-tight transition-all hover:brightness-110 mt-2 disabled:opacity-60"
                     style={{ background: "var(--gold)" }}
                   >
-                    {submitting ? "A enviar…" : <><span>Pedir proposta personalizada</span> <ArrowRight className="w-4 h-4" /></>}
+                    {submitting ? "A processar…" : <><span>Efetuar reserva</span> <ArrowRight className="w-4 h-4" /></>}
                   </motion.button>
                   {trip.pdf_url && (
                     <a
@@ -431,8 +431,8 @@ export function TripDetailClient({ trip, remainingSeats }: Props) {
                 )}
 
                 <div className="mt-6 pt-6 border-t border-[var(--line-2)] text-[12px] text-[var(--muted)] leading-relaxed">
-                  <strong className="text-[var(--ink)] font-medium block mb-1">Sem compromisso</strong>
-                  Receberá uma proposta detalhada em 48h. Pagamento apenas após confirmação do
+                  <strong className="text-[var(--ink)] font-medium block mb-1">Reserva sem risco</strong>
+                  A sua reserva será confirmada em 48h. Pagamento apenas após confirmação do
                   programa final.
                 </div>
               </div>
