@@ -1548,6 +1548,13 @@ function ClientsView() {
         ...docFields,
       }).eq("id", editClient.id);
       if (error) { setFormError(error.message); setSaving(false); return; }
+      // Cascade contact fields to all trip_passengers linked to this client
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("trip_passengers").update({
+        full_name: form.name,
+        email:     form.email || null,
+        phone:     form.phone || null,
+      }).eq("client_id", editClient.id);
       setClients((prev) => prev.map((c) => c.id === editClient.id ? { ...c, ...form, phone: form.phone || null, country: form.country || null, notes: form.notes || null, ...docFields } : c));
     } else {
       const { data, error } = await clientsTable.insert({

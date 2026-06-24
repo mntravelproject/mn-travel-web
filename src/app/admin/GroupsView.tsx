@@ -1161,10 +1161,11 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
     };
     const { error } = await supabase.from("trip_passengers").update(updates).eq("id", id);
     if (error) throw new Error(error.message);
-    // Sync contact + doc fields back to clients master record
+    // Sync back to clients master record and cascade phone to all other trips
     if (pax?.client_id) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from("clients").update({
+      const sb = supabase as any;
+      await sb.from("clients").update({
         phone:          docs.phone || null,
         id_card_number: docs.id_card_number || null,
         id_card_expiry: docs.id_card_expiry || null,
@@ -1172,6 +1173,9 @@ function TripDetailView({ trip, onBack }: { trip: TripGroup; onBack: () => void 
         date_of_birth:  docs.date_of_birth || null,
         nationality:    docs.nationality || null,
       }).eq("id", pax.client_id);
+      // Cascade phone to all other trip_passengers of this client
+      await sb.from("trip_passengers").update({ phone: docs.phone || null })
+        .eq("client_id", pax.client_id).neq("id", id);
     }
     setPassengers((p) => p.map((x) => x.id === id ? { ...x, ...updates } : x));
     setEditPax(null);
