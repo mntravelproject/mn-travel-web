@@ -26,12 +26,6 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [activeCat, setActiveCat] = useState(searchParams.get("cat") || "all");
 
-  const tipoTrips = tipo
-    ? trips.filter((t) => {
-        const tt = (t as any).trip_type ?? "individual";
-        return tt === tipo || tt === "ambos";
-      })
-    : trips;
   const [price, setPrice] = useState(15000);
   const [sort, setSort] = useState("featured");
   const reduced = useReducedMotion();
@@ -41,8 +35,16 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
     [trips]
   );
 
-  const filtered = useMemo(() => {
-    let result = tipoTrips.filter(
+  const { tipoTrips, filtered } = useMemo(() => {
+    const byTipo = tipo
+      ? trips.filter((t) => {
+          const tt = (t as any).trip_type;
+          if (!tt || tt === "ambos") return true;
+          return tt === tipo;
+        })
+      : trips;
+
+    let result = byTipo.filter(
       (t) =>
         (activeCat === "all" || t.category?.slug === activeCat) &&
         (query === "" ||
@@ -53,8 +55,8 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
     if (sort === "price-asc")  result = [...result].sort((a, b) => a.price_from - b.price_from);
     if (sort === "price-desc") result = [...result].sort((a, b) => b.price_from - a.price_from);
     if (sort === "duration")   result = [...result].sort((a, b) => a.duration_days - b.duration_days);
-    return result;
-  }, [query, activeCat, price, sort, trips]);
+    return { tipoTrips: byTipo, filtered: result };
+  }, [query, activeCat, price, sort, trips, tipo]);
 
   const allCategories = [{ id: "all", name: "Todas" }, ...categories.map((c) => ({ id: c.slug, name: c.name }))];
 
