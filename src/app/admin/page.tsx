@@ -2242,6 +2242,7 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     is_published:      trip?.is_published      ?? false,
     is_featured:       trip?.is_featured       ?? false,
     tag:               trip?.tag               ?? "",
+    trip_type:         (trip?.trip_type        ?? "individual") as "individual" | "grupo" | "ambos",
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -2386,6 +2387,7 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       is_published:      form.is_published,
       is_featured:       form.is_featured,
       tag:               form.tag || null,
+      trip_type:         form.trip_type,
       hero_image_url:    gallery[0] ?? null,
     };
 
@@ -2774,6 +2776,31 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
 
         {/* Right: publication + tag + AI */}
         <div className="space-y-6">
+          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
+            <h3 className="font-display text-[20px] tracking-tight mb-1">Tipo de catálogo</h3>
+            <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Define em que catálogo este destino aparece.</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { v: "individual", l: "Individual", desc: "Viagens a par ou solo" },
+                { v: "grupo",      l: "Grupo",      desc: "Viagens partilhadas" },
+                { v: "ambos",      l: "Ambos",      desc: "Aparece nos dois" },
+              ] as const).map(({ v, l, desc }) => (
+                <button
+                  key={v}
+                  onClick={() => setForm((f) => ({ ...f, trip_type: v }))}
+                  className={`flex flex-col items-center text-center rounded-xl border p-3 transition ${
+                    form.trip_type === v
+                      ? "bg-[var(--ink)] text-[var(--cream)] border-[var(--ink)]"
+                      : "border-[var(--line-2)] hover:border-[var(--ink)] text-[var(--ink-soft)]"
+                  }`}
+                >
+                  <span className="text-[13px] font-semibold tracking-tight">{l}</span>
+                  <span className={`text-[11px] mt-0.5 leading-tight ${form.trip_type === v ? "text-white/65" : "text-[var(--muted)]"}`}>{desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
             <h3 className="font-display text-[20px] tracking-tight mb-1">Categoria</h3>
             <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Tipo de viagem.</p>

@@ -7,7 +7,14 @@ import { ViagensContent } from "./ViagensContent";
 import { getAllTrips } from "@/lib/services/trips";
 import { getAllCategories } from "@/lib/services/categories";
 
-export default async function ViagensPage() {
+export default async function ViagensPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tipo?: string }>;
+}) {
+  const params = await searchParams;
+  const tipo = (params.tipo === "individual" || params.tipo === "grupo") ? params.tipo : null;
+
   const [trips, categories] = await Promise.all([
     getAllTrips().catch(() => []),
     getAllCategories().catch(() => []),
@@ -34,7 +41,7 @@ export default async function ViagensPage() {
             </div>
           </div>
         }>
-          <ViagensContent trips={trips} categories={categories} />
+          <ViagensContent trips={trips} categories={categories} tipo={tipo} />
         </Suspense>
       </main>
       <Footer />

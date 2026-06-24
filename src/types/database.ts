@@ -100,6 +100,7 @@ export interface Database {
           return_date: string | null;
           available_seats: number | null;
           trip_status: string | null;
+          trip_type: "individual" | "grupo" | "ambos";
           pdf_url: string | null;
           is_featured: boolean;
           is_published: boolean;
@@ -126,6 +127,7 @@ export interface Database {
           return_date?: string | null;
           available_seats?: number | null;
           trip_status?: string | null;
+          trip_type?: "individual" | "grupo" | "ambos";
           pdf_url?: string | null;
           is_featured?: boolean;
           is_published?: boolean;
@@ -152,6 +154,7 @@ export interface Database {
           return_date?: string | null;
           available_seats?: number | null;
           trip_status?: string | null;
+          trip_type?: "individual" | "grupo" | "ambos";
           pdf_url?: string | null;
           is_featured?: boolean;
           is_published?: boolean;

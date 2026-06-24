@@ -13,12 +13,25 @@ import type { TravelPackageCard, Category } from "@/types/database";
 interface Props {
   trips: TravelPackageCard[];
   categories: Category[];
+  tipo?: "individual" | "grupo" | null;
 }
 
-export function ViagensContent({ trips, categories }: Props) {
+const TIPO_LABELS: Record<string, { title: string; subtitle: string }> = {
+  individual: { title: "Viagens Individuais", subtitle: "Experiências personalizadas para si, a par ou em família." },
+  grupo:      { title: "Viagens de Grupo",    subtitle: "Partilhe momentos únicos com outros viajantes." },
+};
+
+export function ViagensContent({ trips, categories, tipo }: Props) {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [activeCat, setActiveCat] = useState(searchParams.get("cat") || "all");
+
+  const tipoTrips = tipo
+    ? trips.filter((t) => {
+        const tt = (t as any).trip_type ?? "individual";
+        return tt === tipo || tt === "ambos";
+      })
+    : trips;
   const [price, setPrice] = useState(15000);
   const [sort, setSort] = useState("featured");
   const reduced = useReducedMotion();
@@ -29,7 +42,7 @@ export function ViagensContent({ trips, categories }: Props) {
   );
 
   const filtered = useMemo(() => {
-    let result = trips.filter(
+    let result = tipoTrips.filter(
       (t) =>
         (activeCat === "all" || t.category?.slug === activeCat) &&
         (query === "" ||
@@ -51,14 +64,27 @@ export function ViagensContent({ trips, categories }: Props) {
       <section className="border-b border-[var(--line)] bg-[var(--cream)]">
         <div className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-10 pb-8 md:pt-16 md:pb-12">
           <SlideUp duration={0.6}>
-            <SectionLabel>Catálogo · {trips.length} viagens</SectionLabel>
-            <h1 className="mt-5 font-display text-[32px] sm:text-[48px] md:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight text-balance max-w-4xl">
-              Cada viagem,<br />uma <span className="italic font-light">narrativa</span>.
-            </h1>
-            <p className="mt-7 max-w-xl text-[15px] text-[var(--muted)] leading-relaxed">
-              Explore o portfólio completo. Todas as viagens são personalizáveis e podem ser
-              desenhadas com datas e composição à sua medida.
-            </p>
+            <SectionLabel>Catálogo · {tipoTrips.length} viagens</SectionLabel>
+            {tipo ? (
+              <>
+                <h1 className="mt-5 font-display text-[32px] sm:text-[48px] md:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight text-balance max-w-4xl">
+                  {TIPO_LABELS[tipo].title}
+                </h1>
+                <p className="mt-7 max-w-xl text-[15px] text-[var(--muted)] leading-relaxed">
+                  {TIPO_LABELS[tipo].subtitle}
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="mt-5 font-display text-[32px] sm:text-[48px] md:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight text-balance max-w-4xl">
+                  Cada viagem,<br />uma <span className="italic font-light">narrativa</span>.
+                </h1>
+                <p className="mt-7 max-w-xl text-[15px] text-[var(--muted)] leading-relaxed">
+                  Explore o portfólio completo. Todas as viagens são personalizáveis e podem ser
+                  desenhadas com datas e composição à sua medida.
+                </p>
+              </>
+            )}
           </SlideUp>
 
           <SlideUp delay={0.1} duration={0.6} className="mt-10 flex flex-col sm:flex-row gap-3 max-w-2xl">
