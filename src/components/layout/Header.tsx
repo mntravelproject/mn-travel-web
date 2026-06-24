@@ -56,7 +56,7 @@ export function Header() {
             <img
               src={onLight ? "/logo_preto.png" : "/logo_branco.png"}
               alt="MN Travel"
-              className="h-20 lg:h-28 w-auto transition-opacity duration-300"
+              className="h-24 lg:h-32 w-auto transition-opacity duration-300"
             />
           </Link>
 
