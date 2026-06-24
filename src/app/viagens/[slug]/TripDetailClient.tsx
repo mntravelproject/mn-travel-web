@@ -105,7 +105,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                       {trip.tag}
                     </Pill>
                   )}
-                  {(trip.trip_status || remainingSeats !== null) && (
+                  {trip.trip_type !== "grupo" && (trip.trip_status || remainingSeats !== null) && (
                     <Pill className={availability.cls}>
                       {availability.label}
                       {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 && (
@@ -326,7 +326,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                       <div className="text-[12px] uppercase tracking-[0.18em] text-[var(--muted)]">desde</div>
                       <div className="mt-1 font-display text-[40px] leading-none">{formatPrice(trip.price_from)}</div>
                       <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">por pessoa · ocupação dupla</div>
-                      {remainingSeats !== null && (
+                      {remainingSeats !== null && trip.trip_type !== "grupo" && (
                         <div className={`mt-1.5 text-[12px] font-medium tracking-tight ${
                           remainingSeats === 0 ? "text-red-600" :
                           remainingSeats <= 5  ? "text-amber-700" : "text-emerald-700"
