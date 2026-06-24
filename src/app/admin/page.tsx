@@ -116,10 +116,9 @@ export default function AdminPage() {
     const supabase = createClient();
     supabase
       .from("travel_packages")
-      .select("*, category:categories(id, name, slug)")
+      .select("*, category:categories!travel_packages_category_id_fkey(id, name, slug)")
       .order("created_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (error) console.error("admin trips error:", error);
+      .then(({ data }) => {
         if (data) setTrips(data as TravelPackageCard[]);
       });
   }, [refreshKey]);

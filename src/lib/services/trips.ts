@@ -3,13 +3,13 @@ import type { TravelPackageCard, TravelPackageWithRelations } from "@/types/data
 
 const PACKAGE_CARD_SELECT = `
   *,
-  category:categories(id, name, slug),
+  category:categories!travel_packages_category_id_fkey(id, name, slug),
   destination:destinations(id, name, slug)
 ` as const;
 
 const PACKAGE_FULL_SELECT = `
   *,
-  category:categories(id, name, slug),
+  category:categories!travel_packages_category_id_fkey(id, name, slug),
   destination:destinations(id, name, slug),
   images:package_images(id, image_url, alt_text, sort_order),
   itinerary:package_itinerary(id, day_label, title, description, sort_order)
