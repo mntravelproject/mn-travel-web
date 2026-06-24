@@ -123,38 +123,80 @@ function Modal({ open, onClose, title, children, wide }: {
 
 // ─── Trip Form ────────────────────────────────────────────────────────────────
 const EMPTY_TRIP = { title: "", destination: "", start_date: "", end_date: "", price_per_person: "", individual_supplement: "0", triple_supplement: "0", notes: "", package_id: "" };
-type PackageOption = { id: string; title: string; country: string; departure_date: string | null; return_date: string | null; price_from: number; individual_supplement: number; triple_supplement: number };
+type PackageOption = { id: string; title: string; country: string; trip_type: string | null; departure_date: string | null; return_date: string | null; price_from: number; individual_supplement: number; triple_supplement: number };
+type PackageDateOption = { id: string; departure_date: string; return_date: string | null; available_seats: number | null; notes: string | null; sort_order: number };
 
 function TripForm({ initial, onSave, onCancel }: {
   initial?: typeof EMPTY_TRIP;
   onSave: (d: typeof EMPTY_TRIP) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [form,     setForm]     = useState(initial ?? EMPTY_TRIP);
-  const [packages, setPackages] = useState<PackageOption[]>([]);
-  const [saving,   setSaving]   = useState(false);
-  const [err,      setErr]      = useState("");
+  const [form,         setForm]         = useState(initial ?? EMPTY_TRIP);
+  const [packages,     setPackages]     = useState<PackageOption[]>([]);
+  const [packageDates, setPackageDates] = useState<PackageDateOption[]>([]);
+  const [selectedDateId, setSelectedDateId] = useState<string>("");
+  const [saving,       setSaving]       = useState(false);
+  const [err,          setErr]          = useState("");
+
+  const selectedPkg = packages.find((p) => p.id === form.package_id) ?? null;
+  const isGrupo = selectedPkg?.trip_type === "grupo";
 
   useEffect(() => {
     createClient()
       .from("travel_packages")
-      .select("id, title, country, departure_date, return_date, price_from, individual_supplement, triple_supplement")
-      .order("departure_date", { ascending: true })
+      .select("id, title, country, trip_type, departure_date, return_date, price_from, individual_supplement, triple_supplement")
+      .order("title", { ascending: true })
       .then(({ data }) => { if (data) setPackages(data as unknown as PackageOption[]); });
   }, []);
 
-  function selectPackage(id: string) {
-    if (!id) { setForm((f) => ({ ...f, package_id: "" })); return; }
+  async function selectPackage(id: string) {
+    if (!id) {
+      setForm((f) => ({ ...f, package_id: "", start_date: "", end_date: "" }));
+      setPackageDates([]);
+      setSelectedDateId("");
+      return;
+    }
     const pkg = packages.find((p) => p.id === id);
     if (!pkg) return;
-    setForm((f) => ({
-      ...f, package_id: id, title: pkg.title, destination: pkg.country,
-      start_date: pkg.departure_date ?? f.start_date,
-      end_date:   pkg.return_date    ?? f.end_date,
-      price_per_person:      String(pkg.price_from),
-      individual_supplement: String(pkg.individual_supplement ?? 0),
-      triple_supplement:     String(pkg.triple_supplement     ?? 0),
-    }));
+
+    if (pkg.trip_type === "grupo") {
+      // Buscar datas da package_dates
+      const { data: dates } = await createClient()
+        .from("package_dates")
+        .select("id, departure_date, return_date, available_seats, notes, sort_order")
+        .eq("package_id", id)
+        .order("sort_order", { ascending: true })
+        .order("departure_date", { ascending: true }) as { data: PackageDateOption[] | null };
+      const dateList = dates ?? [];
+      setPackageDates(dateList);
+      setSelectedDateId("");
+      setForm((f) => ({
+        ...f, package_id: id, title: pkg.title, destination: pkg.country,
+        start_date: "", end_date: "",
+        price_per_person:      String(pkg.price_from),
+        individual_supplement: String(pkg.individual_supplement ?? 0),
+        triple_supplement:     String(pkg.triple_supplement     ?? 0),
+      }));
+    } else {
+      setPackageDates([]);
+      setSelectedDateId("");
+      setForm((f) => ({
+        ...f, package_id: id, title: pkg.title, destination: pkg.country,
+        start_date: pkg.departure_date ?? f.start_date,
+        end_date:   pkg.return_date    ?? f.end_date,
+        price_per_person:      String(pkg.price_from),
+        individual_supplement: String(pkg.individual_supplement ?? 0),
+        triple_supplement:     String(pkg.triple_supplement     ?? 0),
+      }));
+    }
+  }
+
+  function selectDate(dateId: string) {
+    setSelectedDateId(dateId);
+    const d = packageDates.find((pd) => pd.id === dateId);
+    if (d) {
+      setForm((f) => ({ ...f, start_date: d.departure_date, end_date: d.return_date ?? "" }));
+    }
   }
 
   const f = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -176,15 +218,39 @@ function TripForm({ initial, onSave, onCancel }: {
         <select value={form.package_id} onChange={(e) => selectPackage(e.target.value)} className={iCls}>
           <option value="">— Seleccionar viagem existente —</option>
           {packages.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.title}{p.departure_date ? ` · ${new Date(p.departure_date + "T00:00:00").toLocaleDateString("pt-PT")}` : ""}
-            </option>
+            <option key={p.id} value={p.id}>{p.title}</option>
           ))}
         </select>
         {form.package_id && (
           <p className="text-[11px] text-[var(--muted)] mt-1.5">Campos preenchidos automaticamente — podes editar abaixo.</p>
         )}
       </div>
+
+      {/* Dropdown de datas para viagens de grupo */}
+      {isGrupo && (
+        <div>
+          <label className={lCls}>Data de partida *</label>
+          {packageDates.length === 0 ? (
+            <p className="text-[12px] text-[var(--muted)] mt-1">Sem datas registadas para esta viagem.</p>
+          ) : (
+            <select value={selectedDateId} onChange={(e) => selectDate(e.target.value)} className={iCls}>
+              <option value="">— Seleccionar data —</option>
+              {packageDates.map((d) => {
+                const dep = new Date(d.departure_date + "T00:00:00").toLocaleDateString("pt-PT");
+                const ret = d.return_date ? new Date(d.return_date + "T00:00:00").toLocaleDateString("pt-PT") : null;
+                const seats = d.available_seats != null ? ` · ${d.available_seats} lugares` : "";
+                const note = d.notes ? ` · ${d.notes}` : "";
+                return (
+                  <option key={d.id} value={d.id}>
+                    {dep}{ret ? ` → ${ret}` : ""}{seats}{note}
+                  </option>
+                );
+              })}
+            </select>
+          )}
+        </div>
+      )}
+
       <div className="border-t border-[var(--line)]" />
       <div>
         <label className={lCls}>Nome do grupo *</label>
@@ -194,16 +260,35 @@ function TripForm({ initial, onSave, onCancel }: {
         <label className={lCls}>Destino *</label>
         <input value={form.destination} onChange={f("destination")} placeholder="ex: Marrakech, Marrocos" className={iCls} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={lCls}>Data de início *</label>
-          <input type="date" value={form.start_date} onChange={f("start_date")} className={iCls} />
+
+      {/* Datas manuais apenas para viagens não-grupo */}
+      {!isGrupo && (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={lCls}>Data de início *</label>
+            <input type="date" value={form.start_date} onChange={f("start_date")} className={iCls} />
+          </div>
+          <div>
+            <label className={lCls}>Data de fim *</label>
+            <input type="date" value={form.end_date} onChange={f("end_date")} className={iCls} />
+          </div>
         </div>
-        <div>
-          <label className={lCls}>Data de fim *</label>
-          <input type="date" value={form.end_date} onChange={f("end_date")} className={iCls} />
+      )}
+
+      {/* Para grupo: mostrar datas preenchidas (read-only) após selecção */}
+      {isGrupo && form.start_date && (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={lCls}>Data de início</label>
+            <input type="date" value={form.start_date} readOnly className={`${iCls} bg-[var(--cream-2)] cursor-default`} />
+          </div>
+          <div>
+            <label className={lCls}>Data de fim</label>
+            <input type="date" value={form.end_date} readOnly className={`${iCls} bg-[var(--cream-2)] cursor-default`} />
+          </div>
         </div>
-      </div>
+      )}
+
       <div>
         <label className={lCls}>Preço por pessoa (€) *</label>
         <input type="number" min="0" step="0.01" value={form.price_per_person}
