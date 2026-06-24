@@ -15,42 +15,11 @@ const PACKAGE_FULL_SELECT = `
   itinerary:package_itinerary(id, day_label, title, description, sort_order)
 ` as const;
 
-type CatPick = Pick<import("@/types/database").Category, "id" | "name" | "slug">;
-
-async function enrichWithCategories(
-  supabase: ReturnType<typeof createPublicClient>,
-  trips: any[]
-): Promise<TravelPackageCard[]> {
-  if (trips.length === 0) return [];
-
-  // Try junction table; fall back to single `category` field if table doesn't exist yet
-  try {
-    const ids = trips.map((t) => t.id);
-    const { data, error } = await (supabase as any)
-      .from("travel_package_categories")
-      .select("trip_id, category:categories(id, name, slug)")
-      .in("trip_id", ids);
-
-    if (error) throw error;
-
-    const byTrip: Record<string, CatPick[]> = {};
-    for (const row of data ?? []) {
-      if (!row.category) continue;
-      if (!byTrip[row.trip_id]) byTrip[row.trip_id] = [];
-      byTrip[row.trip_id].push(row.category as CatPick);
-    }
-
-    return trips.map((t) => ({
-      ...t,
-      categories: byTrip[t.id] ?? (t.category ? [t.category] : []),
-    })) as TravelPackageCard[];
-  } catch {
-    // Junction table doesn't exist yet — use single category as array
-    return trips.map((t) => ({
-      ...t,
-      categories: t.category ? [t.category] : [],
-    })) as TravelPackageCard[];
-  }
+function addCategories(raw: any[]): TravelPackageCard[] {
+  return raw.map((t) => ({
+    ...t,
+    categories: t.category ? [t.category] : [],
+  }));
 }
 
 export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> {
@@ -64,7 +33,7 @@ export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> 
     .limit(limit);
 
   if (error) throw new Error(`getFeaturedTrips: ${error.message}`);
-  return enrichWithCategories(supabase, data ?? []);
+  return addCategories(data ?? []);
 }
 
 export async function getAllTrips(filters?: {
@@ -113,7 +82,7 @@ export async function getAllTrips(filters?: {
   const { data, error } = await query;
   if (error) throw new Error(`getAllTrips: ${error.message}`);
 
-  let result = await enrichWithCategories(supabase, data ?? []);
+  let result = addCategories(data ?? []);
 
   if (filters?.categorySlug && filters.categorySlug !== "all") {
     result = result.filter((t) =>
