@@ -4,13 +4,8 @@ import type { TravelPackageCard, TravelPackageWithRelations } from "@/types/data
 const PACKAGE_CARD_SELECT = `
   *,
   category:categories(id, name, slug),
-  pkg_categories:travel_package_categories(category:categories(id, name, slug)),
   destination:destinations(id, name, slug)
 ` as const;
-
-function flattenCategories(raw: any[]): Pick<import("@/types/database").Category, "id" | "name" | "slug">[] {
-  return (raw ?? []).map((pc: any) => pc.category).filter(Boolean);
-}
 
 const PACKAGE_FULL_SELECT = `
   *,
@@ -19,6 +14,44 @@ const PACKAGE_FULL_SELECT = `
   images:package_images(id, image_url, alt_text, sort_order),
   itinerary:package_itinerary(id, day_label, title, description, sort_order)
 ` as const;
+
+type CatPick = Pick<import("@/types/database").Category, "id" | "name" | "slug">;
+
+async function enrichWithCategories(
+  supabase: ReturnType<typeof createPublicClient>,
+  trips: any[]
+): Promise<TravelPackageCard[]> {
+  if (trips.length === 0) return [];
+
+  // Try junction table; fall back to single `category` field if table doesn't exist yet
+  try {
+    const ids = trips.map((t) => t.id);
+    const { data, error } = await (supabase as any)
+      .from("travel_package_categories")
+      .select("trip_id, category:categories(id, name, slug)")
+      .in("trip_id", ids);
+
+    if (error) throw error;
+
+    const byTrip: Record<string, CatPick[]> = {};
+    for (const row of data ?? []) {
+      if (!row.category) continue;
+      if (!byTrip[row.trip_id]) byTrip[row.trip_id] = [];
+      byTrip[row.trip_id].push(row.category as CatPick);
+    }
+
+    return trips.map((t) => ({
+      ...t,
+      categories: byTrip[t.id] ?? (t.category ? [t.category] : []),
+    })) as TravelPackageCard[];
+  } catch {
+    // Junction table doesn't exist yet — use single category as array
+    return trips.map((t) => ({
+      ...t,
+      categories: t.category ? [t.category] : [],
+    })) as TravelPackageCard[];
+  }
+}
 
 export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> {
   const supabase = createPublicClient();
@@ -31,7 +64,7 @@ export async function getFeaturedTrips(limit = 6): Promise<TravelPackageCard[]> 
     .limit(limit);
 
   if (error) throw new Error(`getFeaturedTrips: ${error.message}`);
-  return (data ?? []).map((t: any) => ({ ...t, categories: flattenCategories(t.pkg_categories) })) as TravelPackageCard[];
+  return enrichWithCategories(supabase, data ?? []);
 }
 
 export async function getAllTrips(filters?: {
@@ -80,10 +113,7 @@ export async function getAllTrips(filters?: {
   const { data, error } = await query;
   if (error) throw new Error(`getAllTrips: ${error.message}`);
 
-  let result = (data ?? []).map((t: any) => ({
-    ...t,
-    categories: flattenCategories(t.pkg_categories),
-  })) as TravelPackageCard[];
+  let result = await enrichWithCategories(supabase, data ?? []);
 
   if (filters?.categorySlug && filters.categorySlug !== "all") {
     result = result.filter((t) =>
@@ -104,7 +134,7 @@ export async function getTripBySlug(slug: string): Promise<TravelPackageWithRela
     .single();
 
   if (error) {
-    if (error.code === "PGRST116") return null; // not found
+    if (error.code === "PGRST116") return null;
     throw new Error(`getTripBySlug: ${error.message}`);
   }
 
