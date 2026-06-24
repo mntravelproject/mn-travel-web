@@ -114,27 +114,28 @@ export async function getDateSeats(
   if (dates.length === 0) return {};
 
   const supabase = createPublicClient();
+
+  const departureDates = dates.map((d) => d.departure_date);
+  const datesByDeparture: Record<string, string> = {};
+  for (const d of dates) datesByDeparture[d.departure_date] = d.id;
   const dateIds = dates.map((d) => d.id);
 
-  // 1. Reservas confirmadas/pendentes por package_date_id
+  // 1. Todas as reservas do package (ativas) — tanto por package_date_id como por check_in_date
   const { data: bookings } = await (supabase as any)
     .from("booking_requests")
-    .select("package_date_id, pax_count, status")
-    .in("package_date_id", dateIds);
+    .select("package_date_id, check_in_date, pax_count, status")
+    .eq("package_id", packageId)
+    .neq("status", "cancelled");
 
   // 2. Passageiros em trip_groups com o mesmo package_id e start_date
-  const departureDates = dates.map((d) => d.departure_date);
   const { data: groups } = await (supabase as any)
     .from("trip_groups")
     .select("id, start_date")
     .eq("package_id", packageId)
     .in("start_date", departureDates);
 
-  const datesByDeparture: Record<string, string> = {};
-  for (const d of dates) datesByDeparture[d.departure_date] = d.id;
-
   const passengerCounts: Record<string, number> = {};
-  if (groups && groups.length > 0) {
+  if (groups && (groups as any[]).length > 0) {
     const groupIds = (groups as any[]).map((g: any) => g.id);
     const { data: passengers } = await (supabase as any)
       .from("trip_passengers")
@@ -155,7 +156,12 @@ export async function getDateSeats(
   for (const date of dates) {
     if (date.available_seats == null) { result[date.id] = null; continue; }
     const booked = ((bookings ?? []) as any[])
-      .filter((b: any) => b.package_date_id === date.id && b.status !== "cancelled")
+      .filter((b: any) => {
+        if (b.status === "cancelled") return false;
+        // Corresponder por package_date_id (novo) ou por check_in_date (legado)
+        if (b.package_date_id != null) return dateIds.includes(b.package_date_id) && b.package_date_id === date.id;
+        return b.check_in_date === date.departure_date;
+      })
       .reduce((sum: number, b: any) => sum + (b.pax_count ?? 0), 0);
     const passengers = passengerCounts[date.id] ?? 0;
     result[date.id] = Math.max(0, date.available_seats - booked - passengers);
