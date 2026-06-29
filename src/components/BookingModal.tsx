@@ -28,7 +28,19 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
     trip_id: defaultTripId ?? "",
     pax: 2, date: "", message: "",
   });
+  const [companions, setCompanions] = useState<string[]>([""]);
   const reduced = useReducedMotion();
+
+  // Sync companions array length with pax - 1
+  useEffect(() => {
+    setCompanions((prev) => {
+      const needed = form.pax - 1;
+      if (needed <= 0) return [];
+      if (prev.length === needed) return prev;
+      if (prev.length < needed) return [...prev, ...Array(needed - prev.length).fill("")];
+      return prev.slice(0, needed);
+    });
+  }, [form.pax]);
 
   // Fetch published trips for dropdown
   useEffect(() => {
@@ -51,6 +63,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
       const t = setTimeout(() => {
         setSuccess(false);
         setError("");
+        setCompanions([""]);
         setForm({ name: "", email: "", phone: "", trip_id: defaultTripId ?? "", pax: 2, date: "", message: "" });
       }, 350);
       return () => clearTimeout(t);
@@ -77,6 +90,14 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
     setSubmitting(true);
     setError("");
 
+    const filledCompanions = companions.map((c) => c.trim()).filter(Boolean);
+    const messageParts: string[] = [];
+    if (form.message?.trim()) messageParts.push(form.message.trim());
+    if (filledCompanions.length > 0) {
+      messageParts.push(`Acompanhantes:\n${filledCompanions.map((c, i) => `${i + 1}. ${c}`).join("\n")}`);
+    }
+    const fullMessage = messageParts.length > 0 ? messageParts.join("\n\n") : null;
+
     const res = await fetch("/api/booking", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -87,7 +108,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
         package_id:    form.trip_id || null,
         pax_count:     form.pax,
         check_in_date: form.date    || null,
-        message:       form.message || null,
+        message:       fullMessage,
       }),
     });
     const json = await res.json();
@@ -266,6 +287,29 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                         </div>
                       </div>
                     </div>
+
+                    {/* Acompanhantes */}
+                    {companions.length > 0 && (
+                      <div className="space-y-2">
+                        <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)]">
+                          Acompanhante{companions.length > 1 ? "s" : ""}
+                        </label>
+                        {companions.map((name, i) => (
+                          <input
+                            key={i}
+                            type="text"
+                            value={name}
+                            onChange={(e) => {
+                              const next = [...companions];
+                              next[i] = e.target.value;
+                              setCompanions(next);
+                            }}
+                            placeholder={`Nome do acompanhante ${i + 1}`}
+                            className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] placeholder:text-[var(--muted)] focus:outline-none focus:border-[var(--ink)] transition"
+                          />
+                        ))}
+                      </div>
+                    )}
 
                     {/* Mensagem */}
                     <div>
