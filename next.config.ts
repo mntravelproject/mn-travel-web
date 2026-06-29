@@ -1,13 +1,14 @@
 import type { NextConfig } from "next";
 
-// connect-src cobre: Supabase REST, Auth, Storage e Realtime (WebSocket)
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
+  "media-src 'self' https://*.supabase.co",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  "frame-src https://www.openstreetmap.org https://*.openstreetmap.org",
   "object-src 'none'",
   "base-uri 'self'",
   "frame-ancestors 'none'",
