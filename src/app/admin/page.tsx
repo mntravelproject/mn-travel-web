@@ -1113,18 +1113,18 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
                       const companionLines = companionsRaw?.trim().split("\n").filter(Boolean) ?? [];
                       return (
                         <div className="mt-1 space-y-1">
-                          {desc && <div className="text-[12px] text-[var(--muted)] leading-relaxed">{desc}</div>}
                           {companionLines.length > 0 && (
                             <div className="text-[12px] leading-relaxed">
                               <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Acompanhantes · </span>
                               {companionLines.map((line, i) => (
                                 <span key={i}>
-                                  <span className="font-semibold text-[var(--ink-soft)]">{line.replace(/^\d+\.\s*/, "")}</span>
+                                  <span className="font-bold text-[var(--ink)]">{line.replace(/^\d+\.\s*/, "")}</span>
                                   {i < companionLines.length - 1 && <span className="text-[var(--muted)]">, </span>}
                                 </span>
                               ))}
                             </div>
                           )}
+                          {desc && <div className="text-[12px] text-[var(--muted)] leading-relaxed">{desc}</div>}
                         </div>
                       );
                     })()}
