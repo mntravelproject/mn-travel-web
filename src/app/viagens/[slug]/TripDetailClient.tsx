@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -38,6 +38,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
   const [activeImg,     setActiveImg]     = useState(0);
   const [tab,           setTab]           = useState<"itinerary" | "includes" | "dates">("itinerary");
   const [pax,           setPax]           = useState(2);
+  const [companions,    setCompanions]    = useState<string[]>([""]);
   const [form,          setForm]          = useState({ name: "", email: "", phone: "", message: "" });
   const [submitting,    setSubmitting]    = useState(false);
   const [submitted,     setSubmitted]     = useState(false);
@@ -48,15 +49,41 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
   const groupDates = trip.trip_type === "grupo" ? (trip.dates ?? []) : [];
   const reduced = useReducedMotion();
 
+  // Manter o array de acompanhantes sincronizado com o número de viajantes
+  useEffect(() => {
+    if (trip.trip_type !== "grupo") return;
+    const needed = Math.max(0, pax - 1);
+    setCompanions((prev) => {
+      if (prev.length === needed) return prev;
+      if (prev.length < needed) return [...prev, ...Array(needed - prev.length).fill("")];
+      return prev.slice(0, needed);
+    });
+  }, [pax, trip.trip_type]);
+
+  // Limite de lugares disponíveis para a data seleccionada
+  const selectedDateObj = groupDates.find((d) => d.id === selectedDate);
+  const maxPax = selectedDate && selectedDateObj
+    ? (dateSeats[selectedDate] ?? selectedDateObj.available_seats ?? 99)
+    : 99;
+
   async function handleBooking(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.email) { setFormError("Nome e email são obrigatórios."); return; }
     if (groupDates.length > 0 && !selectedDate) { setFormError("Selecione uma data de partida."); return; }
     setSubmitting(true);
     setFormError("");
+
     const checkIn = groupDates.length > 0
       ? groupDates.find((d) => d.id === selectedDate)?.departure_date ?? null
       : checkInRef.current?.value || null;
+
+    // Incluir nomes dos acompanhantes na mensagem
+    const filledCompanions = companions.map((c) => c.trim()).filter(Boolean);
+    const companionBlock = filledCompanions.length > 0
+      ? `\n\nAcompanhantes:\n${filledCompanions.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
+      : "";
+    const fullMessage = (form.message?.trim() || "") + companionBlock || null;
+
     const res = await fetch("/api/booking", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,7 +95,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
         phone:           form.phone  || null,
         pax_count:       pax,
         check_in_date:   checkIn,
-        message:         form.message || null,
+        message:         fullMessage,
       }),
     });
     const json = await res.json();
@@ -416,7 +443,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                         <input ref={checkInRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
                       </label>
                     )}
-                    <label className={`block rounded-xl bg-white border border-[var(--line)] px-4 py-3 ${groupDates.length === 0 ? "" : ""}`}>
+                    <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                       <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
                       <div className="flex items-center justify-between mt-1 text-[13px]">
                         <motion.button
@@ -429,40 +456,72 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                         >
                           <Minus className="w-3 h-3" />
                         </motion.button>
-                        {pax} adultos
+                        {pax} adulto{pax !== 1 ? "s" : ""}
                         <motion.button
                           type="button"
                           whileHover={{ scale: reduced ? 1 : 1.15 }}
                           whileTap={{ scale: reduced ? 1 : 0.85 }}
                           transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                          onClick={() => setPax(pax + 1)}
-                          className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center"
+                          onClick={() => setPax(Math.min(maxPax, pax + 1))}
+                          disabled={pax >= maxPax}
+                          className="w-5 h-5 rounded-full bg-[var(--cream-2)] flex items-center justify-center disabled:opacity-40"
                         >
                           <Plus className="w-3 h-3" />
                         </motion.button>
                       </div>
                     </label>
 
-                    <input
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      placeholder="Nome completo"
-                      className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
-                    />
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Titular da reserva */}
+                    <div className="space-y-3">
+                      {trip.trip_type === "grupo" && pax > 1 && (
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] pt-1">
+                          Titular da reserva
+                        </div>
+                      )}
                       <input
-                        value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        placeholder="Email"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        placeholder="Nome completo"
                         className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
                       />
-                      <input
-                        value={form.phone}
-                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                        placeholder="Telefone"
-                        className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
-                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <input
+                          value={form.email}
+                          onChange={(e) => setForm({ ...form, email: e.target.value })}
+                          placeholder="Email"
+                          className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
+                        />
+                        <input
+                          value={form.phone}
+                          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                          placeholder="Telefone"
+                          className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
+                        />
+                      </div>
                     </div>
+
+                    {/* Acompanhantes — só para viagens de grupo com pax > 1 */}
+                    {trip.trip_type === "grupo" && companions.length > 0 && (
+                      <div className="space-y-2 pt-1">
+                        <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
+                          Acompanhante{companions.length > 1 ? "s" : ""}
+                        </div>
+                        {companions.map((name, i) => (
+                          <input
+                            key={i}
+                            value={name}
+                            onChange={(e) => {
+                              const next = [...companions];
+                              next[i] = e.target.value;
+                              setCompanions(next);
+                            }}
+                            placeholder={`Acompanhante ${i + 1} — Nome completo`}
+                            className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
+                          />
+                        ))}
+                      </div>
+                    )}
+
                     <textarea
                       value={form.message}
                       onChange={(e) => setForm({ ...form, message: e.target.value })}
