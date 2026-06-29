@@ -1107,7 +1107,27 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
                 <tr key={b.id} className="border-b border-[var(--line)] last:border-0 hover:bg-[var(--cream)]/40">
                   <td className="p-4">
                     <div className="font-medium tracking-tight">{b.name}</div>
-                    {b.message && <div className="text-[12px] text-[var(--muted)] mt-1 leading-relaxed">{b.message}</div>}
+                    {b.message && (() => {
+                      const [descRaw, companionsRaw] = b.message.split(/\n\nAcompanhantes:\n/);
+                      const desc = descRaw?.trim();
+                      const companionLines = companionsRaw?.trim().split("\n").filter(Boolean) ?? [];
+                      return (
+                        <div className="mt-1 space-y-1">
+                          {desc && <div className="text-[12px] text-[var(--muted)] leading-relaxed">{desc}</div>}
+                          {companionLines.length > 0 && (
+                            <div className="text-[12px] leading-relaxed">
+                              <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Acompanhantes · </span>
+                              {companionLines.map((line, i) => (
+                                <span key={i}>
+                                  <span className="font-semibold text-[var(--ink-soft)]">{line.replace(/^\d+\.\s*/, "")}</span>
+                                  {i < companionLines.length - 1 && <span className="text-[var(--muted)]">, </span>}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="p-4 hidden md:table-cell">
                     <div className="flex flex-col gap-1">
