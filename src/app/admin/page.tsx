@@ -1115,13 +1115,14 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
                         <div className="mt-1 space-y-1">
                           {companionLines.length > 0 && (
                             <div className="text-[12px] leading-relaxed">
-                              <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Acompanhantes · </span>
-                              {companionLines.map((line, i) => (
-                                <span key={i}>
-                                  <span className="font-bold text-[var(--ink)]">{line.replace(/^\d+\.\s*/, "")}</span>
-                                  {i < companionLines.length - 1 && <span className="text-[var(--muted)]">, </span>}
-                                </span>
-                              ))}
+                              <div className="text-[10px] uppercase tracking-[0.14em] text-[var(--muted)] mb-0.5">Acompanhantes</div>
+                              <ul className="list-disc list-inside space-y-0.5">
+                                {companionLines.map((line, i) => (
+                                  <li key={i} className="font-bold text-[var(--ink)]">
+                                    {line.replace(/^\d+\.\s*/, "")}
+                                  </li>
+                                ))}
+                              </ul>
                             </div>
                           )}
                           {desc && <div className="text-[12px] text-[var(--muted)] leading-relaxed">{desc}</div>}
