@@ -79,10 +79,12 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
 
     // Incluir nomes dos acompanhantes na mensagem
     const filledCompanions = companions.map((c) => c.trim()).filter(Boolean);
-    const companionBlock = filledCompanions.length > 0
-      ? `\n\nAcompanhantes:\n${filledCompanions.map((c, i) => `${i + 1}. ${c}`).join("\n")}`
-      : "";
-    const fullMessage = (form.message?.trim() || "") + companionBlock || null;
+    const messageParts: string[] = [];
+    if (form.message?.trim()) messageParts.push(form.message.trim());
+    if (filledCompanions.length > 0) {
+      messageParts.push(`Acompanhantes:\n${filledCompanions.map((c, i) => `${i + 1}. ${c}`).join("\n")}`);
+    }
+    const fullMessage = messageParts.length > 0 ? messageParts.join("\n\n") : null;
 
     const res = await fetch("/api/booking", {
       method: "POST",

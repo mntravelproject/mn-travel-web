@@ -1108,7 +1108,7 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
                   <td className="p-4">
                     <div className="font-medium tracking-tight">{b.name}</div>
                     {b.message && (() => {
-                      const [descRaw, companionsRaw] = b.message.split(/\n\nAcompanhantes:\n/);
+                      const [descRaw, companionsRaw] = b.message.split(/(?:^|\n\n)Acompanhantes:\n/);
                       const desc = descRaw?.trim();
                       const companionLines = companionsRaw?.trim().split("\n").filter(Boolean) ?? [];
                       return (
