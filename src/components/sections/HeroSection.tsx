@@ -12,19 +12,20 @@ export function HeroSection() {
       className="relative overflow-hidden"
       style={{ height: "clamp(650px, 57vh, 780px)" }}
     >
-      {/* Background — slow Ken Burns */}
-      <motion.div
-        className="absolute inset-0"
-        initial={{ scale: reduced ? 1 : 1.06 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: reduced ? 0.01 : 2.2, ease: "easeOut" }}
-      >
-        <img
-          src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2400&q=90"
-          alt=""
+      {/* Background — vídeo hero */}
+      <div className="absolute inset-0">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2400&q=90"
           className="w-full h-full object-cover object-center absolute inset-0"
-        />
-      </motion.div>
+        >
+          {/* Substitui este src pelo URL do teu vídeo (.mp4) */}
+          <source src="https://ddsupkrcfipidktfnfru.supabase.co/storage/v1/object/public/video-inicio/video-6a3d3f49c37e40f8ad584edf.mp4" type="video/mp4" />
+        </video>
+      </div>
 
       {/* Gradients */}
       <div
