@@ -56,7 +56,7 @@ export function Header() {
 
   useEffect(() => { setOpen(false); setDestMobile(false); }, [pathname]);
 
-  const isHero  = pathname === "/" || (pathname.startsWith("/viagens/") && pathname !== "/viagens");
+  const isHero  = pathname === "/";
   const onLight = !isHero || scrolled || open;
 
   const openDest  = () => { if (destTimer.current) clearTimeout(destTimer.current); setDestOpen(true); };
