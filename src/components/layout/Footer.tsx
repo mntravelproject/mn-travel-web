@@ -88,7 +88,7 @@ export function Footer() {
             ))}
           </div>
           <div className="flex items-center gap-5 text-[12px] text-white/35 tracking-tight">
-            <span>© 2026 MN Travel · RNAVT 9999 · Lisboa, Portugal</span>
+            <span>© 2026 MN Travel · RNAVT 13459 · Lisboa, Portugal</span>
             <Link href="/admin" className="hover:text-white/60 transition-colors">Admin</Link>
           </div>
         </SlideUp>
