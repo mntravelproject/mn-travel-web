@@ -201,7 +201,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
             </div>
           </FadeIn>
 
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="sync">
             {filtered.length === 0 ? (
               <motion.div
                 key="empty"
@@ -216,11 +216,11 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               </motion.div>
             ) : (
               <motion.div
-                key="grid"
+                key={`grid-${query}-${activeCat}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.25 }}
               >
                 <StaggerContainer
                   className="grid sm:grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-12"
