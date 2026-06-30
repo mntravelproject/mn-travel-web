@@ -115,18 +115,19 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduced ? 0.01 : 0.55, delay: 0.8, ease }}
           >
-            <Link
-              href="/viagens"
+            <a
+              href="#colecoes"
               className="inline-flex items-center gap-2.5 rounded-full text-white text-[13px] font-semibold tracking-[.05em] uppercase transition-all duration-200 hover:-translate-y-[2px]"
               style={{
                 padding: "16px 32px",
                 background: "var(--gold)",
+                textDecoration: "none",
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--gold2)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "var(--gold)")}
+              onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.background = "var(--gold2)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.background = "var(--gold)")}
             >
               Explorar viagens <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            </a>
             <Link
               href="/contacto"
               className="inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[.05em] uppercase pb-[2px] border-b transition-all"
