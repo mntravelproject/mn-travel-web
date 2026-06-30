@@ -570,7 +570,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                       </a>
                     )}
                     <Link href="/contacto" className="w-full text-center block text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
-                      Falar com um curador →
+                      Entrar em contacto com a equipa →
                     </Link>
                   </form>
                   )}
