@@ -99,7 +99,7 @@ export default function SobrePage() {
             </h2>
             <div className="mt-6 space-y-4 text-[15px] text-[var(--muted)] leading-relaxed">
               <p>
-                Não somos uma agência de viagens convencional. Somos curadores — pessoas que visitaram os destinos, dormiu nos hotéis e conhece os guias que recomendam.
+                Não somos uma agência de viagens convencional. Somos curadores — pessoas que visitaram os destinos, dormiram nos hotéis e conhecem os guias que recomendam.
               </p>
               <p>
                 Trabalhamos com um número limitado de clientes por ano para garantir que cada viagem recebe a atenção que merece. O resultado é uma experiência desenhada ao milímetro, onde o imprevisto agradável faz parte do plano.

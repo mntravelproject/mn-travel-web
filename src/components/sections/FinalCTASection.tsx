@@ -39,7 +39,7 @@ export function FinalCTASection() {
             color: "rgba(255,255,255,.9)",
           }}
         >
-          Criamos viagens totalmente personalizadas para tornar os seus sonhos realidade.
+          Criamos viagens totalmente personalizadas para concretizar os seus sonhos de viagem.
         </p>
         <Link
           href="/contacto"

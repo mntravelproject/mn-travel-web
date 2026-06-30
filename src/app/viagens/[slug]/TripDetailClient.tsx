@@ -69,8 +69,8 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
 
   async function handleBooking(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.email) { setFormError("Nome e email são obrigatórios."); return; }
-    if (groupDates.length > 0 && !selectedDate) { setFormError("Selecione uma data de partida."); return; }
+    if (!form.name || !form.email) { setFormError("O nome e o e-mail são obrigatórios."); return; }
+    if (groupDates.length > 0 && !selectedDate) { setFormError("Seleccione uma data de partida."); return; }
     setSubmitting(true);
     setFormError("");
 

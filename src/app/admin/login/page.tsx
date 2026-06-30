@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[12px] uppercase tracking-[0.16em] text-[var(--muted)] mb-2">
-                Email
+                E-mail
               </label>
               <input
                 type="email"
@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
 
             <div>
               <label className="block text-[12px] uppercase tracking-[0.16em] text-[var(--muted)] mb-2">
-                Password
+                Palavra-passe
               </label>
               <div className="relative">
                 <input

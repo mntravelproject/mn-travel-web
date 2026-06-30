@@ -28,7 +28,7 @@ export function ContactForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
-      setError("Nome, email e mensagem são obrigatórios.");
+      setError("O nome, o e-mail e a mensagem são obrigatórios.");
       return;
     }
     setSubmitting(true);

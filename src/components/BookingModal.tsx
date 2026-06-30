@@ -86,7 +86,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.email) { setError("Nome e email são obrigatórios."); return; }
+    if (!form.name || !form.email) { setError("O nome e o e-mail são obrigatórios."); return; }
     setSubmitting(true);
     setError("");
 
