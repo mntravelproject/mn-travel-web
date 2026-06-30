@@ -124,6 +124,7 @@ export function CollectionsSection({ trips, categories }: Props) {
         background: "radial-gradient(circle at top, var(--cream-2) 0, var(--cream) 64%)",
         maxWidth: 1440,
         margin: "0 auto",
+        scrollMarginTop: 72,
       }}
     >
       {/* Section header */}

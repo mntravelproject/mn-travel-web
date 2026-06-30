@@ -151,9 +151,10 @@ export function HeroSection() {
       </div>
 
       {/* Scroll indicator */}
-      <motion.div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-[2]"
-        style={{ color: "rgba(255,255,255,.38)" }}
+      <motion.a
+        href="#colecoes"
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-[2] cursor-pointer"
+        style={{ color: "rgba(255,255,255,.38)", textDecoration: "none" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: reduced ? 0.01 : 0.8, delay: 1.2, ease }}
@@ -163,7 +164,7 @@ export function HeroSection() {
           className="w-px h-11"
           style={{ background: "linear-gradient(to bottom, rgba(255,255,255,.38), transparent)" }}
         />
-      </motion.div>
+      </motion.a>
     </section>
   );
 }
