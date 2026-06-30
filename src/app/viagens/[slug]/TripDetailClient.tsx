@@ -252,7 +252,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                       {[
                         { id: "itinerary", l: "Itinerário" },
                         { id: "includes",  l: "Inclui" },
-                        { id: "dates",     l: "Datas & preços" },
+                        ...(!isIndividual ? [{ id: "dates", l: "Datas & preços" }] : []),
                       ].map((t) => (
                         <button
                           key={t.id}
