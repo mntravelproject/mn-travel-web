@@ -47,7 +47,7 @@ export function Footer({ className = "" }: { className?: string }) {
                 href="tel:+351213000000"
                 className="inline-flex items-center gap-2 rounded-full border border-white/20 text-white/70 px-7 py-3.5 text-[15px] tracking-tight hover:border-white/50 hover:text-white transition-colors"
               >
-                Falar com curador
+                Falar com a equipa
               </a>
             </div>
           </SlideUp>

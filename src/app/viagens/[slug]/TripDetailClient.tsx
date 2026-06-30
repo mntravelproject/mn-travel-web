@@ -400,7 +400,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                         </StaggerContainer>
                       ) : (
                         <p className="text-[var(--muted)] text-[14px] tracking-tight">
-                          Datas disponíveis a pedido. Contacte o seu curador.
+                          Datas disponíveis a pedido. Contacte a nossa equipa.
                         </p>
                       )
                     )}

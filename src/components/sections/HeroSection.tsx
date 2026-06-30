@@ -153,7 +153,7 @@ export function HeroSection() {
                 (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,.3)";
               }}
             >
-              Falar com curador →
+              Falar com a equipa →
             </Link>
           </motion.div>
         </div>
