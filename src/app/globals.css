@@ -24,6 +24,7 @@
   --gold-soft: rgba(184,135,58,.1);
   --dark:      #0e1926;
   --dark-mid:  #0a121c;
+  --border:    rgba(140,112,72,.16);
 }
 
 @theme inline {

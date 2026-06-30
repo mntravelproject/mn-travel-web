@@ -119,60 +119,117 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
     <>
       <Header />
       <main>
-        <div className="pt-[72px]">
-          {/* Back */}
-          <FadeIn delay={0.1} className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-8">
-            <Link
-              href="/viagens"
-              className="inline-flex items-center gap-2 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Todas as viagens
-            </Link>
-          </FadeIn>
+        <div>
+          {/* Dark hero */}
+          <div
+            style={{
+              minHeight: "68vh", position: "relative",
+              display: "flex", alignItems: "flex-end",
+              overflow: "hidden", background: "var(--dark)",
+              padding: "clamp(110px,15vw,150px) 6vw 52px",
+            }}
+          >
+            {/* Background image */}
+            {trip.hero_image_url && (
+              <div
+                style={{
+                  position: "absolute", inset: 0,
+                  backgroundSize: "cover", backgroundPosition: "center",
+                  backgroundImage: `url(${trip.hero_image_url})`,
+                }}
+              />
+            )}
+            {/* Overlay */}
+            <div
+              style={{
+                position: "absolute", inset: 0,
+                background: "linear-gradient(0deg, rgba(10,18,28,.96) 0%, rgba(10,18,28,.42) 54%, rgba(10,18,28,.16) 100%)",
+              }}
+            />
+            {/* Content */}
+            <div style={{ position: "relative", zIndex: 2, color: "#fff", maxWidth: 920, width: "100%" }}>
+              <Link
+                href="/viagens"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,.58)",
+                  letterSpacing: "0.05em", marginBottom: 40, cursor: "pointer",
+                  transition: "color .2s", textTransform: "uppercase", textDecoration: "none",
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = "#fff"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,.58)"; }}
+              >
+                <ArrowLeft style={{ width: 14, height: 14 }} /> Voltar às viagens
+              </Link>
+              <div
+                style={{
+                  fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em",
+                  textTransform: "uppercase", color: "var(--gold2)", marginBottom: 12,
+                }}
+              >
+                {trip.country}
+              </div>
+              <h1
+                className="font-display"
+                style={{
+                  fontSize: "clamp(44px, 5.5vw, 80px)", fontWeight: 400,
+                  lineHeight: 0.93, letterSpacing: "-.04em", margin: 0,
+                }}
+              >
+                {trip.title}
+              </h1>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 22 }}>
+                <span
+                  style={{
+                    padding: "8px 18px", borderRadius: 999,
+                    background: "rgba(255,255,255,.14)", backdropFilter: "blur(8px)",
+                    color: "#fff", fontSize: 12.5, fontWeight: 600,
+                  }}
+                >
+                  {trip.duration_days} dias
+                </span>
+                <span
+                  style={{
+                    padding: "8px 18px", borderRadius: 999,
+                    background: "rgba(255,255,255,.14)", backdropFilter: "blur(8px)",
+                    color: "#fff", fontSize: 12.5, fontWeight: 600,
+                  }}
+                >
+                  {isIndividual ? "Privado" : "Grupo"}
+                </span>
+                <span
+                  style={{
+                    padding: "8px 18px", borderRadius: 999,
+                    background: "var(--gold)", color: "#fff",
+                    fontSize: 12.5, fontWeight: 600,
+                  }}
+                >
+                  desde {formatPrice(trip.price_from)}
+                </span>
+              </div>
+            </div>
+          </div>
 
-          {/* Title */}
-          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-8 pb-12">
-            <div className="grid lg:grid-cols-12 gap-8 items-end">
-              <SlideUp className="lg:col-span-8" duration={0.65}>
-                <div className="flex items-center gap-3 mb-5 flex-wrap">
-                  {trip.tag && (
-                    <Pill className="!bg-[var(--gold-soft)] !border-transparent !text-[var(--gold)]">
-                      {trip.tag}
-                    </Pill>
+          {/* Title meta for accessibility / non-hero info */}
+          <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-8 pb-4">
+            <div className="flex items-center gap-4 flex-wrap text-[13px]">
+              {trip.tag && (
+                <Pill className="!bg-[var(--gold-soft)] !border-transparent !text-[var(--gold)]">
+                  {trip.tag}
+                </Pill>
+              )}
+              {!isIndividual && trip.trip_type !== "grupo" && (trip.trip_status || remainingSeats !== null) && (
+                <Pill className={availability.cls}>
+                  {availability.label}
+                  {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 && (
+                    <span className="ml-1 opacity-70">· {remainingSeats} lugar{remainingSeats !== 1 ? "es" : ""}</span>
                   )}
-                  {!isIndividual && trip.trip_type !== "grupo" && (trip.trip_status || remainingSeats !== null) && (
-                    <Pill className={availability.cls}>
-                      {availability.label}
-                      {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 && (
-                        <span className="ml-1 opacity-70">· {remainingSeats} lugar{remainingSeats !== 1 ? "es" : ""}</span>
-                      )}
-                    </Pill>
-                  )}
-                  <span className="text-[13px] text-[var(--muted)] flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" /> {trip.country}
-                  </span>
-                </div>
-                <h1 className="font-display text-[28px] sm:text-[38px] md:text-[52px] lg:text-[64px] leading-[1.02] tracking-tight text-balance">
-                  {trip.title}
-                </h1>
-              </SlideUp>
-              <SlideIn direction="right" className="lg:col-span-4 flex flex-wrap gap-6 text-[13px]" delay={0.1}>
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--muted)]">Duração</div>
-                  <div className="mt-1 text-[var(--ink)] tracking-tight">{trip.duration_days} dias · {trip.nights} noites</div>
-                </div>
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--muted)]">Avaliação</div>
-                  <div className="mt-1 text-[var(--ink)] tracking-tight flex items-center gap-1">
-                    <Star className="w-3.5 h-3.5 fill-current" /> {trip.rating}{" "}
-                    <span className="text-[var(--muted)]">({trip.review_count})</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] uppercase tracking-[0.18em] text-[var(--muted)]">Tipologia</div>
-                  <div className="mt-1 text-[var(--ink)] tracking-tight">Privada · personalizável</div>
-                </div>
-              </SlideIn>
+                </Pill>
+              )}
+              <span className="text-[var(--muted)] flex items-center gap-1">
+                <Star className="w-3.5 h-3.5" style={{ fill: "var(--gold)", color: "var(--gold)" }} />
+                {trip.rating} <span className="opacity-60">({trip.review_count} avaliações)</span>
+              </span>
             </div>
           </section>
 

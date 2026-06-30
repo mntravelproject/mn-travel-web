@@ -37,18 +37,50 @@ export default function SobrePage() {
   return (
     <>
       <Header />
-      <main className="pt-[72px]">
+      <main>
 
-        {/* Hero */}
-        <section className="max-w-[1320px] mx-auto px-6 lg:px-10 pt-10 pb-14 md:pt-20 md:pb-20 border-b border-[var(--line)]">
-          <SectionLabel>Sobre a MN Travel</SectionLabel>
-          <h1 className="mt-5 font-display text-[32px] sm:text-[48px] md:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight max-w-4xl">
-            Viajamos para que<br />
-            <span className="italic font-light">saiba o que esperar.</span>
-          </h1>
-          <p className="mt-8 text-[16px] sm:text-[18px] text-[var(--muted)] leading-relaxed max-w-xl">
-            A MN Travel nasceu da convicção de que uma viagem verdadeiramente memorável começa muito antes de partir — começa na escolha certa de quem a desenha.
-          </p>
+        {/* Dark hero */}
+        <section
+          style={{
+            minHeight: "56vh", position: "relative",
+            display: "flex", alignItems: "center",
+            overflow: "hidden", background: "var(--dark)",
+            padding: "clamp(110px,15vw,150px) 6vw 76px",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              backgroundSize: "cover", backgroundPosition: "center",
+              backgroundImage: "url('https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=2400&q=90')",
+              opacity: 0.28,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(105deg, rgba(10,18,28,.92) 40%, rgba(10,18,28,.35) 100%)",
+            }}
+          />
+          <div style={{ position: "relative", zIndex: 2, color: "#fff", maxWidth: 1440, margin: "0 auto", width: "100%" }}>
+            <div
+              style={{
+                fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em",
+                textTransform: "uppercase", color: "var(--gold2)", marginBottom: 16,
+              }}
+            >
+              Sobre nós
+            </div>
+            <h1
+              className="font-display"
+              style={{
+                fontSize: "clamp(44px, 5.5vw, 78px)", fontWeight: 400,
+                lineHeight: 0.93, letterSpacing: "-.04em", maxWidth: 680,
+              }}
+            >
+              Não fabricamos<br />viagens. <em>Desenhamos</em><br />histórias.
+            </h1>
+          </div>
         </section>
 
         {/* Imagem + Missão */}

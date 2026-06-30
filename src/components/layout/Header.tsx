@@ -56,8 +56,9 @@ export function Header() {
 
   useEffect(() => { setOpen(false); setDestMobile(false); }, [pathname]);
 
-  const isHero  = pathname === "/";
-  const onLight = !isHero || scrolled || open;
+  const isHero = pathname === "/";
+  // nav is dark when scrolled, menu open, or on any non-home page
+  const isDark = (!isHero) || scrolled || open;
 
   const openDest  = () => { if (destTimer.current) clearTimeout(destTimer.current); setDestOpen(true); };
   const closeDest = () => { destTimer.current = setTimeout(() => setDestOpen(false), 300); };
@@ -70,17 +71,19 @@ export function Header() {
         transition={{ duration: reduced ? 0.01 : 0.55, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
           "fixed inset-x-0 top-0 z-50 transition-all duration-500",
-          onLight
-            ? "bg-[var(--cream)]/92 backdrop-blur-md hairline"
+          isDark
+            ? isHero
+              ? "bg-[rgba(14,25,38,0.96)] backdrop-blur-[20px] shadow-[0_2px_28px_rgba(0,0,0,.28)]"
+              : "bg-[var(--dark)]"
             : "bg-transparent"
         )}
       >
-        <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 h-[68px] md:h-[88px] lg:h-[108px] flex items-center justify-between lg:grid lg:grid-cols-[180px_1fr_220px]">
+        <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 h-[68px] md:h-[88px] lg:h-[108px] flex items-center justify-between lg:grid lg:grid-cols-[200px_1fr_220px]">
 
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
             <img
-              src={onLight ? "/logo_preto.png" : "/logo_branco.png"}
+              src="/logo_branco.png"
               alt="MN Travel"
               className="h-24 lg:h-32 w-auto transition-opacity duration-300"
             />
@@ -103,19 +106,15 @@ export function Header() {
                       className={cn(
                         "inline-flex h-9 items-center gap-1 rounded-md px-4 text-[14px] font-medium transition-all",
                         destOpen
-                          ? onLight
-                            ? "bg-[var(--ink)] text-white"
-                            : "bg-white text-[var(--ink)]"
-                          : onLight
-                            ? "text-[var(--ink-soft)] hover:bg-[var(--cream-2)] hover:text-[var(--ink)]"
-                            : "text-white/85 hover:bg-white/10 hover:text-white"
+                          ? "bg-white/10 text-white"
+                          : "text-white/75 hover:bg-white/10 hover:text-white"
                       )}
                     >
                       {link.label}
                       <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", destOpen && "rotate-180")} />
                     </button>
 
-                    {/* Dropdown — sempre montado, CSS controla visibilidade */}
+                    {/* Dropdown */}
                     <div
                       className="absolute top-full left-1/2 pt-2 z-50 w-[300px]"
                       style={{
@@ -127,28 +126,18 @@ export function Header() {
                         pointerEvents: destOpen ? "auto" : "none",
                       }}
                     >
-                      <div className={cn(
-                        "rounded-xl shadow-xl border overflow-hidden p-1.5",
-                        onLight
-                          ? "bg-white border-[var(--line)]"
-                          : "bg-[var(--dark)] border-white/10"
-                      )}>
+                      <div className="rounded-xl shadow-xl border overflow-hidden p-1.5 bg-white border-[var(--line)]">
                         {link.children.map((child) => (
                           <Link
                             key={child.href}
                             href={child.href}
-                            className={cn(
-                              "flex items-start gap-4 rounded-lg px-4 py-3.5 transition-colors",
-                              onLight
-                                ? "text-[var(--ink-soft)] hover:bg-[var(--cream-2)] hover:text-[var(--ink)]"
-                                : "text-white/70 hover:bg-white/8 hover:text-white"
-                            )}
+                            className="flex items-start gap-4 rounded-lg px-4 py-3.5 transition-colors text-[var(--ink-soft)] hover:bg-[var(--cream-2)] hover:text-[var(--ink)]"
                           >
-                            <span className={cn("mt-0.5", onLight ? "text-[var(--gold)]" : "text-[var(--gold2)]")}>
+                            <span className="mt-0.5 text-[var(--gold)]">
                               {child.icon}
                             </span>
                             <div>
-                              <div className={cn("text-[14px] font-semibold mb-0.5", onLight ? "text-[var(--ink)]" : "text-white")}>
+                              <div className="text-[14px] font-semibold mb-0.5 text-[var(--ink)]">
                                 {child.label}
                               </div>
                               <div className="text-[13px] leading-snug opacity-70">
@@ -170,10 +159,8 @@ export function Header() {
                   className={cn(
                     "inline-flex h-9 items-center rounded-md px-4 text-[14px] font-medium transition-colors",
                     isActive
-                      ? onLight ? "text-[var(--ink)]" : "text-white"
-                      : onLight
-                        ? "text-[var(--ink-soft)] hover:bg-[var(--cream-2)] hover:text-[var(--ink)]"
-                        : "text-white/85 hover:bg-white/10 hover:text-white"
+                      ? "text-white"
+                      : "text-white/75 hover:bg-white/10 hover:text-white"
                   )}
                 >
                   {link.label}
@@ -184,12 +171,7 @@ export function Header() {
 
           {/* Right actions */}
           <div className="flex items-center justify-end gap-4">
-            <button
-              className={cn(
-                "hidden sm:inline-flex items-center gap-1.5 text-[14px] font-medium tracking-tight transition-colors",
-                onLight ? "text-[var(--ink-soft)] hover:text-[var(--ink)]" : "text-white/85 hover:text-white"
-              )}
-            >
+            <button className="hidden sm:inline-flex items-center gap-1.5 text-[14px] font-medium tracking-tight transition-colors text-white/50 hover:text-white">
               <Globe className="w-4 h-4" /> PT
             </button>
 
@@ -198,12 +180,7 @@ export function Header() {
               whileTap={{ scale: reduced ? 1 : 0.97 }}
               transition={{ type: "spring", stiffness: 400, damping: 22 }}
               onClick={() => setBookingOpen(true)}
-              className={cn(
-                "hidden sm:inline-flex items-center rounded-full px-[26px] py-[11px] text-[14px] font-medium tracking-tight transition-all duration-300",
-                onLight
-                  ? "border border-[var(--ink)] text-[var(--ink)] hover:bg-[var(--ink)] hover:text-[var(--cream)]"
-                  : "border border-white/80 text-white hover:bg-white hover:text-[var(--ink)]"
-              )}
+              className="hidden sm:inline-flex items-center rounded-full px-[26px] py-[11px] text-[14px] font-medium tracking-tight transition-all duration-300 border border-white/60 text-white hover:bg-white hover:text-[var(--dark)]"
             >
               Reservar
             </motion.button>
@@ -213,7 +190,7 @@ export function Header() {
               whileTap={{ scale: reduced ? 1 : 0.88 }}
               transition={{ type: "spring", stiffness: 400, damping: 20 }}
               onClick={() => setOpen(!open)}
-              className={cn("lg:hidden p-2 -mr-2", onLight ? "text-[var(--ink)]" : "text-white")}
+              className="lg:hidden p-2 -mr-2 text-white"
             >
               <AnimatePresence mode="wait" initial={false}>
                 {open ? (

@@ -1,117 +1,95 @@
 "use client";
 
 import Link from "next/link";
-import { Clock, MapPin, Star, Users, Heart } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import type { TravelPackageCard } from "@/types/database";
 import { formatPrice } from "@/lib/utils";
-import { Pill } from "@/components/ui/Pill";
 import { cn } from "@/lib/utils";
 
 interface TripCardProps {
   trip: TravelPackageCard;
-  large?: boolean;
   className?: string;
 }
 
-export function TripCard({ trip, large = false, className }: TripCardProps) {
+export function TripCard({ trip, className }: TripCardProps) {
   const reduced = useReducedMotion();
 
   return (
     <motion.div
       whileHover={reduced ? {} : { y: -4 }}
       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      className={cn(large && "col-span-2", className)}
+      className={cn(className)}
+      style={{
+        borderRadius: 12,
+        overflow: "hidden",
+        background: "var(--cream-2)",
+        border: "1px solid var(--border)",
+        boxShadow: "0 3px 14px rgba(0,0,0,.06)",
+        cursor: "pointer",
+      }}
     >
-      <Link href={`/viagens/${trip.slug}`} className="group cursor-pointer block">
+      <Link href={`/viagens/${trip.slug}`} className="group block">
         {/* Image */}
-        <div
-          className={cn(
-            "relative overflow-hidden rounded-[20px] bg-[var(--cream-2)]",
-            large ? "aspect-[16/10]" : "aspect-[4/5]"
-          )}
-        >
+        <div className="overflow-hidden" style={{ aspectRatio: "16/10" }}>
           {trip.hero_image_url && (
-            <motion.img
+            <img
               src={trip.hero_image_url}
               alt={trip.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-transform duration-[650ms] ease-[cubic-bezier(.16,1,.3,1)] group-hover:scale-[1.06]"
               loading="lazy"
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-              whileHover={reduced ? {} : { scale: 1.04 }}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-
-          {/* Top badges */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-            <div className="flex flex-col gap-2 items-start">
-              {trip.tag && (
-                <Pill className="!bg-white/85 !border-transparent text-[var(--ink)]">
-                  {trip.tag}
-                </Pill>
-              )}
-              {trip.trip_status && trip.trip_status !== "disponivel" && (
-                <Pill className={
-                  trip.trip_status === "esgotado"
-                    ? "!bg-red-500/90 !border-transparent !text-white"
-                    : trip.trip_status === "ultimos_lugares"
-                      ? "!bg-amber-500/90 !border-transparent !text-white"
-                      : "!bg-white/85 !border-transparent text-[var(--ink)]"
-                }>
-                  {trip.trip_status === "esgotado"
-                    ? "Não disponível"
-                    : trip.trip_status === "ultimos_lugares"
-                      ? "Últimos lugares"
-                      : trip.trip_status}
-                </Pill>
-              )}
-            </div>
-            <motion.button
-              whileHover={reduced ? {} : { scale: 1.12 }}
-              whileTap={reduced ? {} : { scale: 0.9 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              onClick={(e) => e.preventDefault()}
-              className="w-9 h-9 rounded-full bg-white/85 backdrop-blur flex items-center justify-center hover:bg-white"
-            >
-              <Heart className="w-4 h-4 text-[var(--ink)]" />
-            </motion.button>
-          </div>
-
-          {/* Bottom info */}
-          <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end text-white">
-            <div className="flex items-center gap-1.5 text-[12px] tracking-tight">
-              <MapPin className="w-3.5 h-3.5" /> {trip.country}
-            </div>
-            {trip.rating && (
-              <div className="flex items-center gap-1 text-[12px] tracking-tight">
-                <Star className="w-3.5 h-3.5 fill-white" /> {trip.rating}
-              </div>
-            )}
-          </div>
         </div>
-
-        {/* Text */}
-        <div className="pt-5 pr-2">
+        {/* Body */}
+        <div style={{ padding: "18px 20px 20px" }}>
+          <div
+            style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.15em",
+              color: "var(--gold)", textTransform: "uppercase",
+              marginBottom: 9, display: "block",
+            }}
+          >
+            {trip.country}
+          </div>
           <h3
-            className={cn(
-              "font-display tracking-tight text-balance text-[var(--ink)] group-hover:opacity-75 transition-opacity duration-300",
-              large ? "text-[28px] leading-[1.1]" : "text-[20px] leading-[1.15]"
-            )}
+            className="font-display"
+            style={{ fontSize: 20, fontWeight: 400, color: "var(--ink)", lineHeight: 1.25, marginBottom: 7 }}
           >
             {trip.title}
           </h3>
-          <div className="mt-3 flex items-center justify-between text-[13px] text-[var(--muted)]">
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" /> {trip.duration_days} dias
-              </span>
-              <span className="hidden sm:flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" /> Privado
-              </span>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>
+            {trip.duration_days} dias · {trip.trip_type === "grupo" ? "Grupo" : "Privado"}
+          </div>
+          {/* Footer */}
+          <div
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              paddingTop: 13, borderTop: "1px solid var(--border)",
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 10, color: "var(--muted)", textTransform: "uppercase",
+                  letterSpacing: "0.1em", marginBottom: 2,
+                }}
+              >
+                desde
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 600, color: "var(--ink)" }}>
+                {formatPrice(trip.price_from)}
+              </div>
             </div>
-            <div className="font-semibold tracking-tight" style={{ color: "var(--gold)" }}>
-              desde {formatPrice(trip.price_from)}
+            <div
+              className="group-hover:bg-[var(--gold)] group-hover:border-[var(--gold)] group-hover:text-white transition-all duration-200"
+              style={{
+                width: 32, height: 32, borderRadius: "50%",
+                border: "1.5px solid var(--border)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "var(--gold)", fontSize: 14, flexShrink: 0,
+              }}
+            >
+              →
             </div>
           </div>
         </div>
