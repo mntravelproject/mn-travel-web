@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText, Map, Package, CalendarDays } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -247,29 +247,25 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                   </div>
 
                   <div className="pt-10">
-                    {/* Tabs — segmented control */}
-                    <div className="flex items-center gap-1 p-1 rounded-2xl bg-[var(--cream-2)] mb-8">
+                    {/* Tabs */}
+                    <div className="flex items-center gap-2 mb-8 border-b border-[var(--line)]">
                       {[
-                        { id: "itinerary", l: "Itinerário", icon: Map },
-                        { id: "includes",  l: "Inclui",     icon: Package },
-                        { id: "dates",     l: "Preços",     icon: CalendarDays },
-                      ].map((t) => {
-                        const Icon = t.icon;
-                        return (
-                          <button
-                            key={t.id}
-                            onClick={() => setTab(t.id as typeof tab)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-[13.5px] tracking-tight transition-all ${
-                              tab === t.id
-                                ? "bg-[var(--ink)] text-[var(--cream)] shadow-sm font-medium"
-                                : "text-[var(--muted)] hover:text-[var(--ink)]"
-                            }`}
-                          >
-                            <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                            <span className="hidden sm:inline">{t.l}</span>
-                          </button>
-                        );
-                      })}
+                        { id: "itinerary", l: "Itinerário" },
+                        { id: "includes",  l: "Inclui" },
+                        { id: "dates",     l: "Datas & preços" },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => setTab(t.id as typeof tab)}
+                          className={`px-4 py-3 text-[14px] tracking-tight transition-all border-b-2 -mb-px ${
+                            tab === t.id
+                              ? "border-[var(--gold)] text-[var(--ink)] font-medium"
+                              : "border-transparent text-[var(--muted)]"
+                          }`}
+                        >
+                          {t.l}
+                        </button>
+                      ))}
                     </div>
 
                     {/* Itinerary tab */}
