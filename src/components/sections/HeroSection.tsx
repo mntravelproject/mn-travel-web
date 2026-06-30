@@ -115,19 +115,21 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduced ? 0.01 : 0.55, delay: 0.8, ease }}
           >
-            <a
-              href="#colecoes"
+            <button
+              type="button"
+              onClick={() => document.getElementById("colecoes")?.scrollIntoView({ behavior: "smooth" })}
               className="inline-flex items-center gap-2.5 rounded-full text-white text-[13px] font-semibold tracking-[.05em] uppercase transition-all duration-200 hover:-translate-y-[2px]"
               style={{
                 padding: "16px 32px",
                 background: "var(--gold)",
-                textDecoration: "none",
+                border: "none",
+                cursor: "pointer",
               }}
-              onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.background = "var(--gold2)")}
-              onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.background = "var(--gold)")}
+              onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--gold2)")}
+              onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--gold)")}
             >
               Explorar viagens <ArrowRight className="w-3.5 h-3.5" />
-            </a>
+            </button>
             <Link
               href="/contacto"
               className="inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[.05em] uppercase pb-[2px] border-b transition-all"
@@ -151,10 +153,11 @@ export function HeroSection() {
       </div>
 
       {/* Scroll indicator */}
-      <motion.a
-        href="#colecoes"
+      <motion.button
+        type="button"
+        onClick={() => document.getElementById("colecoes")?.scrollIntoView({ behavior: "smooth" })}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-[2] cursor-pointer"
-        style={{ color: "rgba(255,255,255,.38)", textDecoration: "none" }}
+        style={{ color: "rgba(255,255,255,.38)", background: "none", border: "none", padding: 0 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: reduced ? 0.01 : 0.8, delay: 1.2, ease }}
@@ -164,7 +167,7 @@ export function HeroSection() {
           className="w-px h-11"
           style={{ background: "linear-gradient(to bottom, rgba(255,255,255,.38), transparent)" }}
         />
-      </motion.a>
+      </motion.button>
     </section>
   );
 }
