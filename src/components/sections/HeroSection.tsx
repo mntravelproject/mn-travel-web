@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -7,6 +8,12 @@ import { motion, useReducedMotion } from "motion/react";
 export function HeroSection() {
   const reduced = useReducedMotion();
   const ease = [0.16, 1, 0.3, 1] as const;
+
+  useEffect(() => {
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   return (
     <section className="relative overflow-hidden min-h-screen flex items-center">
