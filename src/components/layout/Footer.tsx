@@ -17,9 +17,9 @@ const columns = [
   },
 ];
 
-export function Footer() {
+export function Footer({ className = "" }: { className?: string }) {
   return (
-    <footer style={{ background: "var(--dark)" }} className="text-white pt-12 pb-8 mt-16 md:pt-24 md:pb-10 md:mt-32">
+    <footer style={{ background: "var(--dark)" }} className={`text-white pt-12 pb-8 mt-16 md:pt-24 md:pb-10 md:mt-32 ${className}`}>
       <div className="max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14">
 
         {/* Top grid */}

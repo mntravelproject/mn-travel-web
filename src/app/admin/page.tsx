@@ -198,6 +198,19 @@ export default function AdminPage() {
       );
     }
 
+    // Copy includes
+    const { data: includesData } = await supabase
+      .from("package_includes" as any)
+      .select("title, sort_order")
+      .eq("package_id", id)
+      .order("sort_order");
+
+    if (includesData && (includesData as any[]).length > 0) {
+      await supabase.from("package_includes" as any).insert(
+        (includesData as any[]).map((row) => ({ ...row, package_id: data.id }))
+      );
+    }
+
     setTrips((p) => [data as TravelPackageCard, ...p]);
   }
 
@@ -2248,6 +2261,7 @@ function UsersView() {
 
 /* ─────────────────────────────────────────────────────── Edit form */
 type ItineraryRow = { day_label: string; title: string; description: string };
+type IncludesRow  = { title: string };
 
 function generateSlug(title: string) {
   return title
@@ -2296,6 +2310,22 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     { day_label: "Dia 1", title: "", description: "" },
     { day_label: "Dia 2", title: "", description: "" },
   ]);
+
+  const [includes, setIncludes] = useState<IncludesRow[]>([{ title: "" }]);
+
+  useEffect(() => {
+    if (!trip?.id) return;
+    createClient()
+      .from("package_includes")
+      .select("title, sort_order")
+      .eq("package_id", trip.id)
+      .order("sort_order")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setIncludes(data.map((r) => ({ title: r.title })));
+        }
+      });
+  }, [trip?.id]);
 
   const [gallery,      setGallery]      = useState<string[]>([]);
 
@@ -2416,6 +2446,18 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     setItinerary((prev) => prev.filter((_, idx) => idx !== i));
   }
 
+  function updateIncludesRow(i: number, value: string) {
+    setIncludes((prev) => prev.map((row, idx) => idx === i ? { title: value } : row));
+  }
+
+  function addIncludesRow() {
+    setIncludes((prev) => [...prev, { title: "" }]);
+  }
+
+  function removeIncludesRow(i: number) {
+    setIncludes((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
   async function handleSave() {
     if (!form.title.trim() || !form.country.trim()) {
       setError("Título e país são obrigatórios.");
@@ -2488,6 +2530,15 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             );
           }
         }
+
+        // Sync includes: replace all
+        await supabase.from("package_includes" as any).delete().eq("package_id", packageId);
+        const validIncludes = includes.filter((inc) => inc.title.trim());
+        if (validIncludes.length > 0) {
+          await supabase.from("package_includes" as any).insert(
+            validIncludes.map((inc, i) => ({ package_id: packageId, title: inc.title.trim(), sort_order: i }))
+          );
+        }
       } else {
         // ── Insert new trip ───────────────────────────────────
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2517,6 +2568,14 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             }))
           );
           if (itError) throw itError;
+        }
+
+        // Save includes
+        const validIncludes = includes.filter((inc) => inc.title.trim());
+        if (validIncludes.length > 0) {
+          await supabase.from("package_includes" as any).insert(
+            validIncludes.map((inc, i) => ({ package_id: packageId, title: inc.title.trim(), sort_order: i }))
+          );
         }
 
         // Save package_dates (only for grupo)
@@ -2935,6 +2994,41 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
                     className="p-2 rounded-lg hover:bg-red-50 text-[var(--muted)] hover:text-red-500 transition"
                   >
                     <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Includes */}
+          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="font-display text-[20px] tracking-tight">O que inclui</h3>
+              <button
+                onClick={addIncludesRow}
+                className="inline-flex items-center gap-2 rounded-full border border-[var(--line-2)] hover:border-[var(--ink)] px-3 py-1.5 text-[12px] tracking-tight transition"
+              >
+                <Plus className="w-3.5 h-3.5" /> Adicionar item
+              </button>
+            </div>
+            <p className="text-[13px] text-[var(--muted)] mb-6 tracking-tight">
+              Itens incluídos no preço — voos, alojamento, transfers, etc.
+            </p>
+            <div className="space-y-2">
+              {includes.map((inc, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-[var(--ink)] flex-shrink-0" />
+                  <input
+                    value={inc.title}
+                    onChange={(e) => updateIncludesRow(i, e.target.value)}
+                    placeholder={`Ex: Voos internacionais em classe executiva`}
+                    className="flex-1 bg-[var(--cream-2)] rounded-lg px-3 py-2 text-[13.5px] focus:outline-none focus:bg-white focus:ring-1 focus:ring-[var(--line-2)] transition"
+                  />
+                  <button
+                    onClick={() => removeIncludesRow(i)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-[var(--muted)] hover:text-red-500 transition flex-shrink-0"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}

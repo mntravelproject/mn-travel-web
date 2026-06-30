@@ -286,6 +286,35 @@ export interface Database {
           }
         ];
       };
+      package_includes: {
+        Row: {
+          id: string;
+          package_id: string;
+          title: string;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          package_id: string;
+          title: string;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          package_id?: string;
+          title?: string;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_includes_package_id_fkey";
+            columns: ["package_id"];
+            isOneToOne: false;
+            referencedRelation: "travel_packages";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
       testimonials: {
         Row: {
           id: string;
@@ -504,6 +533,7 @@ export type Destination = Database["public"]["Tables"]["destinations"]["Row"];
 export type TravelPackage = Database["public"]["Tables"]["travel_packages"]["Row"];
 export type PackageImage = Database["public"]["Tables"]["package_images"]["Row"];
 export type PackageItinerary = Database["public"]["Tables"]["package_itinerary"]["Row"];
+export type PackageIncludes = Database["public"]["Tables"]["package_includes"]["Row"];
 export type Testimonial = Database["public"]["Tables"]["testimonials"]["Row"];
 export type BookingRequest = Database["public"]["Tables"]["booking_requests"]["Row"];
 
@@ -515,6 +545,7 @@ export type TravelPackageWithRelations = TravelPackage & {
   destination: Pick<Destination, "id" | "name" | "slug"> | null;
   images: PackageImage[];
   itinerary: PackageItinerary[];
+  includes: PackageIncludes[];
   dates: PackageDate[];
 };
 

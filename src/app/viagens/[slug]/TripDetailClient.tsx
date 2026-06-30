@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Minus, Plus, ArrowRight, Check, FileText, Map, Package, CalendarDays } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -247,25 +247,29 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                   </div>
 
                   <div className="pt-10">
-                    {/* Tabs */}
-                    <div className="flex items-center gap-2 mb-8 border-b border-[var(--line)]">
+                    {/* Tabs — segmented control */}
+                    <div className="flex items-center gap-1 p-1 rounded-2xl bg-[var(--cream-2)] mb-8">
                       {[
-                        { id: "itinerary", l: "Itinerário" },
-                        { id: "includes",  l: "Inclui" },
-                        { id: "dates",     l: "Datas & preços" },
-                      ].map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => setTab(t.id as typeof tab)}
-                          className={`px-4 py-3 text-[14px] tracking-tight transition-all border-b-2 -mb-px ${
-                            tab === t.id
-                              ? "border-[var(--gold)] text-[var(--ink)] font-medium"
-                              : "border-transparent text-[var(--muted)]"
-                          }`}
-                        >
-                          {t.l}
-                        </button>
-                      ))}
+                        { id: "itinerary", l: "Itinerário", icon: Map },
+                        { id: "includes",  l: "Inclui",     icon: Package },
+                        { id: "dates",     l: "Preços",     icon: CalendarDays },
+                      ].map((t) => {
+                        const Icon = t.icon;
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => setTab(t.id as typeof tab)}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-[13.5px] tracking-tight transition-all ${
+                              tab === t.id
+                                ? "bg-[var(--ink)] text-[var(--cream)] shadow-sm font-medium"
+                                : "text-[var(--muted)] hover:text-[var(--ink)]"
+                            }`}
+                          >
+                            <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="hidden sm:inline">{t.l}</span>
+                          </button>
+                        );
+                      })}
                     </div>
 
                     {/* Itinerary tab */}
@@ -295,27 +299,24 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
 
                     {/* Includes tab */}
                     {tab === "includes" && (
-                      <StaggerContainer className="grid sm:grid-cols-2 gap-4" staggerDelay={0.05}>
-                        {[
-                          "Voos internacionais em classe executiva",
-                          "Alojamento em hotéis 5★ ou boutique",
-                          "Refeições conforme programa",
-                          "Transferes privados em todos os destinos",
-                          "Guias locais especializados (PT/EN)",
-                          "Experiências exclusivas curadas pela MN",
-                          "Seguro de viagem premium",
-                          "Concierge 24/7 durante toda a viagem",
-                        ].map((x) => (
-                          <StaggerItem key={x}>
-                            <div className="flex items-start gap-3 p-5 rounded-2xl bg-[var(--cream-2)]">
-                              <div className="w-5 h-5 rounded-full bg-[var(--ink)] text-[var(--cream)] flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <Check className="w-3 h-3" />
+                      trip.includes && trip.includes.length > 0 ? (
+                        <StaggerContainer className="grid sm:grid-cols-2 gap-4" staggerDelay={0.05}>
+                          {trip.includes.map((inc) => (
+                            <StaggerItem key={inc.id}>
+                              <div className="flex items-start gap-3 p-5 rounded-2xl bg-[var(--cream-2)]">
+                                <div className="w-5 h-5 rounded-full bg-[var(--ink)] text-[var(--cream)] flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <Check className="w-3 h-3" />
+                                </div>
+                                <span className="text-[14.5px] text-[var(--ink-soft)]">{inc.title}</span>
                               </div>
-                              <span className="text-[14.5px] text-[var(--ink-soft)]">{x}</span>
-                            </div>
-                          </StaggerItem>
-                        ))}
-                      </StaggerContainer>
+                            </StaggerItem>
+                          ))}
+                        </StaggerContainer>
+                      ) : (
+                        <p className="text-[var(--muted)] text-[14px] tracking-tight">
+                          Programa detalhado disponível na proposta personalizada.
+                        </p>
+                      )
                     )}
 
                     {/* Dates tab */}
@@ -568,9 +569,9 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                         <FileText className="w-4 h-4" /> Descarregar ficha da viagem
                       </a>
                     )}
-                    <button type="button" className="w-full text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
-                      Falar com curador agora →
-                    </button>
+                    <Link href="/contacto" className="w-full text-center block text-[13px] py-2 text-[var(--muted)] hover:text-[var(--ink)] tracking-tight transition-colors">
+                      Falar com um curador →
+                    </Link>
                   </form>
                   )}
 
@@ -614,7 +615,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
           </section>
         </div>
       </main>
-      <Footer />
+      <Footer className="!mt-0" />
     </>
   );
 }
