@@ -53,14 +53,13 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
 
   // Manter o array de acompanhantes sincronizado com o número de viajantes
   useEffect(() => {
-    if (trip.trip_type !== "grupo") return;
     const needed = Math.max(0, pax - 1);
     setCompanions((prev) => {
       if (prev.length === needed) return prev;
       if (prev.length < needed) return [...prev, ...Array(needed - prev.length).fill("")];
       return prev.slice(0, needed);
     });
-  }, [pax, trip.trip_type]);
+  }, [pax]);
 
   // Limite de lugares disponíveis para a data seleccionada
   const selectedDateObj = groupDates.find((d) => d.id === selectedDate);
@@ -489,7 +488,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
 
                     {/* Titular da reserva */}
                     <div className="space-y-3">
-                      {trip.trip_type === "grupo" && pax > 1 && (
+                      {pax > 1 && (
                         <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)] pt-1">
                           Titular da reserva
                         </div>
@@ -516,8 +515,8 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                       </div>
                     </div>
 
-                    {/* Acompanhantes — só para viagens de grupo com pax > 1 */}
-                    {trip.trip_type === "grupo" && companions.length > 0 && (
+                    {/* Acompanhantes — quando há mais de um viajante */}
+                    {companions.length > 0 && (
                       <div className="space-y-2 pt-1">
                         <div className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">
                           Acompanhante{companions.length > 1 ? "s" : ""}
