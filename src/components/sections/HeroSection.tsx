@@ -117,7 +117,7 @@ export function HeroSection() {
           >
             <button
               type="button"
-              onClick={() => document.getElementById("colecoes")?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => document.querySelector('[data-scroll="colecoes"]')?.scrollIntoView({ behavior: "smooth" })}
               className="inline-flex items-center gap-2.5 rounded-full text-white text-[13px] font-semibold tracking-[.05em] uppercase transition-all duration-200 hover:-translate-y-[2px]"
               style={{
                 padding: "16px 32px",
@@ -155,7 +155,7 @@ export function HeroSection() {
       {/* Scroll indicator */}
       <motion.button
         type="button"
-        onClick={() => document.getElementById("colecoes")?.scrollIntoView({ behavior: "smooth" })}
+        onClick={() => document.querySelector('[data-scroll="colecoes"]')?.scrollIntoView({ behavior: "smooth" })}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 z-[2] cursor-pointer"
         style={{ color: "rgba(255,255,255,.38)", background: "none", border: "none", padding: 0 }}
         initial={{ opacity: 0 }}

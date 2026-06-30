@@ -118,7 +118,7 @@ export function CollectionsSection({ trips, categories }: Props) {
 
   return (
     <section
-      id="colecoes"
+      data-scroll="colecoes"
       className="px-[6vw] pt-[88px] pb-0"
       style={{
         background: "radial-gradient(circle at top, var(--cream-2) 0, var(--cream) 64%)",
