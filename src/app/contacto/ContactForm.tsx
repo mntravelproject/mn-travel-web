@@ -98,7 +98,7 @@ export function ContactForm() {
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-[10.5px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">
-            Email <span style={{ color: "var(--gold)" }}>*</span>
+            E-mail <span style={{ color: "var(--gold)" }}>*</span>
           </label>
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />

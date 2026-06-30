@@ -557,7 +557,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                         <input
                           value={form.email}
                           onChange={(e) => setForm({ ...form, email: e.target.value })}
-                          placeholder="Email"
+                          placeholder="E-mail"
                           className="w-full rounded-xl bg-white border border-[var(--line)] px-4 py-3 text-[13.5px] focus:outline-none focus:border-[var(--ink)] transition-colors"
                         />
                         <input

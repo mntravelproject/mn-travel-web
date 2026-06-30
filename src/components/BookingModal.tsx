@@ -216,7 +216,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
-                          Email <span className="text-[var(--clay)]">*</span>
+                          E-mail <span className="text-[var(--clay)]">*</span>
                         </label>
                         <div className="relative">
                           <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />

@@ -226,7 +226,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 Especialidades
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                {["Lua de mel", "Família", "Solo", "Wellness", "Cultura"].map((s) => (
+                {["Lua de mel", "Família", "Individual", "Bem-estar", "Cultura"].map((s) => (
                   <button
                     key={s}
                     style={{

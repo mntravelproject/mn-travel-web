@@ -10,7 +10,7 @@ export const metadata = {
 };
 
 const INFO = [
-  { icon: Mail,   label: "Email",    value: "geral@mntravel.pt",   href: "mailto:geral@mntravel.pt" },
+  { icon: Mail,   label: "E-mail",   value: "geral@mntravel.pt",   href: "mailto:geral@mntravel.pt" },
   { icon: Phone,  label: "Telefone", value: "+351 21 000 0000",    href: "tel:+351210000000" },
   { icon: MapPin, label: "Morada",   value: "Lisboa, Portugal",    href: null },
   { icon: Clock,  label: "Horário",  value: "Seg–Sex, 9h–18h",     href: null },
