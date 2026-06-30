@@ -2311,6 +2311,20 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     { day_label: "Dia 2", title: "", description: "" },
   ]);
 
+  useEffect(() => {
+    if (!trip?.id) return;
+    createClient()
+      .from("package_itinerary")
+      .select("day_label, title, description, sort_order")
+      .eq("package_id", trip.id)
+      .order("sort_order")
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setItinerary(data.map((r) => ({ day_label: r.day_label, title: r.title, description: r.description })));
+        }
+      });
+  }, [trip?.id]);
+
   const [includes, setIncludes] = useState<IncludesRow[]>([{ title: "" }]);
 
   useEffect(() => {
