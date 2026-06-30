@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { HeroSection } from "@/components/sections/HeroSection";
+import { StatsBar } from "@/components/sections/StatsBar";
 import { CollectionsSection } from "@/components/sections/CollectionsSection";
 import { FinalCTASection } from "@/components/sections/FinalCTASection";
 import { getFeaturedTrips } from "@/lib/services/trips";
@@ -19,6 +20,7 @@ export default async function HomePage() {
       <Header />
       <main>
         <HeroSection />
+        <StatsBar />
         <CollectionsSection trips={trips} categories={categories} />
         <FinalCTASection />
       </main>

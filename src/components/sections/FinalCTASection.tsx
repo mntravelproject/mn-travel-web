@@ -13,7 +13,7 @@ export function FinalCTASection() {
       style={{
         color: "white",
         background: `
-          linear-gradient(90deg, rgba(0,0,0,.86) 0%, rgba(0,0,0,.67) 38%, rgba(0,0,0,.10) 100%),
+          linear-gradient(105deg, rgba(10,18,28,.98) 0%, rgba(10,18,28,.67) 42%, rgba(10,18,28,.10) 100%),
           url('https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?auto=format&fit=crop&w=2400&q=90') center/cover no-repeat
         `,
       }}

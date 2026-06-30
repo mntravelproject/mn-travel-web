@@ -42,7 +42,7 @@ function OverlayTripCard({ trip }: { trip: TravelPackageCard }) {
       style={{
         borderRadius: 10,
         boxShadow: "0 24px 45px rgba(43,35,25,.12)",
-        background: "#111",
+        background: "var(--dark)",
       }}
     >
       {/* Photo */}
@@ -67,7 +67,7 @@ function OverlayTripCard({ trip }: { trip: TravelPackageCard }) {
       >
         <div
           style={{
-            color: "#f1c674",
+            color: "var(--gold2)",
             fontSize: 13,
             letterSpacing: ".08em",
             fontWeight: 800,
@@ -246,7 +246,7 @@ export function CollectionsSection({ trips, categories }: Props) {
           position: "relative",
           color: "white",
           background: `
-            linear-gradient(90deg, rgba(15,10,4,.76) 0%, rgba(15,10,4,.18) 56%, rgba(15,10,4,.04) 100%),
+            linear-gradient(105deg, rgba(10,18,28,.96) 36%, rgba(10,18,28,.35) 100%),
             url('https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=2200&q=90') center/cover no-repeat
           `,
         }}
@@ -289,7 +289,7 @@ export function CollectionsSection({ trips, categories }: Props) {
         style={{
           maxWidth: 1380,
           margin: "0 auto 40px",
-          background: "rgba(255,250,242,.55)",
+          background: "rgba(250,243,230,.65)",
           borderRadius: 12,
         }}
       >
