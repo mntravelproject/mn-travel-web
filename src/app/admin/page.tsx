@@ -949,6 +949,8 @@ type BookingRequest = {
   message: string | null;
   pax_count: number;
   package_id: string | null;
+  check_in_date: string | null;
+  check_out_date: string | null;
   status: BookingStatus;
   created_at: string;
   package: { title: string; available_seats: number | null } | null;
@@ -980,7 +982,7 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
   useEffect(() => {
     createClient()
       .from("booking_requests")
-      .select("id, name, email, phone, message, pax_count, package_id, status, created_at, package:travel_packages(title, available_seats)")
+      .select("id, name, email, phone, message, pax_count, package_id, check_in_date, check_out_date, status, created_at, package:travel_packages(title, available_seats)")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setBookings(data as unknown as BookingRequest[]);
@@ -1043,9 +1045,10 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
 
   function exportCSV() {
     const BOM = "﻿";
-    const headers = ["Nome", "Email", "Telefone", "Viagem", "Pax", "Estado", "Mensagem", "Data"];
+    const headers = ["Nome", "Email", "Telefone", "Viagem", "Datas", "Pax", "Estado", "Mensagem", "Data"];
     const rows = sorted.map((b) => [
       b.name, b.email, b.phone ?? "", b.package?.title ?? "",
+      [b.check_in_date, b.check_out_date].filter(Boolean).join(" → "),
       String(b.pax_count), BOOKING_STATUS[b.status]?.label ?? b.status,
       (b.message ?? "").replace(/,/g, ";").replace(/\n/g, " "),
       new Date(b.created_at).toLocaleString("pt-PT"),
@@ -1062,6 +1065,10 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
 
   function fmtDate(iso: string) {
     return new Date(iso).toLocaleString("pt-PT", { dateStyle: "short", timeStyle: "short" });
+  }
+
+  function fmtShortDate(isoDate: string) {
+    return new Date(`${isoDate}T00:00:00`).toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" });
   }
 
   return (
@@ -1136,7 +1143,16 @@ function BookingsView({ onBadgeChange }: { onBadgeChange?: (n: number) => void }
                       {b.phone && <a href={`tel:${b.phone}`} className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] hover:text-[var(--ink)] transition"><Phone className="w-3.5 h-3.5" /> {b.phone}</a>}
                     </div>
                   </td>
-                  <td className="p-4 hidden lg:table-cell"><span className="text-[13px] text-[var(--ink-soft)]">{b.package?.title ?? "—"}</span></td>
+                  <td className="p-4 hidden lg:table-cell">
+                    <span className="text-[13px] text-[var(--ink-soft)]">{b.package?.title ?? "—"}</span>
+                    {(b.check_in_date || b.check_out_date) && (
+                      <div className="text-[11px] text-[var(--muted)] mt-0.5">
+                        {b.check_in_date ? fmtShortDate(b.check_in_date) : "?"}
+                        {" → "}
+                        {b.check_out_date ? fmtShortDate(b.check_out_date) : "?"}
+                      </div>
+                    )}
+                  </td>
                   <td className="p-4 hidden xl:table-cell text-[var(--muted)] text-[13px]">{b.pax_count} pax</td>
                   <td className="p-4 hidden sm:table-cell text-[var(--muted)] text-[13px] whitespace-nowrap">{fmtDate(b.created_at)}</td>
                   <td className="p-4">

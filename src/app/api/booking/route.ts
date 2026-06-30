@@ -14,10 +14,11 @@ export async function POST(req: Request) {
       phone?: string;
       pax_count?: unknown;
       check_in_date?: string;
+      check_out_date?: string;
       message?: string;
     };
 
-    const { package_id, package_date_id, name, email, phone, pax_count, check_in_date, message } = body;
+    const { package_id, package_date_id, name, email, phone, pax_count, check_in_date, check_out_date, message } = body;
 
     // ── Validação ────────────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ export async function POST(req: Request) {
       phone:           phone?.trim() || null,
       pax_count:       pax,
       check_in_date:   check_in_date  || null,
+      check_out_date:  check_out_date || null,
       message:         message?.trim() || null,
       status:          "pending",
     });

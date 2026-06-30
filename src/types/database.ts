@@ -443,6 +443,7 @@ export interface Database {
           email: string;
           phone: string | null;
           check_in_date: string | null;
+          check_out_date: string | null;
           pax_count: number;
           message: string | null;
           status: "pending" | "contacted" | "confirmed" | "cancelled";
@@ -457,6 +458,7 @@ export interface Database {
           email: string;
           phone?: string | null;
           check_in_date?: string | null;
+          check_out_date?: string | null;
           pax_count?: number;
           message?: string | null;
           status?: "pending" | "contacted" | "confirmed" | "cancelled";
@@ -471,6 +473,7 @@ export interface Database {
           email?: string;
           phone?: string | null;
           check_in_date?: string | null;
+          check_out_date?: string | null;
           pax_count?: number;
           message?: string | null;
           status?: "pending" | "contacted" | "confirmed" | "cancelled";

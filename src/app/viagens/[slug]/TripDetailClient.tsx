@@ -45,8 +45,10 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
   const [formError,     setFormError]     = useState("");
   const [selectedDate,  setSelectedDate]  = useState<string | null>(null);
   const checkInRef = useRef<HTMLInputElement>(null);
+  const checkOutRef = useRef<HTMLInputElement>(null);
 
   const groupDates = trip.trip_type === "grupo" ? (trip.dates ?? []) : [];
+  const isIndividual = trip.trip_type === "individual";
   const reduced = useReducedMotion();
 
   // Manter o array de acompanhantes sincronizado com o número de viajantes
@@ -76,6 +78,9 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
     const checkIn = groupDates.length > 0
       ? groupDates.find((d) => d.id === selectedDate)?.departure_date ?? null
       : checkInRef.current?.value || null;
+    const checkOut = groupDates.length > 0
+      ? groupDates.find((d) => d.id === selectedDate)?.return_date ?? null
+      : checkOutRef.current?.value || null;
 
     // Incluir nomes dos acompanhantes na mensagem
     const filledCompanions = companions.map((c) => c.trim()).filter(Boolean);
@@ -97,6 +102,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
         phone:           form.phone  || null,
         pax_count:       pax,
         check_in_date:   checkIn,
+        check_out_date:  checkOut,
         message:         fullMessage,
       }),
     });
@@ -135,7 +141,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                       {trip.tag}
                     </Pill>
                   )}
-                  {trip.trip_type !== "grupo" && (trip.trip_status || remainingSeats !== null) && (
+                  {!isIndividual && trip.trip_type !== "grupo" && (trip.trip_status || remainingSeats !== null) && (
                     <Pill className={availability.cls}>
                       {availability.label}
                       {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 && (
@@ -324,11 +330,13 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                                   {formatTripDate(trip.departure_date)}
                                   {trip.return_date && ` — ${formatTripDate(trip.return_date)}`}
                                 </div>
-                                <div className="text-[12px] text-[var(--muted)] mt-1 tracking-tight">
-                                  {availability.label}
-                                  {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 &&
-                                    ` · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`}
-                                </div>
+                                {!isIndividual && (
+                                  <div className="text-[12px] text-[var(--muted)] mt-1 tracking-tight">
+                                    {availability.label}
+                                    {remainingSeats !== null && remainingSeats > 0 && remainingSeats <= 5 &&
+                                      ` · ${remainingSeats} lugar${remainingSeats !== 1 ? "es" : ""}`}
+                                  </div>
+                                )}
                               </div>
                               <div className="text-right">
                                 <div className="text-[20px] font-medium tracking-tight">{formatPrice(trip.price_from)}</div>
@@ -355,8 +363,8 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                     <div>
                       <div className="text-[12px] uppercase tracking-[0.18em] text-[var(--muted)]">desde</div>
                       <div className="mt-1 font-display text-[40px] leading-none">{formatPrice(trip.price_from)}</div>
-                      <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">por pessoa · ocupação dupla</div>
-                      {remainingSeats !== null && trip.trip_type !== "grupo" && (
+                      <div className="mt-1 text-[12px] text-[var(--muted)] tracking-tight">por pessoa</div>
+                      {!isIndividual && remainingSeats !== null && trip.trip_type !== "grupo" && (
                         <div className={`mt-1.5 text-[12px] font-medium tracking-tight ${
                           remainingSeats === 0 ? "text-red-600" :
                           remainingSeats <= 5  ? "text-amber-700" : "text-emerald-700"
@@ -440,10 +448,16 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                         </div>
                       </div>
                     ) : (
-                      <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
-                        <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Check-in</span>
-                        <input ref={checkInRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
-                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
+                          <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Início</span>
+                          <input ref={checkInRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
+                        </label>
+                        <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
+                          <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Fim</span>
+                          <input ref={checkOutRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
+                        </label>
+                      </div>
                     )}
                     <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                       <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
