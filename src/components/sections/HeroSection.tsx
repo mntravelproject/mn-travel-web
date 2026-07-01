@@ -186,10 +186,10 @@ export function HeroSection({ images = [] }: Props) {
               onClick={() => setCurrent(i)}
               aria-label={`Slide ${i + 1}`}
               style={{
-                width: i === current ? 6 : 5,
-                height: i === current ? 22 : 5,
+                width: 2,
+                height: i === current ? 28 : 8,
                 borderRadius: 999,
-                background: i === current ? "var(--gold)" : "rgba(255,255,255,.5)",
+                background: i === current ? "var(--gold)" : "rgba(255,255,255,.35)",
                 border: "none",
                 cursor: "pointer",
                 transition: "all .4s ease",
