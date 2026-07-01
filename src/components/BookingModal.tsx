@@ -145,24 +145,6 @@ function TripPicker({
           </div>
         )}
 
-        {/* Botão viagem personalizada */}
-        <button
-          type="button"
-          onClick={onCustom}
-          className="mt-4 w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-[var(--gold)] bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition text-left group"
-        >
-          <span className="w-9 h-9 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--gold)]/20 transition">
-            <Sparkles className="w-4 h-4 text-[var(--gold)]" strokeWidth={1.8} />
-          </span>
-          <div>
-            <div className="text-[13px] font-semibold text-[var(--ink)] tracking-tight">
-              Pedido de viagem personalizada
-            </div>
-            <div className="text-[11px] text-[var(--muted)] mt-0.5">
-              Não encontrou o que procura? Desenhamos de raiz.
-            </div>
-          </div>
-        </button>
       </div>
     </motion.div>
   );
@@ -307,7 +289,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
             className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="relative bg-[var(--cream)] rounded-3xl shadow-2xl w-full max-w-[560px] max-h-[92vh] overflow-hidden pointer-events-auto"
+              className="relative bg-[var(--cream)] rounded-3xl shadow-2xl w-full max-w-[560px] max-h-[92vh] overflow-hidden pointer-events-auto flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* ── Success state ── */}
@@ -338,7 +320,8 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                   </button>
                 </motion.div>
               ) : (
-                <div className="relative overflow-y-auto max-h-[92vh]">
+                <>
+                <div className="relative flex-1 overflow-y-auto">
                   {/* ── Header ── */}
                   <div className="flex items-start justify-between px-8 pt-8 pb-2">
                     <div>
@@ -521,27 +504,6 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                     <p className="text-[11px] text-center text-[var(--muted)] leading-relaxed">
                       Os seus dados são tratados de forma confidencial e nunca partilhados com terceiros.
                     </p>
-
-                    {/* Viagem personalizada */}
-                    <div className="pt-2 pb-1 border-t border-[var(--line)]">
-                      <button
-                        type="button"
-                        onClick={() => { onClose(); router.push("/contacto"); }}
-                        className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-[var(--gold)] bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition text-left group"
-                      >
-                        <span className="w-9 h-9 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--gold)]/20 transition">
-                          <Sparkles className="w-4 h-4 text-[var(--gold)]" strokeWidth={1.8} />
-                        </span>
-                        <div>
-                          <div className="text-[13px] font-semibold text-[var(--ink)] tracking-tight">
-                            Pedido de viagem personalizada
-                          </div>
-                          <div className="text-[11px] text-[var(--muted)] mt-0.5">
-                            Desenhamos de raiz para si, sem catálogo.
-                          </div>
-                        </div>
-                      </button>
-                    </div>
                   </form>
 
                   {/* ── Trip Picker overlay ── */}
@@ -563,6 +525,24 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                     )}
                   </AnimatePresence>
                 </div>
+                {!showPicker && (
+                  <div className="shrink-0 px-8 py-4 border-t border-[var(--line)] bg-[var(--cream)]">
+                    <button
+                      type="button"
+                      onClick={() => { onClose(); router.push("/contacto"); }}
+                      className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-[var(--gold)] bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition text-left group"
+                    >
+                      <span className="w-9 h-9 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--gold)]/20 transition">
+                        <Sparkles className="w-4 h-4 text-[var(--gold)]" strokeWidth={1.8} />
+                      </span>
+                      <div>
+                        <div className="text-[13px] font-semibold text-[var(--ink)] tracking-tight">Pedido de viagem personalizada</div>
+                        <div className="text-[11px] text-[var(--muted)] mt-0.5">Não encontrou o que procura? Desenhamos de raiz.</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+                </>
               )}
             </div>
           </motion.div>
