@@ -124,39 +124,39 @@ export default function SobrePage() {
         </section>
 
         {/* Valores */}
-        <section style={{ background: "var(--dark)", color: "#fff" }}>
+        <section style={{ borderBottom: "1px solid var(--line)" }}>
           <div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-16 md:py-28">
             {/* Header */}
             <div className="mb-16 md:mb-20 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div>
-                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold2)", marginBottom: 14 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold)", marginBottom: 14 }}>
                   O que nos guia
                 </div>
-                <h2 className="font-display text-[28px] sm:text-[36px] md:text-[48px] tracking-tight leading-[1.05]">
+                <h2 className="font-display text-[28px] sm:text-[36px] md:text-[48px] tracking-tight leading-[1.05]" style={{ color: "var(--ink)" }}>
                   Os valores por detrás<br />
                   <em className="font-light">de cada viagem.</em>
                 </h2>
               </div>
             </div>
             {/* Grid */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-t border-white/10">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-t border-[var(--line)]">
               {VALUES.map(({ title, description }, i) => (
                 <div
                   key={title}
-                  className="py-10 lg:py-12 border-b sm:border-b-0 border-white/10"
+                  className="py-10 lg:py-12 border-b sm:border-b-0 border-[var(--line)]"
                   style={{
                     paddingRight: i < VALUES.length - 1 ? "clamp(24px, 3vw, 48px)" : 0,
                     paddingLeft: i > 0 ? "clamp(24px, 3vw, 48px)" : 0,
-                    borderRight: i < VALUES.length - 1 ? "1px solid rgba(255,255,255,.10)" : "none",
+                    borderRight: i < VALUES.length - 1 ? "1px solid var(--line)" : "none",
                   }}
                 >
-                  <div style={{ fontSize: 11, color: "var(--gold2)", letterSpacing: "0.2em", fontWeight: 700, marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, color: "var(--gold)", letterSpacing: "0.2em", fontWeight: 700, marginBottom: 20 }}>
                     {String(i + 1).padStart(2, "0")}
                   </div>
-                  <h3 className="font-display text-[22px] leading-tight tracking-tight mb-4" style={{ color: "#fff" }}>
+                  <h3 className="font-display text-[22px] leading-tight tracking-tight mb-4" style={{ color: "var(--ink)" }}>
                     {title}
                   </h3>
-                  <p style={{ fontSize: 14, color: "rgba(255,255,255,.48)", lineHeight: 1.75 }}>
+                  <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.75 }}>
                     {description}
                   </p>
                 </div>
