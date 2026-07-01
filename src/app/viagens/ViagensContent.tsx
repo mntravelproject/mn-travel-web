@@ -62,7 +62,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
           <div style={{ color: "#fff" }}>
             <div
               style={{
-                fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em",
+                fontSize: 9.5, fontWeight: 700, letterSpacing: "0.22em",
                 textTransform: "uppercase", color: "var(--gold2)", marginBottom: 8,
               }}
             >
@@ -73,13 +73,13 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 <h1
                   className="font-display"
                   style={{
-                    fontSize: "clamp(26px, 3vw, 38px)", fontWeight: 400,
+                    fontSize: "clamp(22px, 2.4vw, 32px)", fontWeight: 400,
                     lineHeight: 1, letterSpacing: "-.04em", margin: "0 0 6px",
                   }}
                 >
                   {TIPO_LABELS[tipo].title}
                 </h1>
-                <p style={{ fontSize: 13.5, color: "rgba(255,255,255,.55)", margin: 0, fontWeight: 300 }}>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,.55)", margin: 0, fontWeight: 300 }}>
                   {TIPO_LABELS[tipo].subtitle}
                 </p>
               </>
@@ -88,13 +88,13 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 <h1
                   className="font-display"
                   style={{
-                    fontSize: "clamp(26px, 3vw, 38px)", fontWeight: 400,
+                    fontSize: "clamp(22px, 2.4vw, 32px)", fontWeight: 400,
                     lineHeight: 1, letterSpacing: "-.04em", margin: "0 0 6px",
                   }}
                 >
                   Cada viagem, <em>uma narrativa.</em>
                 </h1>
-                <p style={{ fontSize: 13.5, color: "rgba(255,255,255,.55)", margin: 0, fontWeight: 300 }}>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,.55)", margin: 0, fontWeight: 300 }}>
                   Explore o portfólio completo. Todas as viagens são personalizáveis e podem ser desenhadas com datas e composição à sua medida.
                 </p>
               </>
