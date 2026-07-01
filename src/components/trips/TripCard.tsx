@@ -18,7 +18,7 @@ export function TripCard({ trip, className }: TripCardProps) {
     <motion.div
       whileHover={reduced ? {} : { y: -4 }}
       transition={{ type: "spring", stiffness: 300, damping: 28 }}
-      className={cn(className)}
+      className={cn("flex flex-col h-full", className)}
       style={{
         borderRadius: 12,
         overflow: "hidden",
@@ -28,9 +28,9 @@ export function TripCard({ trip, className }: TripCardProps) {
         cursor: "pointer",
       }}
     >
-      <Link href={`/viagens/${trip.slug}`} className="group block">
+      <Link href={`/viagens/${trip.slug}`} className="group flex flex-col h-full">
         {/* Image */}
-        <div className="overflow-hidden" style={{ aspectRatio: "16/10" }}>
+        <div className="overflow-hidden shrink-0" style={{ aspectRatio: "16/10" }}>
           {trip.hero_image_url && (
             <img
               src={trip.hero_image_url}
@@ -41,7 +41,7 @@ export function TripCard({ trip, className }: TripCardProps) {
           )}
         </div>
         {/* Body */}
-        <div style={{ padding: "18px 20px 20px" }}>
+        <div className="flex flex-col flex-1" style={{ padding: "18px 20px 20px" }}>
           <div
             style={{
               fontSize: 10, fontWeight: 700, letterSpacing: "0.15em",
@@ -52,19 +52,20 @@ export function TripCard({ trip, className }: TripCardProps) {
             {trip.country}
           </div>
           <h3
-            className="font-display"
+            className="font-display line-clamp-2"
             style={{ fontSize: 20, fontWeight: 400, color: "var(--ink)", lineHeight: 1.25, marginBottom: 7 }}
           >
             {trip.title}
           </h3>
-          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 14 }}>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>
             {trip.duration_days} dias · {trip.trip_type === "grupo" ? "Grupo" : "Privado"}
           </div>
           {/* Footer */}
           <div
+            className="mt-auto"
             style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              paddingTop: 13, borderTop: "1px solid var(--border)",
+              paddingTop: 13, marginTop: 14, borderTop: "1px solid var(--border)",
             }}
           >
             <div>
