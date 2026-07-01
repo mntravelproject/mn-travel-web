@@ -114,9 +114,9 @@ export default function SobrePage() {
             <div className="mt-8 h-px bg-[var(--line)]" />
             <div className="mt-8 grid grid-cols-3 gap-6">
               {[
-                { value: "10+", label: "Anos de experiência" },
-                { value: "60+", label: "Destinos no mundo" },
-                { value: "500+", label: "Viagens realizadas" },
+                { value: "15+", label: "Anos de experiência" },
+                { value: "200+", label: "Destinos disponíveis" },
+                { value: "999+", label: "Clientes satisfeitos" },
               ].map(({ value, label }) => (
                 <div key={label}>
                   <div className="font-display text-[32px] tracking-tight" style={{ color: "var(--gold)" }}>{value}</div>
