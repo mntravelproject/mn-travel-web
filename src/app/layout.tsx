@@ -20,7 +20,7 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
   title: "MN Travel — Experiências Premium de Viagem",
   description:
-    "Desenhamos viagens à medida para quem entende que viajar bem é, antes de mais, viajar de outra forma.",
+    "O mundo visto de outra perspectiva — organizado ao detalhe, pensado para si.",
 };
 
 export default function RootLayout({

@@ -112,7 +112,7 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: reduced ? 0.01 : 0.65, delay: 0.65, ease }}
           >
-            Selecção exclusiva de viagens desenhadas ao detalhe, para quem entende que viajar bem é, antes de mais, viajar de outra forma.
+            O mundo visto de outra perspectiva — organizado ao detalhe, pensado para si.
           </motion.p>
 
           {/* CTAs */}
