@@ -52,13 +52,13 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
     <div>
       {/* Dark hero header — sticky, compact */}
       <div
-        className="sticky z-20 top-[68px] md:top-[88px] lg:top-[108px]"
+        className="sticky z-20 top-0"
         style={{
           background: "var(--dark)",
           borderBottom: "1px solid rgba(255,255,255,.07)",
         }}
       >
-        <div style={{ maxWidth: 1440, margin: "0 auto", padding: "18px 6vw 22px" }}>
+        <div style={{ maxWidth: 1440, margin: "0 auto", paddingLeft: "6vw", paddingRight: "6vw", paddingBottom: 22 }} className="pt-[68px] md:pt-[88px] lg:pt-[108px]">
           <div style={{ color: "#fff" }}>
             <div
               style={{
