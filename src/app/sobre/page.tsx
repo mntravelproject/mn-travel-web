@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { ArrowRight, Globe, Heart, Star, Shield } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Sobre — MN Travel",
@@ -12,22 +12,18 @@ export const metadata: Metadata = {
 
 const VALUES = [
   {
-    icon: Heart,
     title: "Paixão pelo detalhe",
     description: "Cada viagem é construída com atenção minuciosa a cada momento — do hotel ao guia local, da mesa de jantar ao pôr do sol.",
   },
   {
-    icon: Globe,
     title: "Conhecimento do mundo",
     description: "Anos de experiência em destinos de todos os continentes permitem-nos recomendar o que realmente vale a pena.",
   },
   {
-    icon: Star,
     title: "Exclusividade",
     description: "Acesso a experiências e propriedades fora do alcance das plataformas de viagem convencionais.",
   },
   {
-    icon: Shield,
     title: "Confiança e discrição",
     description: "Acompanhamos cada cliente com total privacidade e disponibilidade antes, durante e após a viagem.",
   },
@@ -128,24 +124,44 @@ export default function SobrePage() {
         </section>
 
         {/* Valores */}
-        <section className="max-w-[1320px] mx-auto px-6 lg:px-10 py-14 md:py-24 border-b border-[var(--line)]">
-          <SectionLabel>O que nos guia</SectionLabel>
-          <h2 className="mt-5 font-display text-[28px] sm:text-[36px] md:text-[44px] tracking-tight max-w-xl">
-            Os valores por detrás de cada viagem.
-          </h2>
-          <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {VALUES.map(({ icon: Icon, title, description }) => (
-              <div key={title} className="space-y-4">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                  style={{ background: "var(--gold-soft)" }}
-                >
-                  <Icon className="w-5 h-5" style={{ color: "var(--gold)" }} strokeWidth={1.5} />
+        <section style={{ background: "var(--dark)", color: "#fff" }}>
+          <div className="max-w-[1320px] mx-auto px-6 lg:px-10 py-16 md:py-28">
+            {/* Header */}
+            <div className="mb-16 md:mb-20 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: "var(--gold2)", marginBottom: 14 }}>
+                  O que nos guia
                 </div>
-                <h3 className="font-display text-[20px] tracking-tight">{title}</h3>
-                <p className="text-[14px] text-[var(--muted)] leading-relaxed">{description}</p>
+                <h2 className="font-display text-[28px] sm:text-[36px] md:text-[48px] tracking-tight leading-[1.05]">
+                  Os valores por detrás<br />
+                  <em className="font-light">de cada viagem.</em>
+                </h2>
               </div>
-            ))}
+            </div>
+            {/* Grid */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-0 border-t border-white/10">
+              {VALUES.map(({ title, description }, i) => (
+                <div
+                  key={title}
+                  className="py-10 lg:py-12 border-b sm:border-b-0 border-white/10"
+                  style={{
+                    paddingRight: i < VALUES.length - 1 ? "clamp(24px, 3vw, 48px)" : 0,
+                    paddingLeft: i > 0 ? "clamp(24px, 3vw, 48px)" : 0,
+                    borderRight: i < VALUES.length - 1 ? "1px solid rgba(255,255,255,.10)" : "none",
+                  }}
+                >
+                  <div style={{ fontSize: 11, color: "var(--gold2)", letterSpacing: "0.2em", fontWeight: 700, marginBottom: 20 }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
+                  <h3 className="font-display text-[22px] leading-tight tracking-tight mb-4" style={{ color: "#fff" }}>
+                    {title}
+                  </h3>
+                  <p style={{ fontSize: 14, color: "rgba(255,255,255,.48)", lineHeight: 1.75 }}>
+                    {description}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
