@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 interface TripOption {
   id: string;
   title: string;
+  trip_type: string | null;
 }
 
 interface Props {
@@ -20,6 +21,7 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 export function BookingModal({ open, onClose, defaultTripId }: Props) {
   const [trips,      setTrips]      = useState<TripOption[]>([]);
+  const [tripType,   setTripType]   = useState<"" | "individual" | "grupo">("");
   const [submitting, setSubmitting] = useState(false);
   const [success,    setSuccess]    = useState(false);
   const [error,      setError]      = useState("");
@@ -42,20 +44,25 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
     });
   }, [form.pax]);
 
-  // Fetch published trips for dropdown
+  // Fetch published trips for dropdowns
   useEffect(() => {
     createClient()
       .from("travel_packages")
-      .select("id, title")
+      .select("id, title, trip_type")
       .eq("is_published", true)
       .order("title")
       .then(({ data }) => { if (data) setTrips(data as TripOption[]); });
   }, []);
 
-  // Sync defaultTripId into form when it changes
+  // Sync defaultTripId into form + pre-fill type when trips are loaded
   useEffect(() => {
-    setForm((f) => ({ ...f, trip_id: defaultTripId ?? "" }));
-  }, [defaultTripId]);
+    if (!defaultTripId) return;
+    setForm((f) => ({ ...f, trip_id: defaultTripId }));
+    const found = trips.find((t) => t.id === defaultTripId);
+    if (found?.trip_type === "individual" || found?.trip_type === "grupo") {
+      setTripType(found.trip_type);
+    }
+  }, [defaultTripId, trips]);
 
   // Reset form after modal closes
   useEffect(() => {
@@ -63,6 +70,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
       const t = setTimeout(() => {
         setSuccess(false);
         setError("");
+        setTripType("");
         setCompanions([""]);
         setForm({ name: "", email: "", phone: "", trip_id: defaultTripId ?? "", pax: 2, date: "", message: "" });
       }, 350);
@@ -240,21 +248,44 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                       </div>
                     </div>
 
-                    {/* Viagem */}
-                    <div>
-                      <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Viagem de interesse</label>
-                      <div className="relative">
-                        <select
-                          value={form.trip_id} onChange={set("trip_id")}
-                          className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--ink)] transition appearance-none pr-8"
-                        >
-                          <option value="">Seleccionar viagem (opcional)</option>
-                          {trips.map((t) => (
-                            <option key={t.id} value={t.id}>{t.title}</option>
-                          ))}
-                        </select>
-                        <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]">↓</span>
+                    {/* Tipo de viagem + Viagem */}
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Tipo de viagem</label>
+                        <div className="relative">
+                          <select
+                            value={tripType}
+                            onChange={(e) => {
+                              setTripType(e.target.value as "" | "individual" | "grupo");
+                              setForm((f) => ({ ...f, trip_id: "" }));
+                            }}
+                            className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--ink)] transition appearance-none pr-8"
+                          >
+                            <option value="">Seleccionar tipo (opcional)</option>
+                            <option value="individual">Individual</option>
+                            <option value="grupo">Grupo</option>
+                          </select>
+                          <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]">↓</span>
+                        </div>
                       </div>
+
+                      {tripType && (
+                        <div>
+                          <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Viagem de interesse</label>
+                          <div className="relative">
+                            <select
+                              value={form.trip_id} onChange={set("trip_id")}
+                              className="w-full px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--ink)] transition appearance-none pr-8"
+                            >
+                              <option value="">Seleccionar viagem (opcional)</option>
+                              {trips.filter((t) => t.trip_type === tripType).map((t) => (
+                                <option key={t.id} value={t.id}>{t.title}</option>
+                              ))}
+                            </select>
+                            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]">↓</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Pax + Data */}

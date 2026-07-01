@@ -133,8 +133,46 @@ export default function AdminPage() {
   const openEdit = (id: string | null) => { setEditId(id); setView("edit"); };
 
   async function delTrip(id: string) {
-    setTrips((p) => p.filter((t) => t.id !== id));
     const supabase = createClient();
+    const trip = trips.find((t) => t.id === id);
+
+    // Collect all Storage image URLs (hero + gallery)
+    const { data: galleryImages } = await supabase
+      .from("package_images")
+      .select("image_url")
+      .eq("package_id", id);
+
+    const imageUrls: string[] = [];
+    if (trip?.hero_image_url) imageUrls.push(trip.hero_image_url);
+    for (const img of galleryImages ?? []) imageUrls.push(img.image_url);
+
+    // Group paths by bucket and delete from Storage
+    const STORAGE_PREFIX = "/storage/v1/object/public/";
+    const byBucket = new Map<string, string[]>();
+    for (const url of imageUrls) {
+      const idx = url.indexOf(STORAGE_PREFIX);
+      if (idx === -1) continue;
+      const rest = url.slice(idx + STORAGE_PREFIX.length);
+      const slash = rest.indexOf("/");
+      if (slash === -1) continue;
+      const bucket = rest.slice(0, slash);
+      const path   = decodeURIComponent(rest.slice(slash + 1));
+      if (!byBucket.has(bucket)) byBucket.set(bucket, []);
+      byBucket.get(bucket)!.push(path);
+    }
+    for (const [bucket, paths] of byBucket) {
+      await supabase.storage.from(bucket).remove(paths);
+    }
+
+    // Delete all related DB records
+    await supabase.from("package_images").delete().eq("package_id", id);
+    await supabase.from("package_itinerary").delete().eq("package_id", id);
+    await (supabase as any).from("package_includes").delete().eq("package_id", id);
+    await (supabase as any).from("package_dates").delete().eq("package_id", id);
+    await supabase.from("booking_requests").delete().eq("package_id", id);
+
+    // Remove from local state and delete the package
+    setTrips((p) => p.filter((t) => t.id !== id));
     await supabase.from("travel_packages").delete().eq("id", id);
   }
 
