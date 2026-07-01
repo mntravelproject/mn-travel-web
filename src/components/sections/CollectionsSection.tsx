@@ -252,7 +252,7 @@ export function CollectionsSection({ trips, categories }: Props) {
               textTransform: "uppercase", color: "var(--gold2)", marginBottom: 12,
             }}
           >
-            Curadoria exclusiva
+            Organização exclusiva
           </div>
           <h2
             className="font-display text-[clamp(38px,4.5vw,64px)]"

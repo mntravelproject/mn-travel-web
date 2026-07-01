@@ -3,7 +3,7 @@ import { ArrowRight, Phone, Star, Clock, Shield, Headphones } from "lucide-react
 import { ScaleIn, SlideUp, StaggerContainer, StaggerItem } from "@/components/animations";
 
 const benefits = [
-  { icon: Star,        label: "Curadoria exclusiva",         sub: "Itinerários únicos" },
+  { icon: Star,        label: "Organização exclusiva",       sub: "Itinerários únicos" },
   { icon: Clock,       label: "Atenção 24/7",                sub: "Durante toda a viagem" },
   { icon: Shield,      label: "Garantia de qualidade",       sub: "Total tranquilidade" },
   { icon: Headphones,  label: "Apoio personalizado",         sub: "Do planeamento ao regresso" },
@@ -35,7 +35,7 @@ export function CTASection() {
             {/* Eyebrow */}
             <div className="flex items-center gap-3 text-[12px] uppercase tracking-[0.2em] font-semibold mb-7" style={{ color: "var(--gold2)" }}>
               <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "var(--gold2)" }} />
-              Curadoria exclusiva · Por encomenda
+              Organização exclusiva · Por encomenda
             </div>
 
             <h2 className="font-display text-[26px] sm:text-[36px] md:text-[46px] lg:text-[64px] leading-[1.0] tracking-tight text-white text-balance mb-6">

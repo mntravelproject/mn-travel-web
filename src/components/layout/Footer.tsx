@@ -8,7 +8,7 @@ const columns = [
     links: ["Todas as viagens", "Destinos", "Cruzeiros", "Lua de mel", "Grupos privados"],
   },
   {
-    title: "Curadoria",
+    title: "Organização",
     links: ["Filosofia", "Curadores", "Editorial", "Parceiros", "Sustentabilidade"],
   },
   {

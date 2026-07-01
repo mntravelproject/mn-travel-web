@@ -57,7 +57,7 @@ export function HeroSection() {
           >
             <span className="block w-8 h-px flex-shrink-0" style={{ background: "var(--gold2)" }} />
             <span className="text-[11px] font-bold tracking-[0.22em] uppercase">
-              Curadoria de viagens premium
+              Organização de viagens premium
             </span>
           </motion.div>
 
