@@ -79,7 +79,7 @@ export function Footer({ className = "" }: { className?: string }) {
         </div>
 
         {/* Bottom bar */}
-        <SlideUp delay={0.15} className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-6 text-white/40">
             {["IG", "FB", "YT"].map((s) => (
               <a key={s} href="#" className="text-[11px] font-semibold tracking-widest hover:text-[var(--gold2)] transition-colors cursor-pointer">
@@ -91,7 +91,7 @@ export function Footer({ className = "" }: { className?: string }) {
             <span>© 2026 MN Travel · RNAVT 13459 · Lisboa, Portugal</span>
             <Link href="/admin" className="hover:text-white/60 transition-colors">Admin</Link>
           </div>
-        </SlideUp>
+        </div>
 
       </div>
     </footer>
