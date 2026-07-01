@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   description:
     "O mundo visto de outra perspectiva — organizado ao detalhe, pensado para si.",
   icons: {
-    icon: "/logo_preto.png",
+    icon: "/favicon.svg",
     apple: "/logo_preto.png",
   },
 };
