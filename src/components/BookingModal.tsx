@@ -521,6 +521,27 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                     <p className="text-[11px] text-center text-[var(--muted)] leading-relaxed">
                       Os seus dados são tratados de forma confidencial e nunca partilhados com terceiros.
                     </p>
+
+                    {/* Viagem personalizada */}
+                    <div className="pt-2 pb-1 border-t border-[var(--line)]">
+                      <button
+                        type="button"
+                        onClick={() => { onClose(); router.push("/contacto"); }}
+                        className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-[var(--gold)] bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition text-left group"
+                      >
+                        <span className="w-9 h-9 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--gold)]/20 transition">
+                          <Sparkles className="w-4 h-4 text-[var(--gold)]" strokeWidth={1.8} />
+                        </span>
+                        <div>
+                          <div className="text-[13px] font-semibold text-[var(--ink)] tracking-tight">
+                            Pedido de viagem personalizada
+                          </div>
+                          <div className="text-[11px] text-[var(--muted)] mt-0.5">
+                            Desenhamos de raiz para si, sem catálogo.
+                          </div>
+                        </div>
+                      </button>
+                    </div>
                   </form>
 
                   {/* ── Trip Picker overlay ── */}
