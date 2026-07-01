@@ -145,22 +145,23 @@ function TripPicker({
           </div>
         )}
 
-        {/* Botão viagem personalizada */}
-        <div className="mt-4">
-          <button
-            type="button"
-            onClick={onCustom}
-            className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-[var(--gold)] bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition text-left group"
-          >
-            <span className="w-9 h-9 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--gold)]/20 transition">
-              <Sparkles className="w-4 h-4 text-[var(--gold)]" strokeWidth={1.8} />
-            </span>
-            <div>
-              <div className="text-[13px] font-semibold text-[var(--ink)] tracking-tight">Pedido de viagem personalizada</div>
-              <div className="text-[11px] text-[var(--muted)] mt-0.5">Não encontrou o que procura? Desenhamos de raiz.</div>
-            </div>
-          </button>
-        </div>
+      </div>
+
+      {/* Footer fixo */}
+      <div className="shrink-0 px-6 py-4 border-t border-[var(--line)] bg-[var(--cream)]">
+        <button
+          type="button"
+          onClick={onCustom}
+          className="w-full flex items-center gap-3 px-5 py-4 rounded-xl border border-dashed border-[var(--gold)] bg-[var(--gold)]/5 hover:bg-[var(--gold)]/10 transition text-left group"
+        >
+          <span className="w-9 h-9 rounded-full bg-[var(--gold)]/10 flex items-center justify-center shrink-0 group-hover:bg-[var(--gold)]/20 transition">
+            <Sparkles className="w-4 h-4 text-[var(--gold)]" strokeWidth={1.8} />
+          </span>
+          <div>
+            <div className="text-[13px] font-semibold text-[var(--ink)] tracking-tight">Pedido de viagem personalizada</div>
+            <div className="text-[11px] text-[var(--muted)] mt-0.5">Não encontrou o que procura? Desenhamos de raiz.</div>
+          </div>
+        </button>
       </div>
     </motion.div>
   );
