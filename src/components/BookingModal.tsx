@@ -2,16 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
-import { X, User, Mail, Phone, Calendar, Check } from "lucide-react";
+import { X, User, Mail, Phone, Calendar, Check, ChevronLeft, MapPin } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { formatPrice } from "@/lib/utils";
 
 interface TripOption {
   id: string;
   title: string;
   trip_type: string | null;
+  hero_image_url: string | null;
+  country: string;
+  duration_days: number;
+  price_from: number;
 }
 
 interface Props {
@@ -22,12 +24,135 @@ interface Props {
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+// ── Trip Picker ──────────────────────────────────────────────────────────────
+function TripPicker({
+  trips,
+  selectedId,
+  onSelect,
+  onBack,
+}: {
+  trips: TripOption[];
+  selectedId: string;
+  onSelect: (t: TripOption) => void;
+  onBack: () => void;
+}) {
+  const [tab, setTab] = useState<"individual" | "grupo">("individual");
+  const filtered = trips.filter((t) => t.trip_type === tab);
+
+  return (
+    <motion.div
+      key="picker"
+      initial={{ opacity: 0, x: 32 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 32 }}
+      transition={{ duration: 0.28, ease }}
+      className="absolute inset-0 bg-[var(--cream)] rounded-3xl flex flex-col z-10"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-[var(--line)] shrink-0">
+        <button
+          type="button"
+          onClick={onBack}
+          className="p-2 rounded-full hover:bg-[var(--cream-2)] transition text-[var(--muted)] hover:text-[var(--ink)]"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <h3 className="font-display text-[20px] tracking-tight flex-1">Escolher viagem</h3>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 px-6 pt-4 pb-3 shrink-0">
+        {(["individual", "grupo"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`flex-1 py-2.5 rounded-xl text-[13px] font-medium tracking-tight transition ${
+              tab === t
+                ? "bg-[var(--ink)] text-[var(--cream)]"
+                : "bg-white border border-[var(--line)] text-[var(--muted)] hover:text-[var(--ink)]"
+            }`}
+          >
+            {t === "individual" ? "Individual" : "Grupo"}
+          </button>
+        ))}
+      </div>
+
+      {/* Cards grid */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
+        {filtered.length === 0 ? (
+          <div className="py-12 text-center text-[14px] text-[var(--muted)]">
+            Nenhuma viagem disponível neste momento.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {filtered.map((t) => {
+              const selected = t.id === selectedId;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => onSelect(t)}
+                  className={`text-left rounded-xl overflow-hidden border transition-all ${
+                    selected
+                      ? "border-[var(--ink)] ring-1 ring-[var(--ink)]"
+                      : "border-[var(--line)] hover:border-[var(--ink-soft)]"
+                  }`}
+                  style={{ background: "var(--cream-2)" }}
+                >
+                  {/* Image */}
+                  <div className="overflow-hidden" style={{ aspectRatio: "16/10" }}>
+                    {t.hero_image_url ? (
+                      <img
+                        src={t.hero_image_url}
+                        alt={t.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-[var(--cream-2)] flex items-center justify-center">
+                        <MapPin className="w-5 h-5 text-[var(--muted)]" strokeWidth={1.5} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-3">
+                    <div className="text-[9px] font-bold tracking-[0.15em] uppercase text-[var(--gold)] mb-1">
+                      {t.country}
+                    </div>
+                    <div className="font-display text-[14px] leading-snug text-[var(--ink)] mb-1 line-clamp-2">
+                      {t.title}
+                    </div>
+                    <div className="text-[11px] text-[var(--muted)]">{t.duration_days} dias</div>
+                    <div className="mt-2 pt-2 border-t border-[var(--border)] flex items-center justify-between">
+                      <span className="text-[12px] font-semibold text-[var(--ink)]">
+                        {formatPrice(t.price_from)}
+                      </span>
+                      {selected && (
+                        <span className="w-5 h-5 rounded-full bg-[var(--ink)] flex items-center justify-center shrink-0">
+                          <Check className="w-3 h-3 text-[var(--cream)]" strokeWidth={2.5} />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Main Modal ───────────────────────────────────────────────────────────────
 export function BookingModal({ open, onClose, defaultTripId }: Props) {
-  const [trips,      setTrips]      = useState<TripOption[]>([]);
-  const [tripType,   setTripType]   = useState<"" | "individual" | "grupo">("");
-  const [submitting, setSubmitting] = useState(false);
-  const [success,    setSuccess]    = useState(false);
-  const [error,      setError]      = useState("");
+  const [trips,       setTrips]       = useState<TripOption[]>([]);
+  const [showPicker,  setShowPicker]  = useState(false);
+  const [submitting,  setSubmitting]  = useState(false);
+  const [success,     setSuccess]     = useState(false);
+  const [error,       setError]       = useState("");
   const [form, setForm] = useState({
     name: "", email: "", phone: "",
     trip_id: defaultTripId ?? "",
@@ -35,6 +160,8 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
   });
   const [companions, setCompanions] = useState<string[]>([""]);
   const reduced = useReducedMotion();
+
+  const selectedTrip = trips.find((t) => t.id === form.trip_id) ?? null;
 
   // Sync companions array length with pax - 1
   useEffect(() => {
@@ -47,33 +174,29 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
     });
   }, [form.pax]);
 
-  // Fetch published trips for dropdowns
+  // Fetch published trips
   useEffect(() => {
     createClient()
       .from("travel_packages")
-      .select("id, title, trip_type")
+      .select("id, title, trip_type, hero_image_url, country, duration_days, price_from")
       .eq("is_published", true)
       .order("title")
       .then(({ data }) => { if (data) setTrips(data as TripOption[]); });
   }, []);
 
-  // Sync defaultTripId into form + pre-fill type when trips are loaded
+  // Sync defaultTripId
   useEffect(() => {
     if (!defaultTripId) return;
     setForm((f) => ({ ...f, trip_id: defaultTripId }));
-    const found = trips.find((t) => t.id === defaultTripId);
-    if (found?.trip_type === "individual" || found?.trip_type === "grupo") {
-      setTripType(found.trip_type);
-    }
   }, [defaultTripId, trips]);
 
-  // Reset form after modal closes
+  // Reset after close
   useEffect(() => {
     if (!open) {
       const t = setTimeout(() => {
         setSuccess(false);
         setError("");
-        setTripType("");
+        setShowPicker(false);
         setCompanions([""]);
         setForm({ name: "", email: "", phone: "", trip_id: defaultTripId ?? "", pax: 2, date: "", message: "" });
       }, 350);
@@ -84,12 +207,17 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
   // Close on Escape
   useEffect(() => {
     if (!open) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (showPicker) setShowPicker(false);
+        else onClose();
+      }
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [open, onClose, showPicker]);
 
-  // Prevent body scroll when modal is open
+  // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -128,7 +256,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
     else         { setSuccess(true); }
   }
 
-  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
 
   return (
@@ -143,7 +271,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={() => { if (showPicker) setShowPicker(false); else onClose(); }}
           />
 
           {/* Modal card */}
@@ -156,7 +284,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
             className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="relative bg-[var(--cream)] rounded-3xl shadow-2xl w-full max-w-[520px] max-h-[92vh] overflow-y-auto pointer-events-auto"
+              className="relative bg-[var(--cream)] rounded-3xl shadow-2xl w-full max-w-[560px] max-h-[92vh] overflow-hidden pointer-events-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {/* ── Success state ── */}
@@ -187,7 +315,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                   </button>
                 </motion.div>
               ) : (
-                <>
+                <div className="relative overflow-y-auto max-h-[92vh]">
                   {/* ── Header ── */}
                   <div className="flex items-start justify-between px-8 pt-8 pb-2">
                     <div>
@@ -251,44 +379,45 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                       </div>
                     </div>
 
-                    {/* Tipo de viagem + Viagem */}
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Tipo de viagem</label>
-                        <Select
-                          value={tripType || undefined}
-                          onValueChange={(v) => {
-                            setTripType(v as "individual" | "grupo");
-                            setForm((f) => ({ ...f, trip_id: "" }));
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar tipo (opcional)" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="individual">Individual</SelectItem>
-                            <SelectItem value="grupo">Grupo</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {tripType && (
-                        <div>
-                          <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Viagem de interesse</label>
-                          <Select
-                            value={form.trip_id || undefined}
-                            onValueChange={(v) => setForm((f) => ({ ...f, trip_id: v }))}
+                    {/* Viagem de interesse */}
+                    <div>
+                      <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">
+                        Viagem de interesse
+                      </label>
+                      {selectedTrip ? (
+                        <div className="flex items-center gap-3 bg-white border border-[var(--ink)] rounded-xl px-4 py-3">
+                          {selectedTrip.hero_image_url && (
+                            <img
+                              src={selectedTrip.hero_image_url}
+                              alt=""
+                              className="w-10 h-10 rounded-lg object-cover shrink-0"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[var(--gold)]">
+                              {selectedTrip.country}
+                            </div>
+                            <div className="text-[13px] font-medium text-[var(--ink)] truncate">
+                              {selectedTrip.title}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setForm((f) => ({ ...f, trip_id: "" }))}
+                            className="p-1.5 rounded-full hover:bg-[var(--cream-2)] transition text-[var(--muted)] hover:text-[var(--ink)] shrink-0"
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar viagem (opcional)" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {trips.filter((t) => t.trip_type === tripType).map((t) => (
-                                <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowPicker(true)}
+                          className="w-full flex items-center justify-between px-4 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] text-[var(--muted)] hover:border-[var(--ink)] hover:text-[var(--ink)] transition"
+                        >
+                          <span>Escolher viagem (opcional)</span>
+                          <span className="text-[12px]">→</span>
+                        </button>
                       )}
                     </div>
 
@@ -370,7 +499,22 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                       Os seus dados são tratados de forma confidencial e nunca partilhados com terceiros.
                     </p>
                   </form>
-                </>
+
+                  {/* ── Trip Picker overlay ── */}
+                  <AnimatePresence>
+                    {showPicker && (
+                      <TripPicker
+                        trips={trips}
+                        selectedId={form.trip_id}
+                        onSelect={(t) => {
+                          setForm((f) => ({ ...f, trip_id: t.id }));
+                          setShowPicker(false);
+                        }}
+                        onBack={() => setShowPicker(false)}
+                      />
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </div>
           </motion.div>
