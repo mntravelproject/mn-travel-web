@@ -56,7 +56,8 @@ export function Header() {
 
   useEffect(() => { setOpen(false); setDestMobile(false); }, [pathname]);
 
-  const isHero = pathname === "/";
+  const isHero    = pathname === "/";
+  const isViagens = pathname.startsWith("/viagens");
   // nav is dark when scrolled, menu open, or on any non-home page
   const isDark = (!isHero) || scrolled || open;
 
@@ -66,9 +67,9 @@ export function Header() {
   return (
     <>
       <motion.header
-        initial={{ opacity: 0, y: reduced ? 0 : -20 }}
+        initial={{ opacity: isViagens ? 1 : 0, y: reduced || isViagens ? 0 : -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: reduced ? 0.01 : 0.55, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: reduced || isViagens ? 0.01 : 0.55, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
           "fixed inset-x-0 top-0 z-50 transition-all duration-500",
           isDark

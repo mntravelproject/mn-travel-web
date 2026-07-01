@@ -58,7 +58,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
           borderBottom: "1px solid rgba(255,255,255,.07)",
         }}
       >
-        <div style={{ maxWidth: 1440, margin: "0 auto", paddingLeft: "6vw", paddingRight: "6vw", paddingBottom: 22 }} className="pt-[68px] md:pt-[88px] lg:pt-[108px]">
+        <div style={{ maxWidth: 1440, margin: "0 auto", paddingLeft: "6vw", paddingRight: "6vw", paddingBottom: 22 }} className="pt-[84px] md:pt-[108px] lg:pt-[132px]">
           <div style={{ color: "#fff" }}>
             <div
               style={{
