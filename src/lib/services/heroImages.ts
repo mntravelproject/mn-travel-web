@@ -1,12 +1,16 @@
-import { createPublicClient } from "@/lib/supabase/public";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function getHeroImages(): Promise<string[]> {
-  const supabase = createPublicClient();
+  const supabase = createAdminClient();
   const { data, error } = await supabase.storage
     .from("imagens-inicio")
     .list("", { sortBy: { column: "name", order: "asc" } });
 
-  if (error || !data || data.length === 0) return [];
+  if (error) {
+    console.error("getHeroImages error:", error.message);
+    return [];
+  }
+  if (!data || data.length === 0) return [];
 
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   return data
