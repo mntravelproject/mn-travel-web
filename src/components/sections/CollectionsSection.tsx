@@ -292,7 +292,7 @@ export function CollectionsSection({ trips, categories }: Props) {
         transition={{ duration: 0.55 }}
         className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
         style={{
-          margin: "72px -6vw 0",
+          margin: "72px -6vw 72px",
           background: "var(--cream)",
           border: "1px solid var(--border)",
           borderLeft: "none", borderRight: "none",
