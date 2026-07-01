@@ -1,7 +1,6 @@
 const STATS = [
   { value: "200+",    label: "Destinos Disponíveis" },
   { value: "15",      label: "Anos de Experiência" },
-  { value: "4.9",     label: "Avaliação Média" },
   { value: "999+",    label: "Clientes Satisfeitos" },
 ];
 
