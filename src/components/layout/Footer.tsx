@@ -93,12 +93,6 @@ export function Footer({ className = "" }: { className?: string }) {
           </div>
         </SlideUp>
 
-        {/* Watermark */}
-        <div className="mt-12 -mb-10 overflow-hidden">
-          <div className="font-display italic text-[18vw] leading-none text-white/[0.03] tracking-tighter select-none whitespace-nowrap">
-            mn travel
-          </div>
-        </div>
       </div>
     </footer>
   );
