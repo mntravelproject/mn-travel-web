@@ -52,10 +52,8 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
     <div>
       {/* Dark hero header — sticky, compact */}
       <div
+        className="sticky z-20 top-[68px] md:top-[88px] lg:top-[108px]"
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
           background: "var(--dark)",
           borderBottom: "1px solid rgba(255,255,255,.07)",
         }}
