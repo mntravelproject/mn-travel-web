@@ -169,13 +169,14 @@ export function HeroSection({ images = [] }: Props) {
         <div
           style={{
             position: "absolute",
-            right: 24,
+            right: 20,
             top: "50%",
             transform: "translateY(-50%)",
             display: "flex",
             flexDirection: "column",
-            gap: 10,
-            zIndex: 3,
+            alignItems: "center",
+            gap: 8,
+            zIndex: 10,
           }}
         >
           {slides.map((_, i) => (
@@ -183,16 +184,18 @@ export function HeroSection({ images = [] }: Props) {
               key={i}
               type="button"
               onClick={() => setCurrent(i)}
+              aria-label={`Slide ${i + 1}`}
               style={{
-                width: 2,
-                height: i === current ? 28 : 8,
+                width: i === current ? 6 : 5,
+                height: i === current ? 22 : 5,
                 borderRadius: 999,
-                background: i === current ? "var(--gold)" : "rgba(255,255,255,.35)",
+                background: i === current ? "var(--gold)" : "rgba(255,255,255,.5)",
                 border: "none",
                 cursor: "pointer",
                 transition: "all .4s ease",
                 padding: 0,
                 display: "block",
+                flexShrink: 0,
               }}
             />
           ))}
