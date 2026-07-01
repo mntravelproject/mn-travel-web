@@ -279,7 +279,7 @@ export function CollectionsSection({ trips, categories }: Props) {
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--gold2)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--gold)"; }}
           >
-            Falar com um especialista →
+            Atendimento personalizado →
           </Link>
         </div>
       </motion.div>

@@ -53,7 +53,7 @@ export function FinalCTASection() {
             textDecoration: "none",
           }}
         >
-          Falar com um especialista <ArrowRight style={{ width: 18, height: 18 }} />
+          Atendimento personalizado <ArrowRight style={{ width: 18, height: 18 }} />
         </Link>
       </motion.div>
     </section>
