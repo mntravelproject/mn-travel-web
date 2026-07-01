@@ -249,7 +249,7 @@ export default function SobrePage() {
         </section>
 
       </main>
-      <Footer />
+      <Footer className="!mt-0" />
     </>
   );
 }
