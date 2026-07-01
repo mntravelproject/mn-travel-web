@@ -7,13 +7,20 @@ export async function getHeroImages(): Promise<string[]> {
     .list("", { sortBy: { column: "name", order: "asc" } });
 
   if (error) {
-    console.error("getHeroImages error:", error.message);
+    console.error("getHeroImages list error:", error.message);
     return [];
   }
-  if (!data || data.length === 0) return [];
+  if (!data || data.length === 0) {
+    console.warn("getHeroImages: bucket vazio ou sem ficheiros");
+    return [];
+  }
 
-  const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  return data
-    .filter((f) => f.name && !f.name.startsWith("."))
-    .map((f) => `${base}/storage/v1/object/public/imagens-inicio/${encodeURIComponent(f.name)}`);
+  const files = data.filter((f) => f.name && !f.name.startsWith("."));
+
+  return files.map((f) => {
+    const { data: urlData } = supabase.storage
+      .from("imagens-inicio")
+      .getPublicUrl(f.name);
+    return urlData.publicUrl;
+  });
 }
