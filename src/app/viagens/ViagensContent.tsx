@@ -286,7 +286,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 transition={{ duration: 0.25 }}
               >
                 <StaggerContainer
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[22px]"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[22px]"
                   staggerDelay={0.06}
                   initialDelay={0.05}
                   once={false}
