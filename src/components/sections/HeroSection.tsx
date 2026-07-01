@@ -164,17 +164,17 @@ export function HeroSection({ images = [] }: Props) {
         </div>
       </div>
 
-      {/* Dots */}
+      {/* Dots — vertical, lado direito */}
       {slides.length > 1 && (
-        <div className="absolute bottom-[72px] left-1/2 -translate-x-1/2 flex gap-2 z-[3]">
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-[3]">
           {slides.map((_, i) => (
             <button
               key={i}
               type="button"
               onClick={() => setCurrent(i)}
               style={{
-                width: i === current ? 28 : 8,
-                height: 2,
+                width: 2,
+                height: i === current ? 28 : 8,
                 borderRadius: 999,
                 background: i === current ? "var(--gold)" : "rgba(255,255,255,.35)",
                 border: "none",
