@@ -50,22 +50,22 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
 
   return (
     <div>
-      {/* Dark hero header — sticky, compact */}
+      {/* Hero header — sticky, compact */}
       <div
         style={{
           position: "sticky",
           top: 0,
           zIndex: 30,
-          background: "var(--dark)",
+          background: "var(--cream)",
+          borderBottom: "1px solid var(--border)",
           padding: "28px 6vw 32px",
         }}
       >
-        {/* Content */}
-        <div style={{ color: "#fff", maxWidth: 680 }}>
+        <div style={{ maxWidth: 680 }}>
           <div
             style={{
               fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em",
-              textTransform: "uppercase", color: "var(--gold2)", marginBottom: 10,
+              textTransform: "uppercase", color: "var(--gold)", marginBottom: 10,
             }}
           >
             Portfólio completo
@@ -77,11 +77,12 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 style={{
                   fontSize: "clamp(32px, 4vw, 54px)", fontWeight: 400,
                   lineHeight: 1, letterSpacing: "-.04em", margin: "0 0 10px",
+                  color: "var(--ink)",
                 }}
               >
                 {TIPO_LABELS[tipo].title}
               </h1>
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,.55)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
+              <p style={{ fontSize: 15, color: "var(--muted)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
                 {TIPO_LABELS[tipo].subtitle}
               </p>
             </>
@@ -92,11 +93,12 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 style={{
                   fontSize: "clamp(32px, 4vw, 54px)", fontWeight: 400,
                   lineHeight: 1, letterSpacing: "-.04em", margin: "0 0 10px",
+                  color: "var(--ink)",
                 }}
               >
                 Cada viagem,<br /><em>uma narrativa.</em>
               </h1>
-              <p style={{ fontSize: 15, color: "rgba(255,255,255,.55)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
+              <p style={{ fontSize: 15, color: "var(--muted)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
                 Explore o portfólio completo. Todas as viagens são personalizáveis e podem ser desenhadas com datas e composição à sua medida.
               </p>
             </>
