@@ -1,7 +1,3 @@
--- Add specialties array to travel_packages
-ALTER TABLE travel_packages
-  ADD COLUMN IF NOT EXISTS specialties text[] DEFAULT '{}';
-
 -- Create package_categories junction table (múltiplas categorias por destino)
 CREATE TABLE IF NOT EXISTS package_categories (
   id          uuid DEFAULT gen_random_uuid() PRIMARY KEY,

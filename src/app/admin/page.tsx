@@ -2331,7 +2331,6 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     is_featured:       trip?.is_featured       ?? false,
     tag:               trip?.tag               ?? "",
     trip_type:         (trip?.trip_type        ?? "individual") as "individual" | "grupo" | "ambos",
-    specialties:       ((trip as any)?.specialties ?? []) as string[],
   });
 
   const [packageCategoryIds, setPackageCategoryIds] = useState<string[]>(
@@ -2555,7 +2554,6 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       available_seats:   form.available_seats !== "" ? Number(form.available_seats) : null,
       trip_status:       form.trip_status || null,
       category_id:       packageCategoryIds[0] ?? null,
-      specialties:       form.specialties.length > 0 ? form.specialties : null,
       pdf_url:           pdfUrl || null,
       is_published:      form.is_published,
       is_featured:       form.is_featured,
@@ -3170,33 +3168,6 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
-            <h3 className="font-display text-[20px] tracking-tight mb-1">Especialidades</h3>
-            <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Temas específicos desta viagem.</p>
-            <div className="flex flex-wrap gap-2">
-              {["Lua de mel", "Família", "Individual", "Bem-estar", "Cultura"].map((s) => {
-                const active = form.specialties.includes(s);
-                return (
-                  <button
-                    key={s}
-                    onClick={() => setForm((f) => ({
-                      ...f,
-                      specialties: active
-                        ? f.specialties.filter((x) => x !== s)
-                        : [...f.specialties, s],
-                    }))}
-                    className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
-                      active
-                        ? "bg-[var(--gold)] text-white border-[var(--gold)]"
-                        : "border-[var(--line-2)] hover:border-[var(--gold)]"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
 
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
             <h3 className="font-display text-[20px] tracking-tight mb-1">Suplementos</h3>

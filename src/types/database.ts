@@ -96,7 +96,6 @@ export interface Database {
           review_count: number;
           hero_image_url: string | null;
           tag: string | null;
-          specialties: string[] | null;
           departure_date: string | null;
           return_date: string | null;
           available_seats: number | null;
@@ -124,7 +123,6 @@ export interface Database {
           review_count?: number;
           hero_image_url?: string | null;
           tag?: string | null;
-          specialties?: string[] | null;
           departure_date?: string | null;
           return_date?: string | null;
           available_seats?: number | null;
@@ -152,7 +150,6 @@ export interface Database {
           review_count?: number;
           hero_image_url?: string | null;
           tag?: string | null;
-          specialties?: string[] | null;
           departure_date?: string | null;
           return_date?: string | null;
           available_seats?: number | null;

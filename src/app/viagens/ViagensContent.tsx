@@ -29,15 +29,12 @@ const DURATION_OPTIONS = [
   { key: "15+",   label: "+15 dias",   min: 15, max: Infinity },
 ] as const;
 
-export const SPECIALTIES = ["Lua de mel", "Família", "Individual", "Bem-estar", "Cultura"];
-
 export function ViagensContent({ trips, categories, tipo }: Props) {
   const searchParams = useSearchParams();
-  const [activeCat,  setActiveCat]  = useState(searchParams.get("cat") || "all");
-  const [price,      setPrice]      = useState(15000);
-  const [sort,       setSort]       = useState("featured");
-  const [duration,   setDuration]   = useState("all");
-  const [specialty,  setSpecialty]  = useState("all");
+  const [activeCat, setActiveCat] = useState(searchParams.get("cat") || "all");
+  const [price,     setPrice]     = useState(15000);
+  const [sort,      setSort]      = useState("featured");
+  const [duration,  setDuration]  = useState("all");
   const reduced = useReducedMotion();
 
   const maxPrice = useMemo(
@@ -61,18 +58,14 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
           t.duration_days >= durOption.min &&
           t.duration_days <= durOption.max);
 
-      const specOk =
-        specialty === "all" ||
-        (t.specialties ?? []).includes(specialty);
-
-      return catOk && priceOk && durOk && specOk;
+      return catOk && priceOk && durOk;
     });
 
     if (sort === "price-asc")  result = [...result].sort((a, b) => a.price_from - b.price_from);
     if (sort === "price-desc") result = [...result].sort((a, b) => b.price_from - a.price_from);
     if (sort === "duration")   result = [...result].sort((a, b) => a.duration_days - b.duration_days);
     return result;
-  }, [activeCat, price, duration, specialty, sort, trips]);
+  }, [activeCat, price, duration, sort, trips]);
 
   const allCategories = [{ id: "all", name: "Todas", slug: "all" }, ...categories.map((c) => ({ id: c.slug, name: c.name, slug: c.slug }))];
 
@@ -81,7 +74,6 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
     setPrice(maxPrice);
     setSort("featured");
     setDuration("all");
-    setSpecialty("all");
   }
 
   const pillBase: React.CSSProperties = {
@@ -249,31 +241,6 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               </div>
             </div>
 
-            {/* Especialidades */}
-            <div style={{ padding: "16px 0" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>
-                Especialidades
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                {SPECIALTIES.map((s) => {
-                  const active = specialty === s;
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => setSpecialty(active ? "all" : s)}
-                      style={{
-                        ...pillBase,
-                        borderColor: active ? "var(--gold)" : "var(--border)",
-                        background: active ? "var(--gold)" : "transparent",
-                        color: active ? "#fff" : "var(--muted)",
-                      }}
-                    >
-                      {s}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </aside>
         </SlideIn>
 
@@ -326,7 +293,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               </motion.div>
             ) : (
               <motion.div
-                key={`grid-${activeCat}-${duration}-${specialty}`}
+                key={`grid-${activeCat}-${duration}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
