@@ -50,22 +50,40 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
 
   return (
     <div>
-      {/* Hero header — sticky, compact */}
+      {/* Dark hero header */}
       <div
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 30,
-          background: "var(--cream)",
-          borderBottom: "1px solid var(--border)",
-          padding: "28px 6vw 32px",
+          minHeight: "45vh",
+          position: "relative",
+          display: "flex",
+          alignItems: "flex-end",
+          overflow: "hidden",
+          background: "var(--dark)",
+          padding: "clamp(110px,15vw,150px) 6vw 56px",
         }}
       >
-        <div style={{ maxWidth: 680 }}>
+        {/* Background image */}
+        <div
+          style={{
+            position: "absolute", inset: 0,
+            backgroundSize: "cover", backgroundPosition: "center",
+            backgroundImage: "url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2400&q=90')",
+            opacity: 0.18,
+          }}
+        />
+        {/* Overlay */}
+        <div
+          style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(180deg, rgba(14,25,38,.95) 0%, rgba(14,25,38,.8) 100%)",
+          }}
+        />
+        {/* Content */}
+        <div style={{ position: "relative", zIndex: 2, color: "#fff", maxWidth: 680 }}>
           <div
             style={{
               fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em",
-              textTransform: "uppercase", color: "var(--gold)", marginBottom: 10,
+              textTransform: "uppercase", color: "var(--gold2)", marginBottom: 12,
             }}
           >
             Portfólio completo
@@ -75,14 +93,13 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               <h1
                 className="font-display"
                 style={{
-                  fontSize: "clamp(32px, 4vw, 54px)", fontWeight: 400,
-                  lineHeight: 1, letterSpacing: "-.04em", margin: "0 0 10px",
-                  color: "var(--ink)",
+                  fontSize: "clamp(44px, 5.5vw, 78px)", fontWeight: 400,
+                  lineHeight: 0.93, letterSpacing: "-.04em", margin: "0 0 16px",
                 }}
               >
                 {TIPO_LABELS[tipo].title}
               </h1>
-              <p style={{ fontSize: 15, color: "var(--muted)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
+              <p style={{ fontSize: 16, color: "rgba(255,255,255,.65)", lineHeight: 1.72, maxWidth: 520, marginTop: 16, fontWeight: 300 }}>
                 {TIPO_LABELS[tipo].subtitle}
               </p>
             </>
@@ -91,14 +108,13 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               <h1
                 className="font-display"
                 style={{
-                  fontSize: "clamp(32px, 4vw, 54px)", fontWeight: 400,
-                  lineHeight: 1, letterSpacing: "-.04em", margin: "0 0 10px",
-                  color: "var(--ink)",
+                  fontSize: "clamp(44px, 5.5vw, 78px)", fontWeight: 400,
+                  lineHeight: 0.93, letterSpacing: "-.04em", margin: "0 0 0",
                 }}
               >
                 Cada viagem,<br /><em>uma narrativa.</em>
               </h1>
-              <p style={{ fontSize: 15, color: "var(--muted)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
+              <p style={{ fontSize: 16, color: "rgba(255,255,255,.65)", lineHeight: 1.72, maxWidth: 520, marginTop: 16, fontWeight: 300 }}>
                 Explore o portfólio completo. Todas as viagens são personalizáveis e podem ser desenhadas com datas e composição à sua medida.
               </p>
             </>
