@@ -500,7 +500,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                           })}
                         </div>
                       </div>
-                    ) : (
+                    ) : trip.trip_type !== "grupo" ? (
                       <div className="grid grid-cols-2 gap-3">
                         <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                           <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Início</span>
@@ -511,7 +511,7 @@ export function TripDetailClient({ trip, remainingSeats, dateSeats }: Props) {
                           <input ref={checkOutRef} type="date" className="w-full mt-1 bg-transparent text-[13px] focus:outline-none" />
                         </label>
                       </div>
-                    )}
+                    ) : null}
                     <label className="block rounded-xl bg-white border border-[var(--line)] px-4 py-3">
                       <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted)]">Viajantes</span>
                       <div className="flex items-center justify-between mt-1 text-[13px]">

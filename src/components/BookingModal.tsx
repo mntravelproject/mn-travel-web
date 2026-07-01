@@ -444,7 +444,7 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                     </div>
 
                     {/* Pax + Data */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={selectedTrip?.trip_type === "grupo" ? "" : "grid grid-cols-2 gap-3"}>
                       <div>
                         <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Número de pessoas</label>
                         <div className="flex items-center gap-2 bg-white border border-[var(--line)] rounded-xl px-3 py-2.5">
@@ -461,17 +461,19 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                           >+</button>
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data pretendida</label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
-                          <input
-                            type="date" value={form.date} onChange={set("date")}
-                            min={new Date().toISOString().slice(0, 10)}
-                            className="w-full pl-10 pr-3 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--ink)] transition"
-                          />
+                      {selectedTrip?.trip_type !== "grupo" && (
+                        <div>
+                          <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Data pretendida</label>
+                          <div className="relative">
+                            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
+                            <input
+                              type="date" value={form.date} onChange={set("date")}
+                              min={new Date().toISOString().slice(0, 10)}
+                              className="w-full pl-10 pr-3 py-3 bg-white border border-[var(--line)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--ink)] transition"
+                            />
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Acompanhantes */}
