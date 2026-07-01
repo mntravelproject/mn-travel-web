@@ -50,19 +50,17 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
 
   return (
     <div>
-      {/* Sticky compact header */}
+      {/* Dark hero header */}
       <div
         style={{
           position: "sticky",
           top: 0,
           zIndex: 30,
-          background: "var(--dark)",
-          overflow: "hidden",
-          padding: "0 6vw",
           display: "flex",
-          alignItems: "center",
-          height: 72,
-          borderBottom: "1px solid rgba(255,255,255,.07)",
+          alignItems: "flex-end",
+          overflow: "hidden",
+          background: "var(--dark)",
+          padding: "clamp(56px,8vw,80px) 6vw 36px",
         }}
       >
         {/* Background image */}
@@ -71,47 +69,56 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
             position: "absolute", inset: 0,
             backgroundSize: "cover", backgroundPosition: "center",
             backgroundImage: "url('https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2400&q=90')",
-            opacity: 0.12,
+            opacity: 0.18,
           }}
         />
-        <div style={{ position: "absolute", inset: 0, background: "rgba(14,25,38,.88)" }} />
+        {/* Overlay */}
+        <div
+          style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(180deg, rgba(14,25,38,.95) 0%, rgba(14,25,38,.8) 100%)",
+          }}
+        />
         {/* Content */}
-        <div style={{ position: "relative", zIndex: 2, display: "flex", alignItems: "baseline", gap: 16 }}>
+        <div style={{ position: "relative", zIndex: 2, color: "#fff", maxWidth: 680 }}>
           <div
             style={{
-              fontSize: 9.5, fontWeight: 700, letterSpacing: "0.22em",
-              textTransform: "uppercase", color: "var(--gold2)", whiteSpace: "nowrap",
+              fontSize: 10.5, fontWeight: 700, letterSpacing: "0.22em",
+              textTransform: "uppercase", color: "var(--gold2)", marginBottom: 10,
             }}
           >
             Portfólio completo
           </div>
-          {tipo && (
+          {tipo ? (
             <>
-              <div style={{ width: 1, height: 12, background: "rgba(255,255,255,.2)" }} />
               <h1
                 className="font-display"
                 style={{
-                  fontSize: "clamp(20px, 2.2vw, 28px)", fontWeight: 400,
-                  letterSpacing: "-.03em", color: "#fff", margin: 0,
+                  fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 400,
+                  lineHeight: 0.95, letterSpacing: "-.04em", margin: "0 0 10px",
                 }}
               >
                 {TIPO_LABELS[tipo].title}
               </h1>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,.45)", margin: 0, fontWeight: 300 }}>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,.55)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
                 {TIPO_LABELS[tipo].subtitle}
               </p>
             </>
-          )}
-          {!tipo && (
-            <h1
-              className="font-display"
-              style={{
-                fontSize: "clamp(20px, 2.2vw, 28px)", fontWeight: 400,
-                letterSpacing: "-.03em", color: "#fff", margin: 0,
-              }}
-            >
-              Cada viagem, <em>uma narrativa.</em>
-            </h1>
+          ) : (
+            <>
+              <h1
+                className="font-display"
+                style={{
+                  fontSize: "clamp(28px, 3.5vw, 48px)", fontWeight: 400,
+                  lineHeight: 0.95, letterSpacing: "-.04em", margin: "0 0 10px",
+                }}
+              >
+                Cada viagem,<br /><em>uma narrativa.</em>
+              </h1>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,.55)", lineHeight: 1.6, maxWidth: 520, margin: 0, fontWeight: 300 }}>
+                Explore o portfólio completo. Todas as viagens são personalizáveis e podem ser desenhadas com datas e composição à sua medida.
+              </p>
+            </>
           )}
         </div>
       </div>
