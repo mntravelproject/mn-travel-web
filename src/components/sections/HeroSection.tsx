@@ -166,7 +166,18 @@ export function HeroSection({ images = [] }: Props) {
 
       {/* Dots — vertical, lado direito */}
       {slides.length > 1 && (
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-2.5 z-[3]">
+        <div
+          style={{
+            position: "absolute",
+            right: 24,
+            top: "50%",
+            transform: "translateY(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            zIndex: 3,
+          }}
+        >
           {slides.map((_, i) => (
             <button
               key={i}
@@ -181,6 +192,7 @@ export function HeroSection({ images = [] }: Props) {
                 cursor: "pointer",
                 transition: "all .4s ease",
                 padding: 0,
+                display: "block",
               }}
             />
           ))}
