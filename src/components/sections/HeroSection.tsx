@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
-export function HeroSection() {
+const FALLBACK = "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2400&q=90";
+const INTERVAL = 5500;
+
+interface Props {
+  images?: string[];
+}
+
+export function HeroSection({ images = [] }: Props) {
   const reduced = useReducedMotion();
   const ease = [0.16, 1, 0.3, 1] as const;
+
+  const slides = images.length > 0 ? images : [FALLBACK];
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     if (window.location.hash) {
@@ -15,25 +25,32 @@ export function HeroSection() {
     }
   }, []);
 
+  useEffect(() => {
+    if (slides.length <= 1 || reduced) return;
+    const id = setInterval(() => setCurrent((i) => (i + 1) % slides.length), INTERVAL);
+    return () => clearInterval(id);
+  }, [slides.length, reduced]);
+
   return (
     <section className="relative overflow-hidden min-h-screen flex items-center">
-      {/* Background — vídeo hero */}
+      {/* Carousel images */}
       <div className="absolute inset-0">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=2400&q=90"
-          className="w-full h-full object-cover object-center absolute inset-0"
-        >
-          <source src="https://ddsupkrcfipidktfnfru.supabase.co/storage/v1/object/public/video-inicio/video-6a3d3f49c37e40f8ad584edf.mp4" type="video/mp4" />
-        </video>
+        {slides.map((url, i) => (
+          <div
+            key={url}
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${url})`,
+              opacity: i === current ? 1 : 0,
+              transition: reduced ? "none" : "opacity 1.2s ease-in-out",
+            }}
+          />
+        ))}
       </div>
 
       {/* Gradients */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 z-[1]"
         style={{
           background: `
             linear-gradient(105deg, rgba(10,18,28,.93) 0%, rgba(10,18,28,.56) 46%, rgba(10,18,28,.12) 100%),
@@ -43,11 +60,9 @@ export function HeroSection() {
       />
 
       {/* Content */}
-      <div
-        className="relative z-[2] w-full max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 pt-[140px] pb-[120px]"
-      >
+      <div className="relative z-[2] w-full max-w-[1380px] mx-auto px-5 md:px-8 lg:px-14 pt-[140px] pb-[120px]">
         <div style={{ maxWidth: "min(820px, 82vw)" }}>
-          {/* Eyebrow with decorative line */}
+          {/* Eyebrow */}
           <motion.div
             initial={{ opacity: 0, y: reduced ? 0 : 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -84,9 +99,7 @@ export function HeroSection() {
                 variants={{
                   hidden: { opacity: 0, y: reduced ? 0 : 40, clipPath: "inset(0 0 100% 0)" },
                   visible: {
-                    opacity: 1,
-                    y: 0,
-                    clipPath: "inset(0 0 0% 0)",
+                    opacity: 1, y: 0, clipPath: "inset(0 0 0% 0)",
                     transition: { duration: 0.8, ease },
                   },
                 }}
@@ -126,12 +139,7 @@ export function HeroSection() {
               type="button"
               onClick={() => document.querySelector('[data-scroll="colecoes"]')?.scrollIntoView({ behavior: "smooth" })}
               className="inline-flex items-center gap-2.5 rounded-full text-white text-[13px] font-semibold tracking-[.05em] uppercase transition-all duration-200 hover:-translate-y-[2px]"
-              style={{
-                padding: "16px 32px",
-                background: "var(--gold)",
-                border: "none",
-                cursor: "pointer",
-              }}
+              style={{ padding: "16px 32px", background: "var(--gold)", border: "none", cursor: "pointer" }}
               onMouseEnter={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--gold2)")}
               onMouseLeave={e => ((e.currentTarget as HTMLButtonElement).style.background = "var(--gold)")}
             >
@@ -140,10 +148,7 @@ export function HeroSection() {
             <Link
               href="/contacto"
               className="inline-flex items-center gap-2 text-[12.5px] font-semibold tracking-[.05em] uppercase pb-[2px] border-b transition-all"
-              style={{
-                color: "rgba(255,255,255,.76)",
-                borderColor: "rgba(255,255,255,.3)",
-              }}
+              style={{ color: "rgba(255,255,255,.76)", borderColor: "rgba(255,255,255,.3)" }}
               onMouseEnter={e => {
                 (e.currentTarget as HTMLAnchorElement).style.color = "#fff";
                 (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,.65)";
@@ -158,6 +163,29 @@ export function HeroSection() {
           </motion.div>
         </div>
       </div>
+
+      {/* Dots */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-[72px] left-1/2 -translate-x-1/2 flex gap-2 z-[3]">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setCurrent(i)}
+              style={{
+                width: i === current ? 28 : 8,
+                height: 2,
+                borderRadius: 999,
+                background: i === current ? "var(--gold)" : "rgba(255,255,255,.35)",
+                border: "none",
+                cursor: "pointer",
+                transition: "all .4s ease",
+                padding: 0,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Scroll indicator */}
       <motion.button

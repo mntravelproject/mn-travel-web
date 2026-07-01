@@ -8,18 +8,20 @@ import { CollectionsSection } from "@/components/sections/CollectionsSection";
 import { FinalCTASection } from "@/components/sections/FinalCTASection";
 import { getFeaturedTrips } from "@/lib/services/trips";
 import { getAllCategories } from "@/lib/services/categories";
+import { getHeroImages } from "@/lib/services/heroImages";
 
 export default async function HomePage() {
-  const [trips, categories] = await Promise.all([
+  const [trips, categories, heroImages] = await Promise.all([
     getFeaturedTrips(8).catch(() => []),
     getAllCategories().catch(() => []),
+    getHeroImages().catch(() => []),
   ]);
 
   return (
     <>
       <Header />
       <main>
-        <HeroSection />
+        <HeroSection images={heroImages} />
         <StatsBar />
         <CollectionsSection trips={trips} categories={categories} />
         <FinalCTASection />
