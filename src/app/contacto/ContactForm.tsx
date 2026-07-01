@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { User, Mail, Phone, MessageSquare, Check, ChevronDown } from "lucide-react";
+import { User, Mail, Phone, MessageSquare, Check } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 
 const CONTACT_TYPES = [
   { value: "orcamento",   label: "Pedido de Orçamento Personalizado" },
@@ -22,7 +25,7 @@ export function ContactForm() {
   const [success,    setSuccess]    = useState(false);
   const [error,      setError]      = useState("");
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
   async function handleSubmit(e: React.FormEvent) {
@@ -125,18 +128,20 @@ export function ContactForm() {
       {/* Tipo de contacto */}
       <div>
         <label className="block text-[10.5px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">Tipo de contacto</label>
-        <div className="relative">
-          <select
-            value={form.type} onChange={set("type")}
-            className="w-full px-4 py-3.5 bg-white border border-[var(--line)] rounded-xl text-[14px] focus:outline-none focus:border-[var(--ink)] transition appearance-none pr-10"
-          >
-            <option value="">Seleccionar tipo…</option>
+        <Select
+          value={form.type || "__placeholder__"}
+          onValueChange={(v) => setForm((f) => ({ ...f, type: v === "__placeholder__" ? "" : v }))}
+        >
+          <SelectTrigger className="py-3.5">
+            <SelectValue placeholder="Seleccionar tipo…" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__placeholder__" className="text-[var(--muted)]">Seleccionar tipo…</SelectItem>
             {CONTACT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
             ))}
-          </select>
-          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
-        </div>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Assunto */}

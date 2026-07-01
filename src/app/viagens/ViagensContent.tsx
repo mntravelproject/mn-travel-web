@@ -3,6 +3,9 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { TripCard } from "@/components/trips/TripCard";
 import { SlideIn, StaggerContainer, StaggerItem, FadeIn } from "@/components/animations";
 import { formatPrice } from "@/lib/utils";
@@ -258,24 +261,17 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               <div style={{ fontSize: 13, color: "var(--muted)" }}>
                 <strong style={{ color: "var(--ink)", fontWeight: 600 }}>{filtered.length}</strong> viagens encontradas
               </div>
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value)}
-                style={{
-                  fontFamily: "inherit", fontSize: 13, color: "var(--ink)",
-                  border: "1.5px solid var(--border)", background: "var(--cream-2)",
-                  padding: "8px 30px 8px 12px", borderRadius: 8,
-                  cursor: "pointer", outline: "none", fontWeight: 500,
-                  appearance: "none",
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238c7a65'/%3E%3C/svg%3E\")",
-                  backgroundRepeat: "no-repeat", backgroundPosition: "right 10px center",
-                }}
-              >
-                <option value="featured">Em destaque</option>
-                <option value="price-asc">Preço · menor primeiro</option>
-                <option value="price-desc">Preço · maior primeiro</option>
-                <option value="duration">Duração</option>
-              </select>
+              <Select value={sort} onValueChange={setSort}>
+                <SelectTrigger className="w-auto min-w-[180px] bg-[var(--cream-2)] border-[var(--border)] text-[13px] py-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Em destaque</SelectItem>
+                  <SelectItem value="price-asc">Preço · menor primeiro</SelectItem>
+                  <SelectItem value="price-desc">Preço · maior primeiro</SelectItem>
+                  <SelectItem value="duration">Duração</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </FadeIn>
 
