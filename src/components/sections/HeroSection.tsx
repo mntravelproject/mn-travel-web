@@ -153,7 +153,7 @@ export function HeroSection() {
                 (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(255,255,255,.3)";
               }}
             >
-              Atendimento personalizado →
+              Planear a minha viagem →
             </Link>
           </motion.div>
         </div>
