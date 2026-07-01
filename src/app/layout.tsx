@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   title: "MN Travel — Experiências Premium de Viagem",
   description:
     "O mundo visto de outra perspectiva — organizado ao detalhe, pensado para si.",
+  icons: {
+    icon: "/logo_preto.png",
+    apple: "/logo_preto.png",
+  },
 };
 
 export default function RootLayout({
