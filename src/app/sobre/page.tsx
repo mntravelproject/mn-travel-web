@@ -7,7 +7,7 @@ import { ArrowRight, Globe, Heart, Star, Shield } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Sobre — MN Travel",
-  description: "Somos curadores de experiências de viagem. Conheça a nossa história, filosofia e a equipa por detrás da MN Travel.",
+  description: "Somos organizadores de experiências de viagem. Conheça a nossa história, filosofia e a equipa por detrás da MN Travel.",
 };
 
 const VALUES = [
@@ -95,11 +95,11 @@ export default function SobrePage() {
           <div>
             <SectionLabel>A nossa missão</SectionLabel>
             <h2 className="mt-5 font-display text-[28px] sm:text-[36px] md:text-[44px] leading-[1.05] tracking-tight">
-              Curar experiências que ficam para sempre.
+              Organizar experiências que ficam para sempre.
             </h2>
             <div className="mt-6 space-y-4 text-[15px] text-[var(--muted)] leading-relaxed">
               <p>
-                Não somos uma agência de viagens convencional. Somos curadores — pessoas que visitaram os destinos, dormiram nos hotéis e conhecem os guias que recomendam.
+                Não somos uma agência de viagens convencional. Somos organizadores — pessoas que visitaram os destinos, dormiram nos hotéis e conhecem os guias que recomendam.
               </p>
               <p>
                 Trabalhamos com um número limitado de clientes por ano para garantir que cada viagem recebe a atenção que merece. O resultado é uma experiência desenhada ao milímetro, onde o imprevisto agradável faz parte do plano.

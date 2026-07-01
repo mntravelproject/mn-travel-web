@@ -6,7 +6,7 @@ import { Mail, Phone, MapPin, Clock } from "lucide-react";
 
 export const metadata = {
   title: "Contacto — MN Travel",
-  description: "Entre em contacto com a nossa equipa de curadores de viagem.",
+  description: "Entre em contacto com a nossa equipa de organizadores de viagem.",
 };
 
 const INFO = [

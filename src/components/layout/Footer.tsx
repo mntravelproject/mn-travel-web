@@ -9,7 +9,7 @@ const columns = [
   },
   {
     title: "Organização",
-    links: ["Filosofia", "Curadores", "Editorial", "Parceiros", "Sustentabilidade"],
+    links: ["Filosofia", "Organizadores", "Editorial", "Parceiros", "Sustentabilidade"],
   },
   {
     title: "Contacto",

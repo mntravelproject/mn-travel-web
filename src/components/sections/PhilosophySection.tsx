@@ -5,7 +5,7 @@ import { ParallaxSection } from "@/components/animations/ParallaxSection";
 
 const stats = [
   { n: "17", l: "anos de organização" },
-  { n: "62", l: "destinos curados" },
+  { n: "62", l: "destinos organizados" },
   { n: "98%", l: "voltam a viajar" },
 ];
 

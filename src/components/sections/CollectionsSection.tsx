@@ -12,7 +12,7 @@ interface Props {
 }
 
 const BENEFITS = [
-  { icon: "✈", label: "Acompanhamento",   sub: "Curador dedicado do início ao fim" },
+  { icon: "✈", label: "Acompanhamento",   sub: "Organizador dedicado do início ao fim" },
   { icon: "◎", label: "Parceiros Exclusivos", sub: "Hotéis e experiências de excelência" },
   { icon: "◇", label: "Segurança Total",   sub: "Tranquilidade em cada destino" },
   { icon: "✦", label: "Assistência 24/7",  sub: "Sempre disponível onde estiver" },
