@@ -129,14 +129,13 @@ export function ContactForm() {
       <div>
         <label className="block text-[10.5px] uppercase tracking-[0.18em] text-[var(--muted)] mb-2">Tipo de contacto</label>
         <Select
-          value={form.type || "__placeholder__"}
-          onValueChange={(v) => setForm((f) => ({ ...f, type: v === "__placeholder__" ? "" : v }))}
+          value={form.type || undefined}
+          onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}
         >
           <SelectTrigger className="py-3.5">
             <SelectValue placeholder="Seleccionar tipo…" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__placeholder__" className="text-[var(--muted)]">Seleccionar tipo…</SelectItem>
             {CONTACT_TYPES.map((t) => (
               <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
             ))}

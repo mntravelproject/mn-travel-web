@@ -256,10 +256,9 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                       <div>
                         <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Tipo de viagem</label>
                         <Select
-                          value={tripType || "__placeholder__"}
+                          value={tripType || undefined}
                           onValueChange={(v) => {
-                            const val = v === "__placeholder__" ? "" : v as "individual" | "grupo";
-                            setTripType(val);
+                            setTripType(v as "individual" | "grupo");
                             setForm((f) => ({ ...f, trip_id: "" }));
                           }}
                         >
@@ -267,7 +266,6 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                             <SelectValue placeholder="Seleccionar tipo (opcional)" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="__placeholder__" className="text-[var(--muted)]">Seleccionar tipo (opcional)</SelectItem>
                             <SelectItem value="individual">Individual</SelectItem>
                             <SelectItem value="grupo">Grupo</SelectItem>
                           </SelectContent>
@@ -278,14 +276,13 @@ export function BookingModal({ open, onClose, defaultTripId }: Props) {
                         <div>
                           <label className="block text-[10.5px] uppercase tracking-[0.16em] text-[var(--muted)] mb-1.5">Viagem de interesse</label>
                           <Select
-                            value={form.trip_id || "__placeholder__"}
-                            onValueChange={(v) => setForm((f) => ({ ...f, trip_id: v === "__placeholder__" ? "" : v }))}
+                            value={form.trip_id || undefined}
+                            onValueChange={(v) => setForm((f) => ({ ...f, trip_id: v }))}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Seleccionar viagem (opcional)" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="__placeholder__" className="text-[var(--muted)]">Seleccionar viagem (opcional)</SelectItem>
                               {trips.filter((t) => t.trip_type === tripType).map((t) => (
                                 <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>
                               ))}
