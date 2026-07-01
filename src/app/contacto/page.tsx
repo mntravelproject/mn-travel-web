@@ -89,7 +89,7 @@ export default function ContactoPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer className="!mt-0" />
     </>
   );
 }

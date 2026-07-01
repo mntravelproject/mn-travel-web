@@ -44,7 +44,7 @@ export default async function ViagensPage({
           <ViagensContent key={tipo ?? "all"} trips={trips} categories={categories} tipo={tipo} />
         </Suspense>
       </main>
-      <Footer />
+      <Footer className="!mt-0" />
     </>
   );
 }

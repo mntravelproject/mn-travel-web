@@ -24,7 +24,7 @@ export default async function HomePage() {
         <CollectionsSection trips={trips} categories={categories} />
         <FinalCTASection />
       </main>
-      <Footer />
+      <Footer className="!mt-0" />
     </>
   );
 }
