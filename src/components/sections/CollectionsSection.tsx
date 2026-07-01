@@ -293,7 +293,7 @@ export function CollectionsSection({ trips, categories }: Props) {
         className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
         style={{
           margin: "0 -6vw",
-          background: "rgba(250,243,230,.55)",
+          background: "var(--cream)",
           border: "1px solid var(--border)",
           borderLeft: "none", borderRight: "none",
         }}
@@ -302,7 +302,7 @@ export function CollectionsSection({ trips, categories }: Props) {
           <div
             key={i}
             style={{
-              padding: "36px 20px",
+              padding: "52px 20px",
               display: "flex", gap: 13, alignItems: "flex-start",
               borderRight: i < BENEFITS.length - 1 ? "1px solid var(--border)" : "none",
             }}
