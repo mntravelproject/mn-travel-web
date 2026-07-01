@@ -22,11 +22,22 @@ const TIPO_LABELS: Record<string, { title: string; subtitle: string }> = {
   grupo:      { title: "Viagens de Grupo",    subtitle: "Partilhe momentos únicos com outros viajantes." },
 };
 
+const DURATION_OPTIONS = [
+  { key: "1-5",   label: "1–5 dias",   min: 1,  max: 5  },
+  { key: "6-9",   label: "6–9 dias",   min: 6,  max: 9  },
+  { key: "10-14", label: "10–14 dias", min: 10, max: 14 },
+  { key: "15+",   label: "+15 dias",   min: 15, max: Infinity },
+] as const;
+
+export const SPECIALTIES = ["Lua de mel", "Família", "Individual", "Bem-estar", "Cultura"];
+
 export function ViagensContent({ trips, categories, tipo }: Props) {
   const searchParams = useSearchParams();
-  const [activeCat, setActiveCat] = useState(searchParams.get("cat") || "all");
-  const [price, setPrice] = useState(15000);
-  const [sort, setSort] = useState("featured");
+  const [activeCat,  setActiveCat]  = useState(searchParams.get("cat") || "all");
+  const [price,      setPrice]      = useState(15000);
+  const [sort,       setSort]       = useState("featured");
+  const [duration,   setDuration]   = useState("all");
+  const [specialty,  setSpecialty]  = useState("all");
   const reduced = useReducedMotion();
 
   const maxPrice = useMemo(
@@ -35,18 +46,50 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
   );
 
   const filtered = useMemo(() => {
-    let result = trips.filter(
-      (t) =>
-        (activeCat === "all" || t.category?.slug === activeCat) &&
-        t.price_from <= price
-    );
+    let result = trips.filter((t) => {
+      const catOk =
+        activeCat === "all" ||
+        t.categories?.some((c) => c.category?.slug === activeCat) ||
+        t.category?.slug === activeCat;
+
+      const priceOk = t.price_from <= price;
+
+      const durOption = DURATION_OPTIONS.find((d) => d.key === duration);
+      const durOk =
+        duration === "all" ||
+        (durOption != null &&
+          t.duration_days >= durOption.min &&
+          t.duration_days <= durOption.max);
+
+      const specOk =
+        specialty === "all" ||
+        (t.specialties ?? []).includes(specialty);
+
+      return catOk && priceOk && durOk && specOk;
+    });
+
     if (sort === "price-asc")  result = [...result].sort((a, b) => a.price_from - b.price_from);
     if (sort === "price-desc") result = [...result].sort((a, b) => b.price_from - a.price_from);
     if (sort === "duration")   result = [...result].sort((a, b) => a.duration_days - b.duration_days);
     return result;
-  }, [activeCat, price, sort, trips]);
+  }, [activeCat, price, duration, specialty, sort, trips]);
 
   const allCategories = [{ id: "all", name: "Todas", slug: "all" }, ...categories.map((c) => ({ id: c.slug, name: c.name, slug: c.slug }))];
+
+  function clearAll() {
+    setActiveCat("all");
+    setPrice(maxPrice);
+    setSort("featured");
+    setDuration("all");
+    setSpecialty("all");
+  }
+
+  const pillBase: React.CSSProperties = {
+    padding: "6px 13px", borderRadius: 999,
+    fontSize: 12, fontWeight: 500,
+    cursor: "pointer", transition: "all .18s", fontFamily: "inherit",
+    border: "1.5px solid",
+  };
 
   return (
     <div>
@@ -120,7 +163,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 Filtros
               </span>
               <button
-                onClick={() => { setActiveCat("all"); setPrice(maxPrice); setSort("featured"); }}
+                onClick={clearAll}
                 style={{
                   fontSize: 11.5, color: "var(--gold)", fontWeight: 600,
                   cursor: "pointer", letterSpacing: "0.04em", background: "none",
@@ -186,21 +229,23 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 Duração
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                {["1–5 dias", "6–9 dias", "10–14 dias", "+15 dias"].map((d) => (
-                  <button
-                    key={d}
-                    style={{
-                      padding: "6px 13px", borderRadius: 999,
-                      border: "1.5px solid var(--border)", fontSize: 12, fontWeight: 500,
-                      color: "var(--muted)", background: "transparent",
-                      cursor: "pointer", transition: "all .18s", fontFamily: "inherit",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--gold)"; (e.currentTarget as HTMLElement).style.color = "var(--ink)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
-                  >
-                    {d}
-                  </button>
-                ))}
+                {DURATION_OPTIONS.map((d) => {
+                  const active = duration === d.key;
+                  return (
+                    <button
+                      key={d.key}
+                      onClick={() => setDuration(active ? "all" : d.key)}
+                      style={{
+                        ...pillBase,
+                        borderColor: active ? "var(--ink)" : "var(--border)",
+                        background: active ? "var(--ink)" : "transparent",
+                        color: active ? "#fff" : "var(--muted)",
+                      }}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -210,21 +255,23 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 Especialidades
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                {["Lua de mel", "Família", "Individual", "Bem-estar", "Cultura"].map((s) => (
-                  <button
-                    key={s}
-                    style={{
-                      padding: "6px 13px", borderRadius: 999,
-                      border: "1.5px solid var(--border)", fontSize: 12, fontWeight: 500,
-                      color: "var(--muted)", background: "transparent",
-                      cursor: "pointer", transition: "all .18s", fontFamily: "inherit",
-                    }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--gold)"; (e.currentTarget as HTMLElement).style.color = "var(--ink)"; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--muted)"; }}
-                  >
-                    {s}
-                  </button>
-                ))}
+                {SPECIALTIES.map((s) => {
+                  const active = specialty === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => setSpecialty(active ? "all" : s)}
+                      style={{
+                        ...pillBase,
+                        borderColor: active ? "var(--gold)" : "var(--border)",
+                        background: active ? "var(--gold)" : "transparent",
+                        color: active ? "#fff" : "var(--muted)",
+                      }}
+                    >
+                      {s}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </aside>
@@ -270,7 +317,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
                 <p className="mt-2" style={{ color: "var(--muted)" }}>
                   Tente ajustar os filtros ou{" "}
                   <button
-                    onClick={() => { setActiveCat("all"); setPrice(maxPrice); }}
+                    onClick={clearAll}
                     style={{ color: "var(--gold)", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}
                   >
                     limpar filtros
@@ -279,7 +326,7 @@ export function ViagensContent({ trips, categories, tipo }: Props) {
               </motion.div>
             ) : (
               <motion.div
-                key={`grid-${activeCat}`}
+                key={`grid-${activeCat}-${duration}-${specialty}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

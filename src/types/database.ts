@@ -96,6 +96,7 @@ export interface Database {
           review_count: number;
           hero_image_url: string | null;
           tag: string | null;
+          specialties: string[] | null;
           departure_date: string | null;
           return_date: string | null;
           available_seats: number | null;
@@ -123,6 +124,7 @@ export interface Database {
           review_count?: number;
           hero_image_url?: string | null;
           tag?: string | null;
+          specialties?: string[] | null;
           departure_date?: string | null;
           return_date?: string | null;
           available_seats?: number | null;
@@ -150,6 +152,7 @@ export interface Database {
           review_count?: number;
           hero_image_url?: string | null;
           tag?: string | null;
+          specialties?: string[] | null;
           departure_date?: string | null;
           return_date?: string | null;
           available_seats?: number | null;
@@ -213,6 +216,41 @@ export interface Database {
             columns: ["package_id"];
             isOneToOne: false;
             referencedRelation: "travel_packages";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      package_categories: {
+        Row: {
+          id: string;
+          package_id: string;
+          category_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          package_id: string;
+          category_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          package_id?: string;
+          category_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_categories_package_id_fkey";
+            columns: ["package_id"];
+            isOneToOne: false;
+            referencedRelation: "travel_packages";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "package_categories_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
             referencedColumns: ["id"];
           }
         ];
@@ -551,4 +589,5 @@ export type TravelPackageWithRelations = TravelPackage & {
 
 export type TravelPackageCard = TravelPackage & {
   category: Pick<Category, "id" | "name" | "slug"> | null;
+  categories: { category: Pick<Category, "id" | "name" | "slug"> | null }[];
 };

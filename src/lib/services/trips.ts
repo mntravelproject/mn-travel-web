@@ -5,7 +5,8 @@ import type { TravelPackageCard, TravelPackageWithRelations, PackageDate } from 
 const PACKAGE_CARD_SELECT = `
   *,
   category:categories!travel_packages_category_id_fkey(id, name, slug),
-  destination:destinations(id, name, slug)
+  destination:destinations(id, name, slug),
+  categories:package_categories(category:categories(id, name, slug))
 ` as const;
 
 const PACKAGE_FULL_SELECT = `
@@ -81,7 +82,11 @@ export async function getAllTrips(filters?: {
   let result = (data ?? []) as TravelPackageCard[];
 
   if (filters?.categorySlug && filters.categorySlug !== "all") {
-    result = result.filter((t) => t.category?.slug === filters.categorySlug);
+    result = result.filter(
+      (t) =>
+        t.categories?.some((c) => c.category?.slug === filters.categorySlug) ||
+        t.category?.slug === filters.categorySlug
+    );
   }
 
   return result;

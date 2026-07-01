@@ -2325,14 +2325,18 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
     triple_supplement:      (trip as any)?.triple_supplement      ?? 0,
     available_seats:        trip?.available_seats != null ? String(trip.available_seats) : "",
     trip_status:       trip?.trip_status       ?? "disponivel",
-    category_id:       (trip?.category_id      ?? null) as string | null,
     short_description: trip?.short_description ?? "",
     long_description:  trip?.long_description  ?? "",
     is_published:      trip?.is_published      ?? false,
     is_featured:       trip?.is_featured       ?? false,
     tag:               trip?.tag               ?? "",
     trip_type:         (trip?.trip_type        ?? "individual") as "individual" | "grupo" | "ambos",
+    specialties:       ((trip as any)?.specialties ?? []) as string[],
   });
+
+  const [packageCategoryIds, setPackageCategoryIds] = useState<string[]>(
+    trip?.category_id ? [trip.category_id] : []
+  );
 
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -2342,6 +2346,20 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       .select("*")
       .order("name")
       .then(({ data }) => { if (data) setCategories(data as Category[]); });
+    // Load existing categories from junction table
+    if (trip?.id) {
+      (createClient() as any)
+        .from("package_categories")
+        .select("category_id")
+        .eq("package_id", trip.id)
+        .then(({ data }: any) => {
+          if (data && data.length > 0) {
+            setPackageCategoryIds(data.map((r: any) => r.category_id));
+          } else if (trip.category_id) {
+            setPackageCategoryIds([trip.category_id]);
+          }
+        });
+    }
   }, []);
 
   const [itinerary, setItinerary] = useState<ItineraryRow[]>([
@@ -2536,7 +2554,8 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
       triple_supplement:      form.triple_supplement,
       available_seats:   form.available_seats !== "" ? Number(form.available_seats) : null,
       trip_status:       form.trip_status || null,
-      category_id:       form.category_id || null,
+      category_id:       packageCategoryIds[0] ?? null,
+      specialties:       form.specialties.length > 0 ? form.specialties : null,
       pdf_url:           pdfUrl || null,
       is_published:      form.is_published,
       is_featured:       form.is_featured,
@@ -2646,6 +2665,14 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
             );
           }
         }
+      }
+
+      // Sync package_categories (múltiplas categorias)
+      await (supabase as any).from("package_categories").delete().eq("package_id", packageId);
+      if (packageCategoryIds.length > 0) {
+        await (supabase as any).from("package_categories").insert(
+          packageCategoryIds.map((catId) => ({ package_id: packageId, category_id: catId }))
+        );
       }
 
       setSaved(true);
@@ -3116,25 +3143,58 @@ function EditForm({ trip, onBack, onSaved }: { trip: TravelPackageCard | null; o
           </div>
 
           <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
-            <h3 className="font-display text-[20px] tracking-tight mb-1">Categoria</h3>
-            <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Tipo de viagem.</p>
+            <h3 className="font-display text-[20px] tracking-tight mb-1">Categorias</h3>
+            <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Pode selecionar mais do que uma.</p>
             <div className="flex flex-wrap gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setForm((f) => ({ ...f, category_id: f.category_id === cat.id ? null : cat.id }))}
-                  className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
-                    form.category_id === cat.id
-                      ? "bg-[var(--ink)] text-[var(--cream)] border-[var(--ink)]"
-                      : "border-[var(--line-2)] hover:border-[var(--ink)]"
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
+              {categories.map((cat) => {
+                const active = packageCategoryIds.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setPackageCategoryIds((prev) =>
+                      active ? prev.filter((id) => id !== cat.id) : [...prev, cat.id]
+                    )}
+                    className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
+                      active
+                        ? "bg-[var(--ink)] text-[var(--cream)] border-[var(--ink)]"
+                        : "border-[var(--line-2)] hover:border-[var(--ink)]"
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
               {categories.length === 0 && (
                 <p className="text-[12px] text-[var(--muted)] tracking-tight">A carregar categorias…</p>
               )}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[var(--line)] p-7">
+            <h3 className="font-display text-[20px] tracking-tight mb-1">Especialidades</h3>
+            <p className="text-[13px] text-[var(--muted)] mb-4 tracking-tight">Temas específicos desta viagem.</p>
+            <div className="flex flex-wrap gap-2">
+              {["Lua de mel", "Família", "Individual", "Bem-estar", "Cultura"].map((s) => {
+                const active = form.specialties.includes(s);
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setForm((f) => ({
+                      ...f,
+                      specialties: active
+                        ? f.specialties.filter((x) => x !== s)
+                        : [...f.specialties, s],
+                    }))}
+                    className={`px-3 py-1.5 rounded-full border text-[12px] tracking-tight transition ${
+                      active
+                        ? "bg-[var(--gold)] text-white border-[var(--gold)]"
+                        : "border-[var(--line-2)] hover:border-[var(--gold)]"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
