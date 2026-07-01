@@ -99,13 +99,16 @@ export default function SobrePage() {
             </h2>
             <div className="mt-6 space-y-4 text-[15px] text-[var(--muted)] leading-relaxed">
               <p>
-                Não somos uma agência de viagens convencional. Somos organizadores — pessoas que visitaram os destinos, dormiram nos hotéis e conhecem os guias que recomendam.
+                Cada viagem merece ser única.
               </p>
               <p>
-                Trabalhamos com um número limitado de clientes por ano para garantir que cada viagem recebe a atenção que merece. O resultado é uma experiência desenhada ao milímetro, onde o imprevisto agradável faz parte do plano.
+                Na MNTRAVEL acreditamos que viajar vai muito além de escolher um destino. É criar momentos, descobrir novas culturas e viver experiências que ficam para sempre.
               </p>
               <p>
-                Da primeira conversa ao regresso a casa, a MN Travel está sempre a um contacto de distância.
+                Planeamos cada viagem com atenção ao detalhe, procurando as melhores opções para cada cliente, sempre com um acompanhamento próximo e personalizado.
+              </p>
+              <p>
+                Do primeiro contacto ao regresso a casa, estamos consigo em todas as etapas, para que viaje com total tranquilidade.
               </p>
             </div>
             <div className="mt-8 h-px bg-[var(--line)]" />
