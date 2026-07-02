@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const RATE_LIMIT = 5;         // pedidos por email
-const RATE_WINDOW_MIN = 60;   // janela em minutos
+const RATE_LIMIT_EMAIL = 5;
+const RATE_LIMIT_IP = 10;
+const RATE_WINDOW_MIN = 60;
+
+function getIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  return (fwd ? fwd.split(",")[0] : "unknown").trim();
+}
 
 export async function POST(req: Request) {
+  const ip = getIp(req);
   try {
     const body = await req.json() as {
       package_id?: string;
@@ -41,16 +48,23 @@ export async function POST(req: Request) {
 
     const admin = createAdminClient();
 
-    // ── Rate limiting por email (máx. 5 pedidos por hora) ────────────────────
+    // ── Rate limiting por email e por IP ─────────────────────────────────────
 
     const since = new Date(Date.now() - RATE_WINDOW_MIN * 60 * 1000).toISOString();
-    const { count } = await admin
-      .from("booking_requests")
-      .select("id", { count: "exact", head: true })
-      .ilike("email", email.trim())
-      .gte("created_at", since);
+    const [{ count: countEmail }, { count: countIp }] = await Promise.all([
+      admin
+        .from("booking_requests")
+        .select("id", { count: "exact", head: true })
+        .ilike("email", email.trim())
+        .gte("created_at", since),
+      admin
+        .from("booking_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_address", ip)
+        .gte("created_at", since),
+    ]);
 
-    if ((count ?? 0) >= RATE_LIMIT) {
+    if ((countEmail ?? 0) >= RATE_LIMIT_EMAIL || (countIp ?? 0) >= RATE_LIMIT_IP) {
       return NextResponse.json(
         { error: "Demasiados pedidos. Tente novamente mais tarde." },
         { status: 429 }
@@ -70,6 +84,7 @@ export async function POST(req: Request) {
       check_out_date:  check_out_date || null,
       message:         message?.trim() || null,
       status:          "pending",
+      ip_address:      ip,
     });
 
     if (error) {

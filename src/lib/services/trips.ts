@@ -1,5 +1,4 @@
 import { createPublicClient } from "@/lib/supabase/public";
-import { createAdminClient } from "@/lib/supabase/admin";
 import type { TravelPackageCard, TravelPackageWithRelations, PackageDate } from "@/types/database";
 
 const PACKAGE_CARD_SELECT = `
@@ -57,9 +56,11 @@ export async function getAllTrips(filters?: {
   }
 
   if (filters?.search) {
-    query = query.or(
-      `title.ilike.%${filters.search}%,country.ilike.%${filters.search}%`
-    );
+    // Strip PostgREST operator characters to prevent filter injection
+    const safe = filters.search.replace(/[,;()\[\]]/g, "").trim().slice(0, 100);
+    if (safe) {
+      query = query.or(`title.ilike.%${safe}%,country.ilike.%${safe}%`);
+    }
   }
 
   switch (filters?.sortBy) {
@@ -121,7 +122,7 @@ export async function getDateSeats(
 ): Promise<Record<string, number | null>> {
   if (dates.length === 0) return {};
 
-  const supabase = createAdminClient();
+  const supabase = createPublicClient();
 
   const departureDates = dates.map((d) => d.departure_date);
   const datesByDeparture: Record<string, string> = {};

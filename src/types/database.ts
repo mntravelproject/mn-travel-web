@@ -470,6 +470,7 @@ export interface Database {
           subject: string | null;
           message: string;
           status: string;
+          ip_address: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -482,6 +483,7 @@ export interface Database {
           subject?: string | null;
           message: string;
           status?: string;
+          ip_address?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -494,6 +496,7 @@ export interface Database {
           subject?: string | null;
           message?: string;
           status?: string;
+          ip_address?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -511,6 +514,7 @@ export interface Database {
           pax_count: number;
           message: string | null;
           status: "pending" | "contacted" | "confirmed" | "cancelled";
+          ip_address: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -526,6 +530,7 @@ export interface Database {
           pax_count?: number;
           message?: string | null;
           status?: "pending" | "contacted" | "confirmed" | "cancelled";
+          ip_address?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -541,6 +546,7 @@ export interface Database {
           pax_count?: number;
           message?: string | null;
           status?: "pending" | "contacted" | "confirmed" | "cancelled";
+          ip_address?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -552,6 +558,24 @@ export interface Database {
             referencedColumns: ["id"];
           }
         ];
+      };
+      login_attempts: {
+        Row: {
+          id: string;
+          ip_address: string;
+          attempted_at: string;
+        };
+        Insert: {
+          id?: string;
+          ip_address: string;
+          attempted_at?: string;
+        };
+        Update: {
+          id?: string;
+          ip_address?: string;
+          attempted_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;

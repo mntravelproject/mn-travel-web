@@ -1,34 +1,38 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { createAdminClient } from "@/lib/supabase/admin";
 
-// Rate limiting em memória: max 5 tentativas por IP por 15 minutos
 const MAX_ATTEMPTS = 5;
-const WINDOW_MS    = 15 * 60 * 1000;
-
-const attempts = new Map<string, { count: number; resetAt: number }>();
+const WINDOW_MS = 15 * 60 * 1000;
 
 function getIp(req: Request): string {
   const fwd = req.headers.get("x-forwarded-for");
   return (fwd ? fwd.split(",")[0] : "unknown").trim();
 }
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = attempts.get(ip);
+async function checkRateLimit(ip: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const since = new Date(Date.now() - WINDOW_MS).toISOString();
 
-  if (!entry || entry.resetAt <= now) {
-    attempts.set(ip, { count: 1, resetAt: now + WINDOW_MS });
-    return true; // permitido
-  }
-  if (entry.count >= MAX_ATTEMPTS) return false; // bloqueado
-  entry.count += 1;
-  return true;
+  const { count } = await admin
+    .from("login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip_address", ip)
+    .gte("attempted_at", since);
+
+  return (count ?? 0) < MAX_ATTEMPTS;
+}
+
+async function recordAttempt(ip: string) {
+  const admin = createAdminClient();
+  await admin.from("login_attempts").insert({ ip_address: ip });
 }
 
 export async function POST(req: Request) {
   const ip = getIp(req);
 
-  if (!checkRateLimit(ip)) {
+  const allowed = await checkRateLimit(ip);
+  if (!allowed) {
     return NextResponse.json(
       { error: "Demasiadas tentativas. Aguarde 15 minutos e tente novamente." },
       { status: 429 }
@@ -44,8 +48,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Password obrigatória." }, { status: 400 });
   }
 
-  // A response é criada antes do signIn para que o setAll do SSR possa
-  // adicionar os cookies de sessão directamente no NextResponse
   const response = NextResponse.json({ ok: true });
 
   const supabase = createServerClient(
@@ -75,13 +77,12 @@ export async function POST(req: Request) {
   });
 
   if (error) {
-    // Não revelamos se o email existe ou não — mesma mensagem para tudo
+    await recordAttempt(ip);
     return NextResponse.json(
       { error: "Credenciais inválidas. Verifique o email e a password." },
       { status: 401 }
     );
   }
 
-  // Sessão foi estabelecida; cookies foram adicionados ao response pelo setAll
   return response;
 }

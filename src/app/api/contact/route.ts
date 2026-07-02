@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const RATE_LIMIT = 3;
+const RATE_LIMIT_EMAIL = 3;
+const RATE_LIMIT_IP = 6;
 const RATE_WINDOW_MIN = 60;
+
+function getIp(req: Request): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  return (fwd ? fwd.split(",")[0] : "unknown").trim();
+}
 
 const ALLOWED_TYPES = ["orcamento", "informacao", "ajuda", "outro"] as const;
 
 export async function POST(req: Request) {
+  const ip = getIp(req);
   try {
     const body = await req.json() as {
       name?: string;
@@ -39,16 +46,23 @@ export async function POST(req: Request) {
 
     const admin = createAdminClient();
 
-    // ── Rate limiting por email ───────────────────────────────────────────────
+    // ── Rate limiting por email e por IP ─────────────────────────────────────
 
     const since = new Date(Date.now() - RATE_WINDOW_MIN * 60 * 1000).toISOString();
-    const { count } = await admin
-      .from("contact_requests")
-      .select("id", { count: "exact", head: true })
-      .ilike("email", email.trim())
-      .gte("created_at", since);
+    const [{ count: countEmail }, { count: countIp }] = await Promise.all([
+      admin
+        .from("contact_requests")
+        .select("id", { count: "exact", head: true })
+        .ilike("email", email.trim())
+        .gte("created_at", since),
+      admin
+        .from("contact_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_address", ip)
+        .gte("created_at", since),
+    ]);
 
-    if ((count ?? 0) >= RATE_LIMIT) {
+    if ((countEmail ?? 0) >= RATE_LIMIT_EMAIL || (countIp ?? 0) >= RATE_LIMIT_IP) {
       return NextResponse.json(
         { error: "Demasiados pedidos. Tente novamente mais tarde." },
         { status: 429 }
@@ -58,13 +72,14 @@ export async function POST(req: Request) {
     // ── Inserir pedido ────────────────────────────────────────────────────────
 
     const { error } = await admin.from("contact_requests").insert({
-      name:    name.trim(),
-      email:   email.trim().toLowerCase(),
-      phone:   phone?.trim()   || null,
-      type:    safeType,
-      subject: subject?.trim() || null,
-      message: message.trim(),
-      status:  "novo",
+      name:       name.trim(),
+      email:      email.trim().toLowerCase(),
+      phone:      phone?.trim()   || null,
+      type:       safeType,
+      subject:    subject?.trim() || null,
+      message:    message.trim(),
+      status:     "novo",
+      ip_address: ip,
     });
 
     if (error) {
